@@ -100,11 +100,11 @@ export function buildExtras({ kit, props }) {
     place(root, Q.trophyShelf({ w: 6.2, h: 4.2 }), -6.2, 0, -1.5);
     place(root, P.plant({ size: 1.1, pot: C.white }), 6.1, 0, -5.9);
     place(root, P.plant({ size: 0.9, pot: C.pink }), -5.7, 0, 5.0);
-    place(root, P.floorLamp({ shade: C.pink, h: 5.6 }), 6.2, 0, -2.6);
+    place(root, P.floorLamp({ shade: C.pink, h: 5.6 }), 6.2, 0, 2.6);
 
     // Globos atados
-    [[5.2, 3.6, C.pink], [6.1, 4.4, C.sky], [4.3, 4.6, C.orange]].forEach(([x, z, color], i) => {
-      place(root, Q.balloon({ color, len: 4.4 }), x, 6.7 + i * 0.4, z);
+    [[6.5, -3.4, C.pink], [6.0, -4.9, C.sky], [6.7, -5.9, C.orange]].forEach(([x, z, color], i) => {
+      place(root, Q.balloon({ color, len: 4.2 }), x, 5.4 + i * 0.7, z);
     });
 
     // Lluvia de confeti
