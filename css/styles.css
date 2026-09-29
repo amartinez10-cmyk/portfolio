@@ -445,6 +445,7 @@ main {
    El relleno inferior evita que la máscara corte la cola de la "y". */
 .word {
   display: inline-block;
+  perspective: 700px;
   overflow: hidden;
   vertical-align: top;
   padding-bottom: 0.12em;
@@ -453,6 +454,7 @@ main {
 
 .word__inner {
   display: inline-block;
+  transform-origin: 50% 100%;
 }
 
 /* Subrayado que se dibuja de izquierda a derecha en el menú y en los idiomas */

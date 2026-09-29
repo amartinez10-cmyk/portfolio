@@ -62,6 +62,14 @@
     return settle(el.animate([{ opacity: 0, transform: from }, { opacity: 1, transform: "none" }], timing));
   }
 
+  // Entradas y salidas con profundidad: el elemento viene desde atrás, girado, con perspectiva.
+  // Con "reducir movimiento" no hay desplazamiento ni giro: solo cambia la opacidad.
+  var DEPTH_REST = "perspective(1100px) translate3d(0px, 0px, 0px) rotateY(0deg) rotateX(0deg)";
+  function depth(dx, dy, dz, ry, rx) {
+    if (reduceMotion.matches) return "translateX(0)";
+    return "perspective(1100px) translate3d(" + dx + "px, " + dy + "px, " + dz + "px) rotateY(" + ry + "deg) rotateX(" + rx + "deg)";
+  }
+
   // Avisa a la capa 3D (js/scene3d.js) de los cambios de sección, idioma y fondo
   function emit(name, detail) {
     document.dispatchEvent(new CustomEvent("portfolio:" + name, { detail: detail }));
@@ -284,7 +292,7 @@
     var style = getComputedStyle(el);
     return {
       opacity: style.opacity,
-      transform: style.transform === "none" ? "translateX(0)" : style.transform
+      transform: style.transform === "none" ? DEPTH_REST : style.transform
     };
   }
 
@@ -292,14 +300,17 @@
     el.getAnimations().forEach(function (anim) { anim.cancel(); });
   }
 
-  // Los bloques de la sección nueva entran uno detrás de otro desde el lado
-  // hacia el que se va en el menú
+  // Los bloques de la sección nueva entran uno detrás de otro, en profundidad, desde el
+  // lado hacia el que se va en el menú. Las tarjetas (data-tilt) entran además enteras.
   function enterPage(page, dir) {
-    var dx = reduceMotion.matches ? 0 : 16 * dir;
+    if (page.hasAttribute("data-tilt") && page.id !== "about") {
+      stopAnimations(page);
+      rise(page, depth(dir * 70, 0, -240, -dir * 16, 0), { duration: 640, easing: curve("ease-out"), fill: "backwards" });
+    }
     Array.prototype.forEach.call(page.children, function (block, i) {
       stopAnimations(block);
-      rise(block, "translateX(" + dx + "px)", {
-        duration: 220, delay: i * 40, easing: curve("ease-out"), fill: "backwards"
+      rise(block, depth(dir * 40, 18, -160, -dir * 12, 0), {
+        duration: 560, delay: 60 + i * 70, easing: curve("ease-out"), fill: "backwards"
       });
     });
   }
@@ -324,12 +335,12 @@
     // Si ya hay una salida en marcha, al terminar mostrará la última sección pedida
     if (leaving || from === to) return;
 
-    var dx = reduceMotion.matches ? 0 : -12 * direction(from.id, id);
+    var dir = direction(from.id, id);
     var start = liveFrame(from);
     stopAnimations(from);
     leaving = settle(from.animate(
-      [start, { opacity: 0, transform: "translateX(" + dx + "px)" }],
-      { duration: 120, easing: curve("ease-out"), fill: "forwards" }
+      [start, { opacity: 0, transform: depth(-dir * 60, 0, -180, dir * 14, 0) }],
+      { duration: 180, easing: curve("ease-out"), fill: "forwards" }
     ));
     leaving.finished.then(function () {
       leaving = null;
@@ -352,7 +363,7 @@
 
   function revealOnScroll(el) {
     var anim = el.animate(
-      [{ opacity: 0, transform: "translateY(16px)" }, { opacity: 1, transform: "none" }],
+      [{ opacity: 0, transform: depth(0, 22, -110, 0, -8) }, { opacity: 1, transform: "none" }],
       { duration: 800, easing: curve("ease-out"), fill: "backwards" }
     );
     anim.pause();
@@ -440,13 +451,13 @@
     var last = null;
     words.inners.forEach(function (inner, i) {
       last = settle(inner.animate(
-        [{ transform: "translateY(110%)" }, { transform: "translateY(0)" }],
+        [{ transform: "translate3d(0, 110%, -140px) rotateX(-55deg)" }, { transform: "translate3d(0, 0, 0) rotateX(0deg)" }],
         { duration: 900, delay: 320 + i * 80, easing: ease, fill: "backwards" }
       ));
     });
     if (last) last.finished.then(words.restore, words.restore);
 
-    rise(document.querySelector(".about__role"), "translateY(12px)",
+    rise(document.querySelector(".about__role"), depth(0, 14, -80, 0, -10),
       { duration: 700, delay: 620, easing: ease, fill: "backwards" });
 
     // Los párrafos y los bloques de habilidades que ya se ven entran ahora;
@@ -454,7 +465,7 @@
     var shown = 0;
     document.querySelectorAll(".about__body p, .about__skills .skills").forEach(function (p) {
       if (p.getBoundingClientRect().top < window.innerHeight * 0.92) {
-        rise(p, "translateY(16px)", { duration: 800, delay: 760 + shown++ * 100, easing: ease, fill: "backwards" });
+        rise(p, depth(0, 22, -110, 0, -8), { duration: 800, delay: 760 + shown++ * 100, easing: ease, fill: "backwards" });
       } else {
         revealOnScroll(p);
       }
@@ -503,7 +514,7 @@
       introAbout();
     } else {
       Array.prototype.forEach.call(page.children, function (block, i) {
-        rise(block, "translateY(12px)", { duration: 700, delay: 250 + i * 90, easing: curve("ease-out"), fill: "backwards" });
+        rise(block, depth(0, 16, -100, 0, -6), { duration: 700, delay: 250 + i * 90, easing: curve("ease-out"), fill: "backwards" });
       });
     }
 

@@ -63,6 +63,143 @@
   }
 }
 
+/* ---------- Paneles de cristal (glassmorphism): el texto se lee siempre sobre el 3D ---------- */
+
+.about__body,
+.about__skills,
+.page:not(.about) {
+  isolation: isolate;
+  padding: 1.125rem 1.5rem;
+  border: 1px solid var(--glass-edge);
+  border-radius: 1.25rem;
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(14px) saturate(1.3);
+  backdrop-filter: blur(14px) saturate(1.3);
+  box-shadow: 0 1.5rem 3rem -1.5rem rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  transition: border-color 250ms ease;
+}
+
+.about__body,
+.page:not(.about) {
+  position: relative;
+}
+
+.about__body p:last-child,
+.page:not(.about) p:last-child {
+  margin-bottom: 0;
+}
+
+/* Las secciones que aún no tienen contenido: una tarjeta con el mismo texto de siempre */
+.page:not(.about) {
+  align-self: flex-start;
+  width: min(100%, 40rem);
+  padding: clamp(1.25rem, 3vw, 2rem) clamp(1.25rem, 3vw, 2.25rem);
+}
+
+/* Perspectiva para el tilt de las tarjetas y las transiciones entre secciones */
+main,
+.about {
+  perspective: 1200px;
+}
+
+/* Brillo que sigue al cursor (js/fx.js pone --mx, --my y --glare); va detrás del texto */
+.about__body::before,
+.about__skills::before,
+.page:not(.about)::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(26rem circle at var(--mx, 50%) var(--my, 0%), rgba(140, 165, 255, 0.17), transparent 60%);
+  opacity: var(--glare, 0);
+  transition: opacity 300ms ease;
+}
+
+/* En tablet las habilidades cuelgan debajo de la primera pantalla: el espacio final
+   pasa a un separador invisible para que el cristal no lo incluya */
+@media (min-width: 700px) and (max-width: 1199px) {
+  .about__skills::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 1px;
+    height: clamp(2rem, 6vh, 4rem);
+  }
+}
+
+.about__photo {
+  border-radius: 0.875rem;
+  box-shadow: 0 0 0 1px var(--glass-edge), 0 0 2rem rgba(108, 134, 255, 0.25);
+}
+
+/* ---------- Parallax por capas (js/fx.js publica --px y --py) ---------- */
+
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .has-fx [data-depth] {
+    translate: calc(var(--px, 0) * var(--depth, 0) * -1px) calc(var(--py, 0) * var(--depth, 0) * -1px);
+  }
+}
+
+/* ---------- Cursor personalizado (sutil: el normal sigue visible) ---------- */
+
+.cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 100;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+
+.cursor.is-visible {
+  opacity: 1;
+}
+
+.cursor__dot,
+.cursor__ring {
+  position: absolute;
+  border-radius: 50%;
+}
+
+.cursor__dot {
+  top: -2px;
+  left: -2px;
+  width: 4px;
+  height: 4px;
+  background: var(--accent-2);
+  box-shadow: 0 0 0.5rem var(--accent-2);
+}
+
+.cursor__ring {
+  top: -16px;
+  left: -16px;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--accent);
+  box-shadow: 0 0 0.75rem rgba(108, 134, 255, 0.4);
+  transition: scale 200ms var(--ease-out), background-color 200ms ease, border-color 200ms ease;
+}
+
+.cursor.is-link .cursor__ring {
+  scale: 1.6;
+  border-color: var(--accent-2);
+  background-color: rgba(51, 225, 255, 0.1);
+}
+
+.cursor.is-down .cursor__ring {
+  scale: 0.75;
+}
+
+@media (hover: none), (prefers-reduced-motion: reduce) {
+  .cursor {
+    display: none;
+  }
+}
+
 /* ---------- Escenario del modelo 3D (Sobre mí) ---------- */
 
 .about__stage {
@@ -176,7 +313,8 @@
 }
 
 @media print {
-  .about__stage {
+  .about__stage,
+  .cursor {
     display: none;
   }
 

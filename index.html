@@ -69,7 +69,7 @@
   <main id="content">
     <!-- SOBRE MÍ -->
     <section id="about" class="page about" aria-labelledby="about-title">
-      <div class="about__intro">
+      <div class="about__intro" data-depth="10">
         <figure class="about__photo">
           <img src="img/alex.jpg" width="960" height="1280"
                data-i18n-alt="about.photoAlt" alt="Retrato de Alex">
@@ -80,13 +80,13 @@
         </div>
       </div>
 
-      <div class="about__body">
+      <div class="about__body" data-tilt data-depth="16">
         <p data-i18n="about.p1">Actualmente estudio SMX en Sa Palomera, y en este portfolio voy recogiendo lo que aprendo por el camino.</p>
         <p data-i18n="about.p2">Me interesa sobre todo la Inteligencia Artificial, y disfruto del trabajo que me deja resolver problemas reales y ver el resultado. Fuera de clase dedico mi tiempo a entrenar y aprender habilidades de alto valor.</p>
       </div>
 
       <!-- Habilidades: las listas se rellenan desde js/translations.js (skills.hard y skills.soft) -->
-      <div class="about__skills">
+      <div class="about__skills" data-tilt data-depth="6">
         <div class="skills">
           <h2 data-i18n="skills.hardTitle">Habilidades técnicas</h2>
           <ul class="skills__list" data-i18n-list="skills.hard">
@@ -127,31 +127,31 @@
     </section>
 
     <!-- CURRÍCULUM -->
-    <section id="resume" class="page" aria-labelledby="resume-title" hidden>
+    <section id="resume" class="page" aria-labelledby="resume-title" data-tilt data-depth="12" hidden>
       <h1 id="resume-title" tabindex="-1" data-i18n="nav.resume">Currículum</h1>
       <p data-i18n="resume.body">Pronto encontrarás aquí mi currículum.</p>
     </section>
 
     <!-- CERTIFICADOS -->
-    <section id="certificates" class="page" aria-labelledby="certificates-title" hidden>
+    <section id="certificates" class="page" aria-labelledby="certificates-title" data-tilt data-depth="12" hidden>
       <h1 id="certificates-title" tabindex="-1" data-i18n="nav.certificates">Certificados</h1>
       <p data-i18n="certificates.body">Aquí iré añadiendo los certificados que obtenga.</p>
     </section>
 
     <!-- PROYECTOS -->
-    <section id="projects" class="page" aria-labelledby="projects-title" hidden>
+    <section id="projects" class="page" aria-labelledby="projects-title" data-tilt data-depth="12" hidden>
       <h1 id="projects-title" tabindex="-1" data-i18n="nav.projects">Proyectos</h1>
       <p data-i18n="projects.body">Aquí iré publicando los proyectos que haga en clase y por mi cuenta.</p>
     </section>
 
     <!-- 7 HHEP -->
-    <section id="hhep" class="page" aria-labelledby="hhep-title" hidden>
+    <section id="hhep" class="page" aria-labelledby="hhep-title" data-tilt data-depth="12" hidden>
       <h1 id="hhep-title" tabindex="-1" data-i18n="nav.hhep">7 HHEP</h1>
       <p data-i18n="hhep.body">Contenido en preparación.</p>
     </section>
 
     <!-- CONTACTO -->
-    <section id="contact" class="page" aria-labelledby="contact-title" hidden>
+    <section id="contact" class="page" aria-labelledby="contact-title" data-tilt data-depth="12" hidden>
       <h1 id="contact-title" tabindex="-1" data-i18n="nav.contact">Contacto</h1>
       <p data-i18n="contact.body">Pronto añadiré aquí mis datos de contacto.</p>
     </section>
@@ -159,6 +159,7 @@
 
   <script src="js/translations.js"></script>
   <script src="js/main.js"></script>
+  <script src="js/fx.js"></script>
   <script src="js/boot3d.js"></script>
 </body>
 </html>
