@@ -26,7 +26,7 @@ function glowTexture() {
 export function createSkillsGraph({ palette, lite, touch }) {
   const group = new THREE.Group();
   const glow = glowTexture();
-  const nodeGeo = new THREE.SphereGeometry(0.13, 16, 12);
+  const nodeGeo = new THREE.SphereGeometry(0.09, 16, 12);
   const hitGeo = new THREE.SphereGeometry(touch ? 0.42 : 0.3, 8, 6);
   const dimColor = palette.accent.clone().multiplyScalar(0.75);
   const hotColor = new THREE.Color(1, 1, 1);
@@ -63,7 +63,7 @@ export function createSkillsGraph({ palette, lite, touch }) {
         map: glow, color: palette.accent, transparent: true, opacity: 0.35,
         blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false
       }));
-      halo.scale.setScalar(0.95);
+      halo.scale.setScalar(0.7);
       mesh.add(hit, halo);
       group.add(mesh);
       nodes.push({ mesh, hit, halo, base: new THREE.Vector3(), level: 0, goal: 0 });
@@ -132,7 +132,7 @@ export function createSkillsGraph({ palette, lite, touch }) {
       n.mesh.scale.setScalar(1 + n.level * 0.9);
       n.mesh.material.color.copy(dimColor).lerp(palette.accent2, n.level * 0.8).lerp(hotColor, n.level * 0.3);
       n.halo.material.opacity = 0.3 + n.level * 0.7;
-      n.halo.scale.setScalar(0.95 + n.level * 0.7);
+      n.halo.scale.setScalar(0.7 + n.level * 0.6);
     });
 
     const pos = edgeLines.geometry.attributes.position;

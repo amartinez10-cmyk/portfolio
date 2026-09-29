@@ -4,17 +4,19 @@
  * ese rectángulo aunque la página se desplace o cambie de tamaño.
  *
  * Interacción: arrastrar (ratón o dedo) gira el modelo con inercia; el cursor lo inclina;
- * con el hueco enfocado, las flechas del teclado lo giran.
+ * pasar el cursor (o tocar) por una pieza del PC o por un nodo de habilidad la resalta y
+ * muestra su nombre; con el hueco enfocado, las flechas del teclado lo giran.
  */
 import * as THREE from "three";
-import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+import { createStudioEnv } from "./studio-env.js";
 import { createHeroModel } from "./hero-model.js";
 import { createSkillsGraph } from "./skills-graph.js";
 
 const CAM_Z = 16;
 const FOV = 30;
 const DESIGN_H = 3.5;          // alto (en unidades de escena) que ocupa el conjunto en el hueco
-const MIN_WIDTH = 5.6;         // ancho mínimo (unidades) para que quepan la torre y los nodos
+const HINT_STRIP = 40;         // px libres bajo el modelo para el texto de ayuda
+const MIN_WIDTH = 4.6;         // ancho mínimo (unidades) para que quepan el PC, su plataforma y los nodos
 const DEFAULT_YAW = -0.55;     // vista de tres cuartos: cristal y frontal
 const DEFAULT_PITCH = 0.1;
 const clamp = THREE.MathUtils.clamp;
@@ -27,17 +29,15 @@ export function createHeroStage({ renderer, palette, lite, stage, wake }) {
   const camera = new THREE.PerspectiveCamera(FOV, 1, 0.1, 60);
   camera.position.set(0, 0, CAM_Z);
 
-  // Reflejos: un entorno de estudio generado por código (sin descargar nada)
-  const room = new RoomEnvironment();
-  const envMap = new THREE.PMREMGenerator(renderer).fromScene(room, 0.04);
-  room.dispose();
+  // Reflejos: un estudio con luces de neón generado por código (sin descargar nada)
+  const envMap = createStudioEnv(renderer, palette);
   scene.environment = envMap.texture;
-  scene.environmentIntensity = 0.6;
+  scene.environmentIntensity = 0.9;
 
-  scene.add(new THREE.AmbientLight(0x8fa0ff, 0.25));
-  const key = new THREE.DirectionalLight(0xdfe6ff, 1.6);
-  const rim = new THREE.DirectionalLight(palette.accent, 3.2);
-  const fill = new THREE.DirectionalLight(palette.accent2, 1.6);
+  scene.add(new THREE.AmbientLight(0x8fa0ff, 0.18));
+  const key = new THREE.DirectionalLight(0xdfe6ff, 1.3);
+  const rim = new THREE.DirectionalLight(palette.accent, 3);
+  const fill = new THREE.DirectionalLight(palette.accent2, 1.4);
   key.position.set(3, 4, 6);
   rim.position.set(-6, 2, -4);
   fill.position.set(6, -3, 2);
@@ -57,22 +57,31 @@ export function createHeroStage({ renderer, palette, lite, stage, wake }) {
   const labelEl = stage.querySelector(".node-label");
   const hardList = document.querySelector('.skills__list[data-i18n-list="skills.hard"]');
   let labels = [];
-  let hover = -1;        // nodo señalado con el ratón
-  let tapped = -1;       // nodo tocado con el dedo
-  let listHover = -1;    // nodo señalado desde la lista HTML
-  let labelIdx = -1;
+  // Lo señalado: nodo (índice) o pieza del PC (id). Con ratón, con el dedo o desde la lista HTML
+  const point = { node: -1, part: null };
+  const tap = { node: -1, part: null };
+  let listHover = -1;
+  let labelKey = "";
   let litIdx = -1;
+  let hlId = null;
   let orbit = 0;         // giro propio de la red
-  let slow = 1;          // la red se frena mientras se señala un nodo
+  let slow = 1;          // la red se frena mientras se señala algo
   const labelPos = new THREE.Vector3();
 
   function readLabels() {
     labels = hardList ? Array.from(hardList.children).map((li) => li.textContent.trim()) : [];
     graph.setCount(labels.length);
-    labelIdx = -1;
+    labelKey = "";
     litIdx = -1;   // los <li> son nuevos: hay que volver a iluminar el que toque
   }
   readLabels();
+
+  // Nombre de una pieza en el idioma actual (claves pc.* de translations.js)
+  function partName(id) {
+    const all = window.TRANSLATIONS || {};
+    const dict = all[document.documentElement.lang] || all.es || {};
+    return dict["pc." + id] || id;
+  }
 
   /* ---------- Estado ---------- */
 
@@ -97,19 +106,23 @@ export function createHeroStage({ renderer, palette, lite, stage, wake }) {
     pointer.y = clamp(((e.clientY - r.top) / r.height) * 2 - 1, -1, 1);
   }
 
+  // Qué hay bajo el puntero: primero los nodos (están delante) y si no, una pieza del PC
   function pickAt(e) {
     raycaster.setFromCamera(new THREE.Vector2((e.clientX / W) * 2 - 1, -(e.clientY / H) * 2 + 1), camera);
-    return graph.pick(raycaster);
+    const node = graph.pick(raycaster);
+    return { node, part: node >= 0 ? null : model.pick(raycaster) };
   }
 
   function endDrag(e) {
     if (!drag.active || (e && e.pointerId !== drag.id)) return;
     drag.active = false;
-    // Un toque corto con el dedo selecciona el nodo (o quita la selección)
+    // Un toque corto con el dedo selecciona lo que haya debajo (o quita la selección)
     if (e && e.type === "pointerup" && e.pointerType === "touch" &&
         Math.hypot(e.clientX - drag.startX, e.clientY - drag.startY) < 8) {
-      const idx = visible ? pickAt(e) : -1;
-      tapped = idx === tapped ? -1 : idx;
+      const hit = visible ? pickAt(e) : { node: -1, part: null };
+      const same = hit.node === tap.node && hit.part === tap.part;
+      tap.node = same ? -1 : hit.node;
+      tap.part = same ? null : hit.part;
     }
     stage.classList.remove("is-dragging");
     if (!animated) yawVel = 0;
@@ -124,7 +137,8 @@ export function createHeroStage({ renderer, palette, lite, stage, wake }) {
     drag.y = drag.startY = e.clientY;
     drag.t = performance.now();
     yawVel = 0;
-    hover = -1;
+    point.node = -1;
+    point.part = null;
     stage.classList.add("is-dragging");
     stage.classList.remove("is-pointing");
     try { stage.setPointerCapture(e.pointerId); } catch (err) { /* sin captura: no pasa nada */ }
@@ -136,8 +150,10 @@ export function createHeroStage({ renderer, palette, lite, stage, wake }) {
       pointer.inside = true;
       trackPointer(e);
       if (!drag.active && visible) {
-        hover = pickAt(e);
-        stage.classList.toggle("is-pointing", hover >= 0);
+        const hit = pickAt(e);
+        point.node = hit.node;
+        point.part = hit.part;
+        stage.classList.toggle("is-pointing", hit.node >= 0 || !!hit.part);
       }
     }
     if (drag.active && e.pointerId === drag.id) {
@@ -161,7 +177,8 @@ export function createHeroStage({ renderer, palette, lite, stage, wake }) {
   on(stage, "lostpointercapture", endDrag);
   on(stage, "pointerleave", () => {
     pointer.inside = false;
-    hover = -1;
+    point.node = -1;
+    point.part = null;
     stage.classList.remove("is-pointing");
     wake();
   });
@@ -200,8 +217,22 @@ export function createHeroStage({ renderer, palette, lite, stage, wake }) {
 
   /* ---------- API para scene3d.js ---------- */
 
+  // Mientras dura la pantalla de carga el modelo espera fuera; al terminar entra girando
+  let held = false;
+  let wanted = true;
+  function setHold(value) {
+    held = value;
+    enterTarget = held || !wanted ? 0 : 1;
+    if (held) {
+      enter = 0;
+      enterV = 0;
+    }
+    wake();
+  }
+
   function setSection(id, previous, animate) {
-    enterTarget = id === "about" ? 1 : 0;
+    wanted = id === "about";
+    enterTarget = held || !wanted ? 0 : 1;
     if (!animate) {
       enter = enterTarget;
       enterV = 0;
@@ -213,16 +244,30 @@ export function createHeroStage({ renderer, palette, lite, stage, wake }) {
     H = h;
   }
 
-  // Etiqueta HTML con el nombre de la habilidad, pegada al nodo señalado
-  function updateLabel(idx, rect) {
+  // Lo que se muestra ahora: {kind, id} o null. Arrastrando no se muestra nada.
+  function currentSelection() {
+    if (drag.active) return null;
+    if (point.node >= 0) return { kind: "node", id: point.node };
+    if (point.part) return { kind: "part", id: point.part };
+    if (tap.node >= 0) return { kind: "node", id: tap.node };
+    if (tap.part) return { kind: "part", id: tap.part };
+    if (listHover >= 0) return { kind: "node", id: listHover };
+    return null;
+  }
+
+  // Etiqueta HTML con el nombre, pegada al nodo o a la pieza señalados
+  function updateLabel(sel, rect) {
     if (!labelEl) return;
-    if (idx !== labelIdx) {
-      labelIdx = idx;
-      if (idx >= 0) labelEl.textContent = labels[idx] || "";
-      labelEl.classList.toggle("is-visible", idx >= 0);
+    const k = sel ? sel.kind + ":" + sel.id : "";
+    if (k !== labelKey) {
+      labelKey = k;
+      if (sel) labelEl.textContent = sel.kind === "node" ? labels[sel.id] || "" : partName(sel.id);
+      labelEl.classList.toggle("is-visible", !!sel);
     }
-    if (idx < 0) return;
-    graph.worldPosition(idx, labelPos).project(camera);
+    if (!sel) return;
+    if (sel.kind === "node") graph.worldPosition(sel.id, labelPos);
+    else model.partAnchor(sel.id, labelPos);
+    labelPos.project(camera);
     const half = (labelEl.offsetWidth || 160) / 2;
     const x = clamp((labelPos.x * 0.5 + 0.5) * W - rect.left, half, Math.max(half, rect.width - half));
     const y = (-labelPos.y * 0.5 + 0.5) * H - rect.top;
@@ -255,27 +300,33 @@ export function createHeroStage({ renderer, palette, lite, stage, wake }) {
     const rect = stage.getBoundingClientRect();
     visible = enter > 0.004 && rect.width > 0 && rect.height > 0 && rect.bottom > -60 && rect.top < H + 60;
     if (!visible) {
-      hover = tapped = -1;
-      updateLabel(-1, rect);
+      point.node = tap.node = -1;
+      point.part = tap.part = null;
+      updateLabel(null, rect);
       syncList(-1);
+      if (hlId) { model.highlight(null); hlId = null; }
       return entering;
     }
 
     // Colocación: el centro del hueco → posición en la escena; su alto → escala
     const wpp = (2 * CAM_Z * Math.tan(THREE.MathUtils.degToRad(FOV / 2))) / H;
-    root.position.set((rect.left + rect.width / 2 - W / 2) * wpp, -(rect.top + rect.height / 2 - H / 2) * wpp, 0);
+    // Abajo se deja una franja libre para el texto de ayuda
+    const usableH = Math.max(rect.height - HINT_STRIP, rect.height * 0.6);
+    root.position.set((rect.left + rect.width / 2 - W / 2) * wpp, -(rect.top + usableH / 2 - H / 2) * wpp, 0);
     // En huecos estrechos (móvil) manda el ancho, para que nada se salga por los lados
-    const s = Math.min((rect.height * wpp) / DESIGN_H, (rect.width * wpp) / MIN_WIDTH);
+    const s = Math.min((usableH * wpp) / DESIGN_H, (rect.width * wpp) / MIN_WIDTH);
     root.scale.setScalar(Math.max(0.0001, s * Math.max(0, enter)));
     camera.aspect = W / H;
     camera.updateProjectionMatrix();
 
-    // Giro: inercia del arrastre + giro lento de reposo (con el fondo en marcha)
+    const sel = currentSelection();
+
+    // Giro: inercia del arrastre + giro lento de reposo (más lento al señalar algo, para poder leerlo)
     if (animated && !drag.active) {
       yaw += yawVel * dt;
       yawVel *= Math.exp(-dt * 2.6);
       if (Math.abs(yawVel) < 0.01) yawVel = 0;
-      yaw += dt * 0.16 * ambient * (pointer.inside ? 0.35 : 1);
+      yaw += dt * 0.16 * ambient * (sel ? 0.06 : pointer.inside ? 0.35 : 1);
       pitch += (DEFAULT_PITCH - pitch) * (1 - Math.exp(-dt * 0.6));
     }
 
@@ -291,19 +342,25 @@ export function createHeroStage({ renderer, palette, lite, stage, wake }) {
     spin.position.y = animated ? Math.sin(t * 0.9) * 0.05 * ambient : 0;
     model.update(t);
 
+    const partId = sel && sel.kind === "part" ? sel.id : null;
+    if (partId !== hlId) {
+      hlId = partId;
+      model.highlight(partId);
+    }
+
     // Red de habilidades: gira despacio alrededor del modelo (algo con el arrastre) y se
     // adapta al ancho del hueco
-    const shown = drag.active ? -1 : hover >= 0 ? hover : tapped >= 0 ? tapped : listHover;
-    slow += ((shown >= 0 ? 0.12 : 1) - slow) * (1 - Math.exp(-dt * 5));
+    const nodeIdx = sel && sel.kind === "node" ? sel.id : -1;
+    slow += ((sel ? 0.1 : 1) - slow) * (1 - Math.exp(-dt * 5));
     if (animated) orbit += dt * 0.12 * ambient * slow;
     graph.group.rotation.y = orbit + (yaw - DEFAULT_YAW) * 0.35;
     const widthUnits = (rect.width * wpp) / s;
     const rx = clamp(widthUnits * 0.45, 1.9, 5.4);
     graph.setLayout(rx, 1.35, Math.min(rx * 0.55, 2.4));
-    const graphActive = graph.update(dt, t, ambient, animated, shown);
+    const graphActive = graph.update(dt, t, ambient, animated, nodeIdx);
     root.updateMatrixWorld(true);
-    updateLabel(shown, rect);
-    syncList(hover >= 0 ? hover : tapped);
+    updateLabel(sel, rect);
+    syncList(point.node >= 0 ? point.node : tap.node);
 
     return entering || drag.active || yawVel !== 0 || tiltMoving || graphActive || ambient > 0;
   }
@@ -323,19 +380,33 @@ export function createHeroStage({ renderer, palette, lite, stage, wake }) {
     layout,
     update,
     setSection,
+    setHold,
     // Al cambiar de idioma la lista HTML se vuelve a escribir: se leen de nuevo los nombres
     refreshLabels() {
       readLabels();
       wake();
     },
-    // Posición en pantalla (px) de un nodo: para pruebas
+    // Para pruebas: coloca el modelo en un ángulo exacto
+    debugPose(newYaw, newPitch) {
+      yaw = newYaw;
+      pitch = newPitch === undefined ? DEFAULT_PITCH : newPitch;
+      yawVel = 0;
+      wake();
+    },
+    // Posición en pantalla (px) de un nodo o de una pieza: para pruebas
     nodeScreen(i) {
       graph.worldPosition(i, labelPos).project(camera);
       return [Math.round((labelPos.x * 0.5 + 0.5) * W), Math.round((-labelPos.y * 0.5 + 0.5) * H)];
     },
+    partScreen(id) {
+      model.partAnchor(id, labelPos);
+      labelPos.project(camera);
+      return [Math.round((labelPos.x * 0.5 + 0.5) * W), Math.round((-labelPos.y * 0.5 + 0.5) * H)];
+    },
     state: () => ({
       yaw: +yaw.toFixed(3), pitch: +pitch.toFixed(3), yawVel: +yawVel.toFixed(3), dragging: drag.active,
-      enter: +enter.toFixed(3), visible, nodes: graph.count, hover, tapped, label: labelEl && labelEl.textContent
+      enter: +enter.toFixed(3), visible, nodes: graph.count, hover: point.node, part: point.part, tapped: tap.node,
+      label: labelEl && labelEl.textContent
     }),
     dispose
   };

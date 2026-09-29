@@ -25,7 +25,7 @@ const SPACING = 70; // separación entre emblemas en el eje X del mundo
 //   (apaisado / vertical) · k y c: rigidez y amortiguación del muelle (cada sección "se
 //   siente" distinta) · roll: giro de la cámara · fov: campo de visión
 const POSES = {
-  about:        { off: [0, 1.5, 60],  ndcL: [0.8, 0.12],   ndcP: [0.5, 0.05],   k: 34, c: 8.5, roll: 0,     fov: 46 },
+  about:        { off: [0, 1.5, 48],  ndcL: [0.44, 0.02],  ndcP: [0, 0],        k: 34, c: 8.5, roll: 0,     fov: 46 },
   resume:       { off: [-17, 2, 25],  ndcL: [0.5, -0.02],  ndcP: [0, -0.42],    k: 70, c: 15,  roll: 0,     fov: 50 },
   certificates: { off: [13, -7, 23],  ndcL: [0.5, -0.02],  ndcP: [0, -0.42],    k: 30, c: 4.5, roll: 0.32,  fov: 54 },
   projects:     { off: [0, 17, 21],   ndcL: [0.46, -0.08], ndcP: [0, -0.42],    k: 22, c: 10,  roll: -0.1,  fov: 48 },
@@ -218,11 +218,25 @@ export function start({ level = "full", force = false } = {}) {
     rig.rollV = rig.fovV = 0;
   }
 
-  rig.target = computePose(section);
+  // Con la pantalla de carga delante (js/boot-screen.js) la entrada se retiene: la cámara espera
+  // lejos y el modelo fuera hasta que la pantalla termina (evento portfolio:boot-done)
+  let held = animated && root.dataset.boot === "running";
+  const FLIGHT = new THREE.Vector3(-8, -6, 42);   // de dónde llega la cámara en la entrada
+
+  function activePose(id) {
+    const pose = computePose(id);
+    if (held) {
+      pose.pos.add(FLIGHT);
+      pose.fov += 14;
+    }
+    return pose;
+  }
+
+  rig.target = activePose(section);
   snapRig();
-  if (animated) {
+  if (animated && !held) {
     // Entrada: la cámara llega desde lejos y un poco por debajo
-    rig.pos.add(new THREE.Vector3(-8, -6, 42));
+    rig.pos.add(FLIGHT);
     rig.fov += 14;
   }
 
@@ -257,7 +271,7 @@ export function start({ level = "full", force = false } = {}) {
     if (!POSES[id]) return;
     const previous = section;
     section = id;
-    rig.target = computePose(id);
+    rig.target = activePose(id);
     if (!animate || !animated) {
       snapRig();
     } else if (previous !== id) {
@@ -286,7 +300,7 @@ export function start({ level = "full", force = false } = {}) {
     cam.aspect = W / H;
     cam.updateProjectionMatrix();
     particles.material.uniforms.uPx.value = renderer.getPixelRatio();
-    rig.target = computePose(section);
+    rig.target = activePose(section);
     if (!animated) snapRig();
     if (hero) hero.layout(W, H);
     wake();
@@ -421,6 +435,16 @@ export function start({ level = "full", force = false } = {}) {
   on(document, "portfolio:section", (e) => setSection(e.detail.id, e.detail.animate));
   on(document, "portfolio:bg", (e) => { bgPlaying = e.detail.playing; wake(); });
   on(document, "portfolio:lang", () => { if (hero) hero.refreshLabels(); wake(); });
+  // Termina la pantalla de carga: la cámara vuela hasta su sitio, con una ráfaga de partículas,
+  // y el modelo entra girando
+  on(document, "portfolio:boot-done", () => {
+    if (!held) return;
+    held = false;
+    rig.target = computePose(section);
+    wheelVel = THREE.MathUtils.clamp(wheelVel + 20, -26, 26);
+    if (hero) hero.setHold(false);
+    wake();
+  });
   on(document, "visibilitychange", () => wake());
   on(canvas, "webglcontextlost", (e) => { e.preventDefault(); dispose(); });
 
@@ -469,6 +493,8 @@ export function start({ level = "full", force = false } = {}) {
       render();
     },
     nodeScreen: (i) => hero && hero.nodeScreen(i),
+    partScreen: (id) => hero && hero.partScreen(id),
+    pose: (yaw, pitch) => hero && hero.debugPose(yaw, pitch),
     dispose
   };
 
@@ -476,6 +502,7 @@ export function start({ level = "full", force = false } = {}) {
   if (stageEl) {
     hero = createHeroStage({ renderer, palette, lite, stage: stageEl, wake });
     hero.setSection(section, section, false);
+    if (held) hero.setHold(true);
   }
 
   resize();

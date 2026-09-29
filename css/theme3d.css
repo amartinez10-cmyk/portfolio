@@ -207,7 +207,7 @@ main,
   position: relative;
   grid-column: 1 / -1;
   grid-row: 2;
-  min-height: clamp(13rem, 30vh, 24rem);
+  min-height: clamp(20rem, 46vh, 36rem);
   cursor: grab;
   touch-action: pan-y;                 /* el scroll vertical sigue funcionando en el móvil */
   user-select: none;
@@ -304,11 +304,47 @@ main,
 /* En el móvil el escenario ocupa el hueco que antes dejaba el margen del texto */
 @media (max-width: 699px) {
   .about__stage {
-    min-height: 40svh;
+    min-height: 44svh;
   }
 
   .has-3d .about__body {
     margin-top: 0;
+  }
+}
+
+/* Escritorio: el texto a la izquierda y el PC grande a la derecha. Con el hueco "pegajoso",
+   el modelo se queda a la vista aunque el texto de la izquierda haga scroll. */
+@media (min-width: 1200px) {
+  .has-3d .about {
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+    grid-template-rows: auto auto 1fr;
+  }
+
+  .has-3d .about__intro {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .has-3d .about__body {
+    grid-column: 1;
+    grid-row: 2;
+    columns: auto;
+  }
+
+  .has-3d .about__skills {
+    grid-column: 1;
+    grid-row: 3;
+    align-self: start;
+  }
+
+  .has-3d .about__stage {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+    position: sticky;
+    top: clamp(0.75rem, 2vh, 1.5rem);
+    align-self: start;
+    height: min(calc(100svh - 8.5rem), 44rem);
+    min-height: 28rem;
   }
 }
 
