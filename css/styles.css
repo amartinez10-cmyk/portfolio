@@ -1,0 +1,507 @@
+:root {
+  --paper: #ffffff;   /* el mismo blanco que el fondo del vídeo */
+  --ink: #000000;
+  --muted: #5e6168;
+  --accent: #5066ce;  /* el azul de las ondas del vídeo */
+  --photo: #e7e8ea;   /* el gris de la pared de la foto */
+
+  --font: "Avenir Next", "Avenir", "Mulish", "Segoe UI", system-ui, sans-serif;
+  --gutter: clamp(1rem, 5vw, 4.375rem);
+  --max: 76rem;
+
+  /* Curvas de las animaciones (las leen también las de main.js) */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);       /* entradas y salidas */
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);   /* algo que cruza la pantalla */
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100svh;
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font);
+  font-weight: 400;
+  font-size: 1rem;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+a,
+button {
+  color: inherit;
+  font: inherit;
+  touch-action: manipulation;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+
+h1:focus {
+  outline: none;
+}
+
+/* ---------- Vídeo de fondo ----------
+   Las ondas del vídeo ocupan la franja entre el 40 % y el 80 % de la altura,
+   así que todo el contenido vive en el tercio de arriba y deja la franja libre. */
+
+.backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: -1;
+  width: 100%;
+  height: 100vh;
+  height: 100lvh;
+  overflow: hidden;
+  background: var(--paper);
+  pointer-events: none;
+}
+
+.backdrop__video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ---------- Cabecera: menú, idiomas y pausa ---------- */
+
+.site-header,
+main {
+  width: 100%;
+  max-width: calc(var(--max) + 2 * var(--gutter));
+  margin: 0 auto;
+}
+
+.site-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 2rem;
+  padding: clamp(1.25rem, 5.5vh, 3rem) var(--gutter) 0;
+}
+
+.main-nav ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.875rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.main-nav a {
+  display: inline-block;
+  padding: 0.25rem 0;
+  text-decoration: none;
+  text-transform: uppercase;
+  font-size: 1.0625rem;
+  letter-spacing: 0.025em; /* las mayúsculas pequeñas necesitan algo más de aire */
+  transition: color 0.15s ease, transform 0.1s ease-out;
+}
+
+.main-nav a:hover,
+.main-nav a[aria-current="page"] {
+  color: var(--accent);
+}
+
+.site-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-right: -0.75rem;
+}
+
+.lang-switch {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.lang-switch button,
+.bg-toggle {
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  padding: 0 0.5rem;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.15s ease, transform 0.1s ease-out;
+}
+
+/* Respuesta inmediata al pulsar, antes de soltar */
+.main-nav a:active {
+  transform: scale(0.97);
+}
+
+.lang-switch button:active,
+.bg-toggle:active {
+  color: var(--ink);
+  transform: scale(0.92);
+}
+
+.lang-switch button {
+  font-size: 0.9375rem;
+  letter-spacing: 0.04em;
+}
+
+.lang-switch button:hover,
+.bg-toggle:hover {
+  color: var(--ink);
+}
+
+.lang-switch button[aria-pressed="true"] {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.bg-toggle {
+  display: inline-grid;
+  place-items: center;
+}
+
+.bg-toggle svg {
+  width: 0.8125rem;
+  height: 0.8125rem;
+  fill: currentColor;
+}
+
+.bg-toggle[data-state="playing"] .bg-toggle__play,
+.bg-toggle[data-state="paused"] .bg-toggle__pause {
+  display: none;
+}
+
+/* ---------- Contenido ---------- */
+
+main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: clamp(1rem, 4.5vh, 2.75rem) var(--gutter) clamp(2rem, 6vh, 4rem);
+}
+
+.page h1 {
+  margin: 0 0 0.5rem;
+  font-size: clamp(2rem, 1.5rem + 1.4vw, 2.75rem);
+  font-weight: 300;
+  line-height: 1.05;
+  letter-spacing: -0.02em; /* los tamaños grandes se aprietan un poco */
+}
+
+.page p {
+  max-width: 34rem;
+  margin: 0 0 0.9em;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+/* ---------- Sobre mí ---------- */
+
+.about {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  grid-template-rows: auto 1fr;
+  gap: 1.75rem clamp(2rem, 5vw, 4.5rem);
+  align-items: start;
+}
+
+.about__intro {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.5rem;
+}
+
+.about__photo {
+  flex: none;
+  width: clamp(5rem, 14vh, 6.75rem);
+  margin: 0;
+  overflow: hidden;
+  background: var(--photo);
+}
+
+.about__photo img {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  object-position: 50% 70%;
+}
+
+.about .about__role {
+  max-width: 21rem;
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.about__body {
+  columns: 2 14rem;
+  column-gap: 2rem;
+}
+
+.about__body p {
+  max-width: none;
+  break-inside: avoid;
+}
+
+/* Habilidades: en el ordenador ocupan la franja blanca de abajo, debajo de las ondas */
+.about__skills {
+  grid-column: 1 / -1;
+  align-self: end;
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 0.5rem 2rem;
+}
+
+/* Cada bloque usa las columnas de .about__skills (subgrid): así los dos títulos
+   ocupan lo mismo que el más largo y las dos listas empiezan a la misma altura */
+.skills {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 11rem minmax(0, 1fr);
+  grid-template-columns: subgrid;
+  align-items: baseline;
+}
+
+.skills h2 {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.6;
+}
+
+.skills__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.125rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+/* Un punto con el azul de las ondas delante de cada habilidad */
+.skills__list li::before {
+  content: "";
+  display: inline-block;
+  width: 0.3125rem;
+  height: 0.3125rem;
+  margin-right: 0.5rem;
+  border-radius: 50%;
+  background: var(--accent);
+  vertical-align: 0.15em;
+}
+
+/* Tablet y portátil pequeño: la presentación arriba, las ondas en medio
+   y el texto en la franja libre de abajo. Las habilidades no caben ahí sin
+   tapar las ondas, así que van justo debajo de la primera pantalla. */
+@media (max-width: 1199px) {
+  .about {
+    position: relative;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .about__body {
+    align-self: end;
+  }
+
+  .about__skills {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: clamp(2rem, 6vh, 4rem);    /* lo mismo que el margen inferior de main */
+    padding-bottom: clamp(2rem, 6vh, 4rem);
+  }
+}
+
+/* Cuando el menú y los botones no caben en una fila:
+   idiomas y pausa arriba a la derecha, el menú debajo */
+@media (max-width: 1099px) {
+  .site-header {
+    flex-direction: column-reverse;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+
+  .site-controls {
+    align-self: flex-end;
+  }
+}
+
+@media (max-width: 899px) {
+  .main-nav ul {
+    gap: 0.5rem 1.25rem;
+  }
+
+  .main-nav a {
+    font-size: 1rem;
+  }
+}
+
+/* Móvil: la presentación arriba, las ondas en medio y el texto al hacer scroll */
+@media (max-width: 699px) {
+  .main-nav ul {
+    gap: 0.25rem 1.25rem;
+  }
+
+  .main-nav a {
+    font-size: 0.9375rem;
+  }
+
+  .about__photo {
+    width: clamp(4.25rem, 11vh, 5.25rem);
+  }
+
+  .about__intro {
+    gap: 1.125rem;
+  }
+
+  .about__body {
+    columns: auto;
+    margin-top: 42vh;
+    margin-top: 42svh;
+  }
+
+  .page p {
+    font-size: 1rem;
+  }
+
+  /* En el móvil las habilidades siguen al texto, con el título encima de cada lista */
+  .about__skills {
+    position: static;
+    grid-template-columns: minmax(0, 1fr);
+    margin-top: 0;
+    padding-bottom: 0;
+    gap: 1.25rem;
+  }
+
+  .skills {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 0.25rem;
+  }
+
+  .skills h2,
+  .skills__list {
+    font-size: 1rem;
+  }
+}
+
+/* ---------- Animaciones ---------- */
+
+/* El <head> pone esta clase hasta que main.js lanza la entrada */
+.intro-pending .backdrop,
+.intro-pending .site-header,
+.intro-pending main {
+  opacity: 0;
+}
+
+/* Cortina blanca con el borde difuminado que descubre las ondas al cargar.
+   La crea main.js y la quita al terminar. */
+.backdrop__curtain {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -30%;
+  width: 130%;
+  background: linear-gradient(to right, transparent, var(--paper) 23%);
+}
+
+/* Palabras del saludo: cada una sube desde detrás de su propia máscara.
+   El relleno inferior evita que la máscara corte la cola de la "y". */
+.word {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: top;
+  padding-bottom: 0.12em;
+  margin-bottom: -0.12em;
+}
+
+.word__inner {
+  display: inline-block;
+}
+
+/* Subrayado que se dibuja de izquierda a derecha en el menú y en los idiomas */
+.main-nav a,
+.lang-switch__label {
+  position: relative;
+}
+
+.lang-switch__label {
+  display: inline-block;
+}
+
+.main-nav a::after,
+.lang-switch__label::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 160ms ease;
+}
+
+.main-nav a::after {
+  bottom: 0;
+}
+
+.lang-switch__label::after {
+  bottom: -0.2em;
+}
+
+/* Solo con ratón: en pantallas táctiles el hover se queda "pegado" tras tocar */
+@media (hover: hover) and (pointer: fine) {
+  .main-nav a:hover::after,
+  .lang-switch button:hover .lang-switch__label::after {
+    transform: scaleX(1);
+  }
+}
+
+.main-nav a:focus-visible::after,
+.lang-switch button:focus-visible .lang-switch__label::after,
+.lang-switch button[aria-pressed="true"] .lang-switch__label::after {
+  transform: scaleX(1);
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --muted: #3a3c41;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::after {
+    transition: none !important;
+  }
+}

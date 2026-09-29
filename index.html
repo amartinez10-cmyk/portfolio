@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Portfolio de Alex</title>
+  <meta name="description" content="Portfolio de Alex, Técnico en Sistemas Microinformáticos y Redes.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Mulish:wght@300;400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+  <script>
+    // Oculta la página hasta que main.js lanza la animación de entrada, para que no se
+    // vea el contenido un instante y luego desaparezca. Si main.js no llegara a
+    // ejecutarse, todo se muestra igualmente a los 1,5 s.
+    document.documentElement.classList.add("intro-pending");
+    setTimeout(function () { document.documentElement.classList.remove("intro-pending"); }, 1500);
+  </script>
+</head>
+<body>
+  <!-- Vídeo de fondo -->
+  <div class="backdrop" aria-hidden="true">
+    <video class="backdrop__video" src="video/fondo.mp4" poster="video/fondo-poster.jpg"
+           muted loop playsinline preload="none" disablepictureinpicture></video>
+  </div>
+
+  <header class="site-header">
+    <nav class="main-nav" data-i18n-aria-label="nav.label" aria-label="Secciones">
+      <ul>
+        <li><a href="#about" data-i18n="nav.about">Sobre mí</a></li>
+        <li><a href="#resume" data-i18n="nav.resume">Currículum</a></li>
+        <li><a href="#certificates" data-i18n="nav.certificates">Certificados</a></li>
+        <li><a href="#projects" data-i18n="nav.projects">Proyectos</a></li>
+        <li><a href="#hhep" data-i18n="nav.hhep">7 HHEP</a></li>
+        <li><a href="#contact" data-i18n="nav.contact">Contacto</a></li>
+      </ul>
+    </nav>
+
+    <div class="site-controls">
+      <div class="lang-switch" role="group" data-i18n-aria-label="lang.label" aria-label="Idioma">
+        <button type="button" data-lang="ca" lang="ca" aria-label="Català" title="Català"><span class="lang-switch__label">CA</span></button>
+        <button type="button" data-lang="en" lang="en" aria-label="English" title="English"><span class="lang-switch__label">EN</span></button>
+        <button type="button" data-lang="es" lang="es" aria-label="Español" title="Español" aria-pressed="true"><span class="lang-switch__label">ES</span></button>
+      </div>
+
+      <button type="button" class="bg-toggle" data-state="paused" aria-label="Reproducir fondo" title="Reproducir fondo">
+        <svg class="bg-toggle__pause" viewBox="0 0 16 16" aria-hidden="true"><rect x="3.5" y="2.5" width="3" height="11"/><rect x="9.5" y="2.5" width="3" height="11"/></svg>
+        <svg class="bg-toggle__play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 2.5v11l9-5.5z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <main id="content">
+    <!-- SOBRE MÍ -->
+    <section id="about" class="page about" aria-labelledby="about-title">
+      <div class="about__intro">
+        <figure class="about__photo">
+          <img src="img/alex.jpg" width="960" height="1280"
+               data-i18n-alt="about.photoAlt" alt="Retrato de Alex">
+        </figure>
+        <div>
+          <h1 id="about-title" tabindex="-1" data-i18n="about.greeting">Hola, soy Alex.</h1>
+          <p class="about__role" data-i18n="about.role">Técnico en Sistemas Microinformáticos y Redes</p>
+        </div>
+      </div>
+
+      <div class="about__body">
+        <p data-i18n="about.p1">Actualmente estudio SMX en Sa Palomera, y en este portfolio voy recogiendo lo que aprendo por el camino.</p>
+        <p data-i18n="about.p2">Me interesa sobre todo la Inteligencia Artificial, y disfruto del trabajo que me deja resolver problemas reales y ver el resultado. Fuera de clase dedico mi tiempo a entrenar y aprender habilidades de alto valor.</p>
+      </div>
+
+      <!-- Habilidades: las listas se rellenan desde js/translations.js (skills.hard y skills.soft) -->
+      <div class="about__skills">
+        <div class="skills">
+          <h2 data-i18n="skills.hardTitle">Habilidades técnicas</h2>
+          <ul class="skills__list" data-i18n-list="skills.hard">
+            <li>Montaje y reparación de ordenadores</li>
+            <li>Windows y Linux</li>
+            <li>Windows Server: Active Directory, DNS y DHCP</li>
+            <li>Redes locales</li>
+            <li>Máquinas virtuales</li>
+            <li>Seguridad informática</li>
+            <li>HTML, CSS y JavaScript</li>
+            <li>Herramientas de IA</li>
+          </ul>
+        </div>
+        <div class="skills">
+          <h2 data-i18n="skills.softTitle">Habilidades personales</h2>
+          <ul class="skills__list" data-i18n-list="skills.soft">
+            <li>Resolución de problemas</li>
+            <li>Ganas de aprender</li>
+            <li>Disciplina y constancia</li>
+            <li>Autonomía</li>
+            <li>Trabajo en equipo</li>
+            <li>Comunicación</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- CURRÍCULUM -->
+    <section id="resume" class="page" aria-labelledby="resume-title" hidden>
+      <h1 id="resume-title" tabindex="-1" data-i18n="nav.resume">Currículum</h1>
+      <p data-i18n="resume.body">Pronto encontrarás aquí mi currículum.</p>
+    </section>
+
+    <!-- CERTIFICADOS -->
+    <section id="certificates" class="page" aria-labelledby="certificates-title" hidden>
+      <h1 id="certificates-title" tabindex="-1" data-i18n="nav.certificates">Certificados</h1>
+      <p data-i18n="certificates.body">Aquí iré añadiendo los certificados que obtenga.</p>
+    </section>
+
+    <!-- PROYECTOS -->
+    <section id="projects" class="page" aria-labelledby="projects-title" hidden>
+      <h1 id="projects-title" tabindex="-1" data-i18n="nav.projects">Proyectos</h1>
+      <p data-i18n="projects.body">Aquí iré publicando los proyectos que haga en clase y por mi cuenta.</p>
+    </section>
+
+    <!-- 7 HHEP -->
+    <section id="hhep" class="page" aria-labelledby="hhep-title" hidden>
+      <h1 id="hhep-title" tabindex="-1" data-i18n="nav.hhep">7 HHEP</h1>
+      <p data-i18n="hhep.body">Contenido en preparación.</p>
+    </section>
+
+    <!-- CONTACTO -->
+    <section id="contact" class="page" aria-labelledby="contact-title" hidden>
+      <h1 id="contact-title" tabindex="-1" data-i18n="nav.contact">Contacto</h1>
+      <p data-i18n="contact.body">Pronto añadiré aquí mis datos de contacto.</p>
+    </section>
+  </main>
+
+  <script src="js/translations.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

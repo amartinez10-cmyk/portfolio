@@ -1,0 +1,9 @@
+# Configuración local del editor / vista previa
+.claude/
+
+# Originales que la web no usa (la web usa video/fondo.mp4 e img/alex.jpg)
+15404923_1920_1080_60fps.mp4
+Copia de Fondo def..png
+
+# Copia comprimida para adjuntar a mano
+*.zip
