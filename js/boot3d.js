@@ -59,7 +59,7 @@
 
   function load() {
     var level = pickLevel();
-    if (!level) return off(flag === "off" ? "?3d=off" : "sin WebGL o dispositivo limitado");
+    if (!level) return off(flag === "off" ? "?3d=off" : "sin WebGL o ahorro de datos");
 
     root.dataset.scene = "loading";
     import(base + "scene3d.js")

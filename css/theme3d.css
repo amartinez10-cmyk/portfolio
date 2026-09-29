@@ -431,13 +431,15 @@ main,
 /* Al explorar el PC, las tarjetas se apartan para dejarle sitio */
 .about__panel,
 .about__skills {
-  transition: opacity 400ms ease, border-color 250ms ease;
+  transition: opacity 400ms ease, visibility 0s, border-color 250ms ease;
 }
 
 .pc-focus .about__panel,
 .pc-focus .about__skills {
-  opacity: 0.06;
+  opacity: 0;
+  visibility: hidden;
   pointer-events: none !important;
+  transition: opacity 400ms ease, visibility 0s 400ms;
 }
 
 /* ---------- Habilidades: escaparate de tarjetas con iconos ---------- */

@@ -286,9 +286,18 @@ export function start({ level = "full", force = false } = {}) {
     const i = activeIndex();
     const v = VARIANT[section] || VARIANT.about;
     const aspect = W / H;
-    const landscape = aspect >= 1.05;
-    // Zona de la pantalla donde debe quedar la sala (el resto lo ocupa el texto)
-    const region = landscape ? { cx: -0.3, cy: 0.05, fw: 0.66, fh: 0.78 } : { cx: 0, cy: 0.4, fw: 0.98, fh: 0.5 };
+    // Zona de la pantalla donde debe quedar la sala (el resto lo ocupa el texto). Con pantalla
+    // ancha (≥ 1000 px, como en el CSS) la tarjeta va a la derecha y la sala ocupa el resto; en
+    // pantallas estrechas la sala va arriba y la tarjeta debajo.
+    let region;
+    if (W >= 1000) {
+      const gutter = THREE.MathUtils.clamp(0.045 * W, 16, 72);
+      const left = 20;
+      const right = Math.max(left + 300, W - gutter - 464 - 12);
+      region = { cx: ((left + right) / 2 / W) * 2 - 1, cy: 0.05, fw: (right - left) / W, fh: 0.78 };
+    } else {
+      region = { cx: 0, cy: 0.4, fw: 0.98, fh: 0.5 };
+    }
     let sw = SIL.w;
     let sh = SIL.h;
     const c = levelPos(i);
