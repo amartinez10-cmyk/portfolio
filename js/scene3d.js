@@ -465,6 +465,7 @@ export function start({ level = "full", force = false } = {}) {
       for (let t = 0; t < seconds; t += 1 / 60) update(1 / 60);
       render();
     },
+    nodeScreen: (i) => hero && hero.nodeScreen(i),
     dispose
   };
 

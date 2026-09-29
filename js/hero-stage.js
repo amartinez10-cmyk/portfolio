@@ -9,6 +9,7 @@
 import * as THREE from "three";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { createHeroModel } from "./hero-model.js";
+import { createSkillsGraph } from "./skills-graph.js";
 
 const CAM_Z = 16;
 const FOV = 30;
@@ -48,6 +49,30 @@ export function createHeroStage({ renderer, palette, lite, stage, wake }) {
   root.add(spin);
   scene.add(root);
 
+  // Habilidades técnicas como nodos: los nombres salen de la lista HTML real
+  const graph = createSkillsGraph({ palette, lite, touch: window.matchMedia("(pointer: coarse)").matches });
+  root.add(graph.group);
+  const raycaster = new THREE.Raycaster();
+  const labelEl = stage.querySelector(".node-label");
+  const hardList = document.querySelector('.skills__list[data-i18n-list="skills.hard"]');
+  let labels = [];
+  let hover = -1;        // nodo señalado con el ratón
+  let tapped = -1;       // nodo tocado con el dedo
+  let listHover = -1;    // nodo señalado desde la lista HTML
+  let labelIdx = -1;
+  let litIdx = -1;
+  let orbit = 0;         // giro propio de la red
+  let slow = 1;          // la red se frena mientras se señala un nodo
+  const labelPos = new THREE.Vector3();
+
+  function readLabels() {
+    labels = hardList ? Array.from(hardList.children).map((li) => li.textContent.trim()) : [];
+    graph.setCount(labels.length);
+    labelIdx = -1;
+    litIdx = -1;   // los <li> son nuevos: hay que volver a iluminar el que toque
+  }
+  readLabels();
+
   /* ---------- Estado ---------- */
 
   let W = 1;
@@ -63,7 +88,7 @@ export function createHeroStage({ renderer, palette, lite, stage, wake }) {
   let tiltX = 0;
   let tiltY = 0;
   const pointer = { inside: false, x: 0, y: 0 };
-  const drag = { active: false, id: null, x: 0, y: 0, t: 0 };
+  const drag = { active: false, id: null, x: 0, y: 0, t: 0, startX: 0, startY: 0 };
 
   function trackPointer(e) {
     const r = stage.getBoundingClientRect();
@@ -71,9 +96,20 @@ export function createHeroStage({ renderer, palette, lite, stage, wake }) {
     pointer.y = clamp(((e.clientY - r.top) / r.height) * 2 - 1, -1, 1);
   }
 
+  function pickAt(e) {
+    raycaster.setFromCamera(new THREE.Vector2((e.clientX / W) * 2 - 1, -(e.clientY / H) * 2 + 1), camera);
+    return graph.pick(raycaster);
+  }
+
   function endDrag(e) {
     if (!drag.active || (e && e.pointerId !== drag.id)) return;
     drag.active = false;
+    // Un toque corto con el dedo selecciona el nodo (o quita la selección)
+    if (e && e.type === "pointerup" && e.pointerType === "touch" &&
+        Math.hypot(e.clientX - drag.startX, e.clientY - drag.startY) < 8) {
+      const idx = visible ? pickAt(e) : -1;
+      tapped = idx === tapped ? -1 : idx;
+    }
     stage.classList.remove("is-dragging");
     if (!animated) yawVel = 0;
     wake();
@@ -83,11 +119,13 @@ export function createHeroStage({ renderer, palette, lite, stage, wake }) {
     if (e.pointerType === "mouse" && e.button !== 0) return;
     drag.active = true;
     drag.id = e.pointerId;
-    drag.x = e.clientX;
-    drag.y = e.clientY;
+    drag.x = drag.startX = e.clientX;
+    drag.y = drag.startY = e.clientY;
     drag.t = performance.now();
     yawVel = 0;
+    hover = -1;
     stage.classList.add("is-dragging");
+    stage.classList.remove("is-pointing");
     try { stage.setPointerCapture(e.pointerId); } catch (err) { /* sin captura: no pasa nada */ }
     wake();
   });
@@ -96,6 +134,10 @@ export function createHeroStage({ renderer, palette, lite, stage, wake }) {
     if (e.pointerType !== "touch") {
       pointer.inside = true;
       trackPointer(e);
+      if (!drag.active && visible) {
+        hover = pickAt(e);
+        stage.classList.toggle("is-pointing", hover >= 0);
+      }
     }
     if (drag.active && e.pointerId === drag.id) {
       const now = performance.now();
@@ -116,7 +158,21 @@ export function createHeroStage({ renderer, palette, lite, stage, wake }) {
   on(stage, "pointerup", endDrag);
   on(stage, "pointercancel", endDrag);
   on(stage, "lostpointercapture", endDrag);
-  on(stage, "pointerleave", () => { pointer.inside = false; wake(); });
+  on(stage, "pointerleave", () => {
+    pointer.inside = false;
+    hover = -1;
+    stage.classList.remove("is-pointing");
+    wake();
+  });
+
+  // Pasar el cursor por una habilidad de la lista enciende su nodo
+  if (hardList) {
+    on(hardList, "pointerover", (e) => {
+      const li = e.target.closest("li");
+      if (li) { listHover = Array.prototype.indexOf.call(hardList.children, li); wake(); }
+    });
+    on(hardList, "pointerout", () => { listHover = -1; wake(); });
+  }
 
   // Teclado (con el hueco enfocado): flechas para girar, Inicio para volver a la vista inicial
   on(stage, "keydown", (e) => {
@@ -156,6 +212,29 @@ export function createHeroStage({ renderer, palette, lite, stage, wake }) {
     H = h;
   }
 
+  // Etiqueta HTML con el nombre de la habilidad, pegada al nodo señalado
+  function updateLabel(idx, rect) {
+    if (!labelEl) return;
+    if (idx !== labelIdx) {
+      labelIdx = idx;
+      if (idx >= 0) labelEl.textContent = labels[idx] || "";
+      labelEl.classList.toggle("is-visible", idx >= 0);
+    }
+    if (idx < 0) return;
+    graph.worldPosition(idx, labelPos).project(camera);
+    const half = (labelEl.offsetWidth || 160) / 2;
+    const x = clamp((labelPos.x * 0.5 + 0.5) * W - rect.left, half, Math.max(half, rect.width - half));
+    const y = (-labelPos.y * 0.5 + 0.5) * H - rect.top;
+    labelEl.style.transform = "translate3d(" + x.toFixed(1) + "px," + y.toFixed(1) + "px,0) translate(-50%, calc(-100% - 16px))";
+  }
+
+  // El elemento de la lista HTML correspondiente se ilumina junto al nodo
+  function syncList(idx) {
+    if (!hardList || idx === litIdx) return;
+    litIdx = idx;
+    Array.prototype.forEach.call(hardList.children, (li, i) => li.classList.toggle("is-lit", i === idx));
+  }
+
   // Devuelve true mientras algo se mueva
   function update(dt, t, ambient, isAnimated) {
     animated = isAnimated;
@@ -174,7 +253,12 @@ export function createHeroStage({ renderer, palette, lite, stage, wake }) {
 
     const rect = stage.getBoundingClientRect();
     visible = enter > 0.004 && rect.width > 0 && rect.height > 0 && rect.bottom > -60 && rect.top < H + 60;
-    if (!visible) return entering;
+    if (!visible) {
+      hover = tapped = -1;
+      updateLabel(-1, rect);
+      syncList(-1);
+      return entering;
+    }
 
     // Colocación: el centro del hueco → posición en la escena; su alto → escala
     const wpp = (2 * CAM_Z * Math.tan(THREE.MathUtils.degToRad(FOV / 2))) / H;
@@ -205,13 +289,28 @@ export function createHeroStage({ renderer, palette, lite, stage, wake }) {
     spin.position.y = animated ? Math.sin(t * 0.9) * 0.05 * ambient : 0;
     model.update(t);
 
-    return entering || drag.active || yawVel !== 0 || tiltMoving || ambient > 0;
+    // Red de habilidades: gira despacio alrededor del modelo (algo con el arrastre) y se
+    // adapta al ancho del hueco
+    const shown = drag.active ? -1 : hover >= 0 ? hover : tapped >= 0 ? tapped : listHover;
+    slow += ((shown >= 0 ? 0.12 : 1) - slow) * (1 - Math.exp(-dt * 5));
+    if (animated) orbit += dt * 0.12 * ambient * slow;
+    graph.group.rotation.y = orbit + (yaw - DEFAULT_YAW) * 0.35;
+    const widthUnits = (DESIGN_H * rect.width) / rect.height;
+    const rx = clamp(widthUnits * 0.45, 1.9, 5.4);
+    graph.setLayout(rx, 1.35, Math.min(rx * 0.55, 2.4));
+    const graphActive = graph.update(dt, t, ambient, animated, shown);
+    root.updateMatrixWorld(true);
+    updateLabel(shown, rect);
+    syncList(hover >= 0 ? hover : tapped);
+
+    return entering || drag.active || yawVel !== 0 || tiltMoving || graphActive || ambient > 0;
   }
 
   function dispose() {
     ac.abort();
     resizeObserver.disconnect();
     model.dispose();
+    graph.dispose();
     envMap.dispose();
   }
 
@@ -222,8 +321,20 @@ export function createHeroStage({ renderer, palette, lite, stage, wake }) {
     layout,
     update,
     setSection,
-    refreshLabels() {},
-    state: () => ({ yaw: +yaw.toFixed(3), pitch: +pitch.toFixed(3), yawVel: +yawVel.toFixed(3), dragging: drag.active, enter: +enter.toFixed(3), visible }),
+    // Al cambiar de idioma la lista HTML se vuelve a escribir: se leen de nuevo los nombres
+    refreshLabels() {
+      readLabels();
+      wake();
+    },
+    // Posición en pantalla (px) de un nodo: para pruebas
+    nodeScreen(i) {
+      graph.worldPosition(i, labelPos).project(camera);
+      return [Math.round((labelPos.x * 0.5 + 0.5) * W), Math.round((-labelPos.y * 0.5 + 0.5) * H)];
+    },
+    state: () => ({
+      yaw: +yaw.toFixed(3), pitch: +pitch.toFixed(3), yawVel: +yawVel.toFixed(3), dragging: drag.active,
+      enter: +enter.toFixed(3), visible, nodes: graph.count, hover, tapped, label: labelEl && labelEl.textContent
+    }),
     dispose
   };
 }
