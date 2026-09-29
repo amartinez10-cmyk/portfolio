@@ -78,8 +78,8 @@ export function createPlants(kit) {
       pivot.rotation.set(0, a, 0);
       const arm = grp(0, 0, 0, pivot);
       arm.rotation.x = -(0.15 + (1 - k) * 0.5);      // más caídas abajo, más erguidas arriba
-      const m = mesh(ico2, leafMat(i % 3 === 0 ? GREENS.light : leaf), 0, 0, 0.8 * s * (1.2 - k * 0.3), arm);
-      m.scale.set(0.68 * s, 0.08 * s, (1.2 - k * 0.25) * s);
+      const m = mesh(ico2, leafMat(i % 3 === 0 ? GREENS.light : leaf), 0, 0, 0.7 * s * (1.2 - k * 0.3), arm);
+      m.scale.set(0.6 * s, 0.08 * s, (1.05 - k * 0.22) * s);
       bar([0, 0, 0], [0, 0, 0.5 * s], 0.025 * s, GREENS.deep, arm, 6);
     }
     return g;
@@ -121,7 +121,7 @@ export function createPlants(kit) {
     for (let i = 0; i < count; i++) {
       const a = i * 2.4 + 0.4;
       const h = (1.25 + (i % 4) * 0.5 + r() * 0.25) * s;
-      const out = (0.4 + (i % 3) * 0.3) * s;
+      const out = (0.3 + (i % 3) * 0.22) * s;
       const bx = Math.cos(a) * out;
       const bz = Math.sin(a) * out;
       bar([0, top, 0], [bx * 0.4, top + h * 0.6, bz * 0.4], 0.05 * s, GREENS.deep, g, 6);
@@ -130,10 +130,10 @@ export function createPlants(kit) {
       const pivot = grp(bx, top + h, bz, g);
       pivot.rotation.set(0, -a + Math.PI / 2, 0);
       const arm = grp(0, 0, 0, pivot);
-      arm.rotation.x = 0.85 + (i % 3) * 0.14;
+      arm.rotation.x = 0.6 + (i % 3) * 0.17;
       const leaf = mesh(monsteraGeo, i % 2 ? mid : dark, 0, 0, 0, arm);
-      leaf.scale.setScalar(1.08 * s);
-      bar([0, 0.02, 0], [0, 1.55 * s, 0.02], 0.022 * s, 0x9adf7f, arm, 5);          // nervio central
+      leaf.scale.setScalar(0.95 * s);
+      bar([0, 0.02, 0], [0, 1.4 * s, 0.02], 0.022 * s, 0x9adf7f, arm, 5);          // nervio central
     }
     return g;
   };

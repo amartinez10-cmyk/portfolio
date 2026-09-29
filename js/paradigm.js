@@ -1,5 +1,5 @@
 /*
- * Líneas del mapa del paradigma personal (sección 7 HHEP): une el círculo central con cada tarjeta
+ * Líneas del mapa del paradigma personal (sección "Sobre mí"): une el círculo central con cada tarjeta
  * mediante una curva, con puntos que avanzan hacia ella. Solo en pantalla ancha (en el móvil las
  * tarjetas van en una columna y no hace falta).
  *

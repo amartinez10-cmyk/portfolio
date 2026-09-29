@@ -41,6 +41,7 @@ const VARIANT = {
   contact:      { yaw: -0.11, pitch: 0.02 }
 };
 
+const Y_AXIS = new THREE.Vector3(0, 1, 0);
 const PARTICLES = { full: 5200, lite: 1400 };
 const BOX = new THREE.Vector3(120, 70, 120);             // volumen de partículas que rodea a la cámara
 
@@ -149,7 +150,24 @@ class Spring {
   get busy() { return Math.abs(this.t - this.v) > 0.003 || Math.abs(this.vel) > 0.003; }
 }
 
-export function start({ level = "full", force = false } = {}) {
+// Los rótulos dibujados en canvas (título de la sala, gráfica del PC, nombre del currículum) usan la
+// tipografía de la web: se espera a que llegue (con un límite) para que no queden con la de reserva
+async function waitForFonts() {
+  if (!document.fonts || !document.fonts.load) return;
+  try {
+    await Promise.race([
+      Promise.all([document.fonts.load('800 100px "Outfit"'), document.fonts.load('600 100px "Outfit"')]),
+      new Promise((resolve) => setTimeout(resolve, 2500))
+    ]);
+  } catch (err) { /* sin tipografía: se usa la de reserva */ }
+}
+
+export async function start(options = {}) {
+  await waitForFonts();
+  return startNow(options);
+}
+
+function startNow({ level = "full", force = false } = {}) {
   const canvas = document.getElementById("scene");
   const stageEl = document.getElementById("stage");
   const root = document.documentElement;
@@ -216,6 +234,20 @@ export function start({ level = "full", force = false } = {}) {
     lv.holder.position.copy(lv.pos);
     lv.pop = new Spring(0);
     world.add(lv.holder);
+  });
+  // Luz real de cada lámpara. Siempre están en la escena (con la intensidad a 0 si su sala no se ve)
+  // porque cambiar el número de luces obliga a recompilar los shaders.
+  levels.items.forEach((lv) => {
+    const anchors = [];
+    lv.root.traverse((o) => { if (o.userData.lamp) anchors.push(o); });
+    lv.holder.updateMatrixWorld(true);
+    lv.lamps = anchors.map((obj) => {
+      const light = new THREE.PointLight(obj.userData.lamp.color, 0, 12, 2);
+      world.add(light);
+      // Posición de la bombilla respecto a la sala (se calcula una sola vez)
+      const local = lv.holder.worldToLocal(obj.localToWorld(new THREE.Vector3(0, obj.userData.lamp.y, 0)));
+      return { light, local, power: obj.userData.lamp.power };
+    });
   });
   const decor = createDecor({
     levels: levels.items.map((lv) => ({ center: lv.pos, accent: lv.style.accent })),
@@ -306,8 +338,9 @@ export function start({ level = "full", force = false } = {}) {
     let yaw = BASE_YAW + v.yaw;
     if (input.focus) {
       // Se acerca al PC: su centro en la sala de "Sobre mí"
-      c.add(new THREE.Vector3(0.6, 0.2, 1.6));
-      sw = 13;
+      const pc = levels.about && levels.about.pc.position;       // el PC de "Sobre mí"
+      c.add(new THREE.Vector3(pc ? pc.x : 0, 0.2, pc ? pc.z : 0));
+      sw = 14;
       sh = 9.5;
       pitch = 0.36;
       yaw = BASE_YAW - 0.05;
@@ -445,17 +478,25 @@ export function start({ level = "full", force = false } = {}) {
     levels.items.forEach((lv) => {
       const pop = Math.max(0, lv.pop.v);
       lv.holder.visible = pop > 0.004;
-      if (!lv.holder.visible) return;
+      if (!lv.holder.visible) {
+        lv.lamps.forEach((l) => { l.light.intensity = 0; });
+        return;
+      }
       lv.holder.scale.setScalar(Math.max(0.0001, pop));
       lv.holder.position.set(lv.pos.x, lv.pos.y + (1 - pop) * -12 + Math.sin(simTime * 0.6 + lv.index * 1.7) * 0.32 * ambient, lv.pos.z);
       lv.holder.rotation.y = Math.sin(simTime * 0.25 + lv.index) * 0.022 * ambient;
       lv.update(simTime, dt * ambient);
+      lv.lamps.forEach((l) => {
+        // La sala se escala, gira un poco y flota: la luz sigue a la lámpara sin actualizar toda la sala
+        l.light.position.copy(l.local).multiplyScalar(lv.holder.scale.x).applyAxisAngle(Y_AXIS, lv.holder.rotation.y).add(lv.holder.position);
+        l.light.intensity = l.power * pop * pop;
+      });
     });
 
     // Cámara
     const inAbout = section === "about";
-    // En "Sobre mí" y "7 HHEP" hay contenido debajo: al bajar, la cámara gira y se acerca
-    const sy = (inAbout || section === "hhep") && !input.focus ? scrollS : 0;
+    // En "Sobre mí" hay contenido debajo (habilidades y paradigma): al bajar, la cámara gira y se acerca
+    const sy = inAbout && !input.focus ? scrollS : 0;
     // Al bajar hacia las habilidades la escena se atenúa un poco para que las tarjetas se lean
     const fade = 1 - 0.5 * THREE.MathUtils.smoothstep(sy, 0.08, 0.5);
     if (fade < 0.999) {
@@ -667,6 +708,43 @@ export function start({ level = "full", force = false } = {}) {
       rig.dist.t = dist; rig.ox.t = 0; rig.oy.t = 0;
       if (yaw !== undefined) rig.yaw.t = yaw;
       if (pitch !== undefined) rig.pitch.t = pitch;
+    },
+    // Revisa qué objetos de cada sala atraviesan las paredes o se salen del suelo (para pruebas)
+    audit: () => {
+      const out = [];
+      const box = new THREE.Box3();
+      const part = new THREE.Box3();
+      levels.items.forEach((lv) => {
+        // Sin el balanceo ni el tamaño animado del nivel: se mide la sala tal cual está construida
+        const keep = [lv.holder.rotation.y, lv.holder.scale.x, lv.holder.position.y];
+        lv.holder.rotation.y = 0;
+        lv.holder.scale.setScalar(1);
+        lv.holder.position.y = lv.pos.y;
+        lv.holder.updateMatrixWorld(true);
+        lv.root.children.forEach((o, i) => {
+          if (!o.isGroup && !o.isMesh) return;
+          // Solo geometría real (no sprites ni resplandores)
+          box.makeEmpty();
+          o.traverse((m) => {
+            if (!m.isMesh || !m.geometry || m.isSprite || !m.castShadow) return;      // solo geometría sólida
+            if (!m.geometry.boundingBox) m.geometry.computeBoundingBox();
+            part.copy(m.geometry.boundingBox).applyMatrix4(m.matrixWorld);
+            box.union(part);
+          });
+          if (box.isEmpty()) return;
+          const p = lv.pos;
+          const min = { x: box.min.x - p.x, z: box.min.z - p.z };
+          const max = { x: box.max.x - p.x, z: box.max.z - p.z, y: box.max.y - p.y };
+          if (min.x < -7.06 || min.z < -7.06 || max.x > 7.3 || max.z > 7.3) {
+            out.push(lv.id + "#" + i + " [" + o.children.length + " hijos] x " + min.x.toFixed(2) + ".." + max.x.toFixed(2) + " z " + min.z.toFixed(2) + ".." + max.z.toFixed(2) + " y<" + max.y.toFixed(1));
+          }
+        });
+        lv.holder.rotation.y = keep[0];
+        lv.holder.scale.setScalar(keep[1]);
+        lv.holder.position.y = keep[2];
+        lv.holder.updateMatrixWorld(true);
+      });
+      return out;
     },
     // Posición en pantalla (px) de una pieza del PC o de un icono de habilidad: para pruebas
     partScreen: (id) => {

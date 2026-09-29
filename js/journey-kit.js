@@ -138,6 +138,30 @@ export function createKit({ lite = false } = {}) {
     return put(new THREE.Mesh(new THREE.LatheGeometry(pts, s), material), x, y, z, parent);
   }
 
+  // Coloca un objeto suelto en (x, z) sin que atraviese las paredes (en X = -7 y Z = -7) ni se salga
+  // del suelo por delante: si sus hojas, su pantalla o su base se pasan, se desplaza hacia dentro.
+  const _box = new THREE.Box3();
+  const _part = new THREE.Box3();
+  function fit(obj, x, y, z, ry = 0, wall = 6.92, edge = 7.05) {
+    obj.position.set(0, 0, 0);
+    obj.rotation.y = ry;
+    obj.updateMatrixWorld(true);
+    _box.makeEmpty();
+    obj.traverse((m) => {
+      // Solo la geometría sólida (proyecta sombra): los charcos de luz, los rótulos y los resplandores no cuentan
+      if (!m.isMesh || m.isSprite || !m.geometry || !m.castShadow) return;
+      if (!m.geometry.boundingBox) m.geometry.computeBoundingBox();
+      _part.copy(m.geometry.boundingBox).applyMatrix4(m.matrixWorld);
+      _box.union(_part);
+    });
+    if (!_box.isEmpty()) {
+      x = Math.min(Math.max(x, -wall - _box.min.x), edge - _box.max.x);
+      z = Math.min(Math.max(z, -wall - _box.min.z), edge - _box.max.z);
+    }
+    obj.position.set(x, y, z);
+    return obj;
+  }
+
   // Suelo de la habitación, las piezas que cuelgan de la pared… cualquier malla propia
   function mesh(geometry, material, x, y, z, parent, shadow = true) {
     return put(new THREE.Mesh(geometry, asMat(material)), x, y, z, parent, shadow);
@@ -206,7 +230,7 @@ export function createKit({ lite = false } = {}) {
 
   // Resplandor suave (una luz encendida): sprite aditivo, no le afecta la iluminación
   let haloTex = null;
-  function halo(color, size, x, y, z, parent, opacity = 0.6) {
+  function getHaloTex() {
     if (!haloTex) {
       haloTex = canvasTex(128, 128, (g, w, h) => {
         const grad = g.createRadialGradient(64, 64, 0, 64, 64, 64);
@@ -217,6 +241,27 @@ export function createKit({ lite = false } = {}) {
         g.fillRect(0, 0, w, h);
       });
     }
+    return haloTex;
+  }
+
+  // Charco de luz tumbado (en el suelo o sobre la mesa) bajo una lámpara
+  function pool(color, size, x, y, z, parent, opacity = 0.4) {
+    const m = new THREE.Mesh(
+      geo(`p${size},${size}`, () => new THREE.PlaneGeometry(size, size)),
+      new THREE.MeshBasicMaterial({
+        map: getHaloTex(), color, transparent: true, opacity, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false
+      })
+    );
+    owned.push(m.material);
+    m.rotation.x = -Math.PI / 2;
+    m.position.set(x || 0, y || 0, z || 0);
+    m.renderOrder = 1;
+    if (parent) parent.add(m);
+    return m;
+  }
+
+  function halo(color, size, x, y, z, parent, opacity = 0.6) {
+    getHaloTex();
     const s = new THREE.Sprite(new THREE.SpriteMaterial({
       map: haloTex, color, transparent: true, opacity, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false
     }));
@@ -237,8 +282,8 @@ export function createKit({ lite = false } = {}) {
   }
 
   return {
-    C, lite, seg, mat, glow, asMat, box, rbox, cyl, cone, ball, torus, plane, grp, mesh, bar, lathe,
-    canvasTex, redraw, decal, screen, roundRect, halo, dispose
+    C, lite, seg, mat, glow, asMat, box, rbox, cyl, cone, ball, torus, plane, grp, mesh, bar, lathe, fit,
+    canvasTex, redraw, decal, screen, roundRect, halo, pool, dispose
   };
 }
 

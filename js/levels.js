@@ -10,6 +10,7 @@ import { createKit, C } from "./journey-kit.js";
 import { createProps } from "./journey-props.js";
 import { buildRoom } from "./journey-room.js";
 import { createHeroModel } from "./hero-model.js";
+import { BASE_DROP } from "./pc-case.js";
 import { createSkillsGraph } from "./skills-graph.js";
 import { buildExtras } from "./levels-extra.js";
 
@@ -23,7 +24,8 @@ export const LEVEL_STYLE = {
   contact:      { wall: 0xffb0c7, accent: 0xff6fa5 }
 };
 
-const PC_SCALE = 2.1;
+const PC_SCALE = 1.7;                 // la torre mide 3,5 de alto: en la sala son ≈ 6
+const PC_POS = { x: -0.5, z: 1.9 };   // dónde está el PC en la sala
 const GRAPH_SCALE = 2.6;
 
 export function createLevels({ palette, lite, order }) {
@@ -40,20 +42,20 @@ export function createLevels({ palette, lite, order }) {
     const { grp } = kit;
 
     // PC en el centro, sobre su plataforma amarilla, con el cristal mirando a la cámara
-    const pc = grp(0.6, 0, 1.6, root);
-    const spin = grp(0, PC_SCALE * 1.68, 0, pc, 0.78);
+    const pc = grp(PC_POS.x, 0, PC_POS.z, root);
+    const spin = grp(0, PC_SCALE * BASE_DROP, 0, pc, 0.42);      // gira para que se vean el cristal lateral y el frontal a la vez
     spin.scale.setScalar(PC_SCALE);
     const model = createHeroModel({ palette, lite });
     spin.add(model.group);
 
     // Habilidades técnicas: iconos que giran alrededor del PC
-    const graphHolder = grp(0, PC_SCALE * 1.68 + 0.6, 0, pc);
+    const graphHolder = grp(0, PC_SCALE * BASE_DROP + 0.6, 0, pc);
     graphHolder.scale.setScalar(GRAPH_SCALE);
     const graph = createSkillsGraph({ palette, lite, touch: window.matchMedia("(pointer: coarse)").matches });
     graphHolder.add(graph.group);
 
     const rug = P.rug({ w: 9.4, round: true, color: C.pink, border: C.white });
-    rug.position.set(0.6, 0, 1.6);
+    rug.position.set(PC_POS.x, 0, PC_POS.z);
     root.add(rug);
 
     // Escritorio contra la pared derecha, con dos monitores y de todo un poco
@@ -62,10 +64,10 @@ export function createLevels({ palette, lite, order }) {
     root.add(desk);
     const top = 2.7;
     const m1 = P.monitor({ seed: 5, w: 3.5, h: 2 });
-    m1.position.set(1.0, top, -6.3);
+    m1.position.set(1.0, top, -6.12);
     m1.rotation.y = 0.12;
     const m2 = P.monitor({ seed: 8, w: 3.5, h: 2 });
-    m2.position.set(4.5, top, -6.3);
+    m2.position.set(4.5, top, -6.12);
     m2.rotation.y = -0.12;
     const mat = P.deskMat({ w: 5.4, d: 2.15, color: C.navy, edge: C.violet });
     mat.position.set(2.85, top, -5.1);
@@ -74,8 +76,7 @@ export function createLevels({ palette, lite, order }) {
     const mouse = P.mouse();
     mouse.position.set(4.6, top + 0.05, -4.7);
     const lamp = P.deskLamp({ color: C.coral });
-    lamp.position.set(6.55, top, -6.1);
-    lamp.rotation.y = -0.5;
+    kit.fit(lamp, 6.2, top, -6.1, -0.5);
     const mug = P.mug({ color: C.yellow });
     mug.position.set(-0.35, top, -4.9);
     const cactus = P.plants.barrel({ size: 0.75, pot: C.white });
@@ -86,7 +87,7 @@ export function createLevels({ palette, lite, order }) {
     [mat, m1, m2, kb, mouse, lamp, mug, cactus, phones].forEach((o) => root.add(o));
 
     const chair = P.chair({ color: C.violet, trim: C.white });
-    chair.position.set(4.9, 0, -2.4);
+    chair.position.set(5.2, 0, -2.4);
     chair.rotation.y = Math.PI + 0.55;
     root.add(chair);
 
@@ -101,10 +102,10 @@ export function createLevels({ palette, lite, order }) {
     shelfBooks.rotation.y = Math.PI / 2;
     root.add(shelfPlant, shelfBooks);
     const floorLamp = P.floorLamp({ shade: C.yellow });
-    floorLamp.position.set(-5.9, 0, -6.0);
+    kit.fit(floorLamp, -5.7, 0, -5.8);
     root.add(floorLamp);
-    const bush = P.plants.monstera({ size: 1.05, pot: C.white });
-    bush.position.set(-5.6, 0, 4.9);
+    const bush = P.plants.monstera({ size: 0.9, pot: C.white });
+    kit.fit(bush, -5.4, 0, 4.6);
     root.add(bush);
 
     // Cuadros y reloj en la pared derecha

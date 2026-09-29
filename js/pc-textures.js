@@ -1,7 +1,6 @@
 /*
  * Texturas del PC dibujadas por código en un <canvas> (sin descargar imágenes): metal cepillado,
- * chapa perforada, aletas de disipador, funda trenzada de cables, placa base y la pantallita
- * animada de la refrigeración líquida.
+ * chapa perforada, aletas de disipador, funda trenzada de cables y placa base.
  */
 import * as THREE from "three";
 
@@ -235,70 +234,4 @@ export function glowTexture(size = 128) {
   g.fillStyle = grad;
   g.fillRect(0, 0, size, size);
   return new THREE.CanvasTexture(c);
-}
-
-// Pantalla circular de la bomba: un anillo que gira, la temperatura y una gráfica que se mueve
-export function createLcd(palette) {
-  const size = 512;
-  const [c, g] = makeCanvas(size, size);
-  const texture = finish(c, { srgb: true, repeat: false });
-  g.scale(2, 2);      // el dibujo está pensado para 256 × 256
-  const a = "#" + palette.accent.getHexString();
-  const b = "#" + palette.accent2.getHexString();
-  const history = [];
-  for (let i = 0; i < 48; i++) history.push(0.5 + 0.3 * Math.sin(i * 0.4));
-  let last = -1;
-
-  function draw(t) {
-    g.fillStyle = "#04060c";
-    g.fillRect(0, 0, size, size);
-    g.lineWidth = 8;
-    g.strokeStyle = "rgba(108,134,255,0.25)";
-    g.beginPath();
-    g.arc(128, 128, 112, 0, Math.PI * 2);
-    g.stroke();
-    const start = t * 2;
-    g.strokeStyle = b;
-    g.beginPath();
-    g.arc(128, 128, 112, start, start + 1.6);
-    g.stroke();
-    g.strokeStyle = a;
-    g.beginPath();
-    g.arc(128, 128, 112, start + 3.14, start + 4.04);
-    g.stroke();
-
-    const value = 38 + Math.round(6 * Math.sin(t * 0.7) + 3 * Math.sin(t * 2.3));
-    g.textAlign = "center";
-    g.textBaseline = "middle";
-    g.fillStyle = "#eaffff";
-    g.font = "700 64px ui-monospace, Consolas, monospace";
-    g.fillText(value + "°", 128, 106);
-    g.fillStyle = b;
-    g.font = "600 20px ui-monospace, Consolas, monospace";
-    g.fillText("CPU", 128, 152);
-
-    history.push(0.5 + 0.35 * Math.sin(t * 1.3) + 0.15 * Math.sin(t * 4.1));
-    history.shift();
-    g.strokeStyle = a;
-    g.lineWidth = 3;
-    g.beginPath();
-    history.forEach((v, i) => {
-      const x = 48 + i * (160 / 47);
-      const y = 208 - v * 30;
-      if (i) g.lineTo(x, y);
-      else g.moveTo(x, y);
-    });
-    g.stroke();
-    texture.needsUpdate = true;
-  }
-
-  draw(0);
-  return {
-    texture,
-    update(t) {
-      if (Math.abs(t - last) < 0.12) return;
-      last = t;
-      draw(t);
-    }
-  };
 }

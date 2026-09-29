@@ -210,8 +210,7 @@ body::after {
 /* ---------- Tarjetas de cristal: el texto se lee siempre sobre el 3D ---------- */
 
 .about__panel,
-.hhep__panel,
-.page:not(.about):not(.hhep) {
+.page:not(.about) {
   position: relative;
   isolation: isolate;
   padding: clamp(1.4rem, 2.4vw, 2.1rem);
@@ -226,8 +225,7 @@ body::after {
 
 /* Borde con un destello del color del nivel que le da la vuelta a la tarjeta */
 .about__panel::after,
-.hhep__panel::after,
-.page:not(.about):not(.hhep)::after {
+.page:not(.about)::after {
   content: "";
   position: absolute;
   inset: -1px;
@@ -247,39 +245,35 @@ body::after {
 
 @media (prefers-reduced-motion: reduce) {
   .about__panel::after,
-  .hhep__panel::after,
-  .page:not(.about):not(.hhep)::after {
+  .page:not(.about)::after {
     animation: none;
   }
 }
 
-.page:not(.about):not(.hhep) {
+.page:not(.about) {
   align-self: flex-start;
   width: min(100%, 34rem);
 }
 
-.page:not(.about):not(.hhep) p:last-child {
+.page:not(.about) p:last-child {
   margin-bottom: 0;
 }
 
 /* Sin 3D (sin WebGL, ahorro de datos…) la tarjeta no debe estirarse por toda la pantalla */
-html:not(.has-3d) .about__panel,
-html:not(.has-3d) .hhep__panel {
+html:not(.has-3d) .about__panel {
   max-width: 52rem;
 }
 
 /* Perspectiva para el tilt de las tarjetas y las transiciones entre secciones */
 main,
-.about,
-.hhep {
+.about {
   perspective: 1200px;
 }
 
 /* Brillo que sigue al cursor (js/fx.js pone --mx, --my y --glare); va detrás del texto */
 .about__panel::before,
-.hhep__panel::before,
 .skills__list li::before,
-.page:not(.about):not(.hhep)::before {
+.page:not(.about)::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -313,26 +307,22 @@ main,
    El 3D ocupa la pantalla y el texto va en una tarjeta a la derecha (como en el móvil, debajo). */
 
 .has-3d main,
-.has-3d .about,
-.has-3d .hhep {
+.has-3d .about {
   pointer-events: none;
 }
 
 .has-3d .about > *,
-.has-3d .hhep > *,
-.has-3d .page:not(.about):not(.hhep) {
+.has-3d .page:not(.about) {
   pointer-events: auto;
 }
 
 .has-3d .about__panel,
-.has-3d .hhep__panel,
-.has-3d .page:not(.about):not(.hhep) {
+.has-3d .page:not(.about) {
   margin-top: 44vh;
   margin-top: 44svh;
 }
 
-.has-3d .about,
-.has-3d .hhep {
+.has-3d .about {
   gap: 1.5rem;
 }
 
@@ -342,27 +332,29 @@ main,
     max-width: none;
   }
 
-  .has-3d .about,
-  .has-3d .hhep {
+  .has-3d .about {
     grid-template-columns: minmax(0, 1fr) minmax(0, 29rem);
-    grid-template-rows: minmax(calc(100svh - 5.5rem), auto) auto;
+    grid-template-rows: minmax(calc(100svh - 5.5rem), auto) auto auto;
   }
 
-  .has-3d .about__panel,
-  .has-3d .hhep__panel {
+  .has-3d .about__panel {
     grid-column: 2;
     grid-row: 1;
     align-self: start;
     margin-top: 0;
   }
 
-  .has-3d .about__skills,
-  .has-3d .paradigm {
+  .has-3d .about__skills {
     grid-column: 1 / -1;
     grid-row: 2;
   }
 
-  .has-3d .page:not(.about):not(.hhep) {
+  .has-3d .paradigm {
+    grid-column: 1 / -1;
+    grid-row: 3;
+  }
+
+  .has-3d .page:not(.about) {
     align-self: flex-end;
     width: min(100%, 29rem);
     margin-top: 0;
@@ -375,12 +367,14 @@ main,
 
 /* Al explorar el PC, las tarjetas se apartan para dejarle sitio */
 .about__panel,
-.about__skills {
+.about__skills,
+.paradigm {
   transition: opacity 400ms ease, visibility 0s, border-color 250ms ease;
 }
 
 .pc-focus .about__panel,
-.pc-focus .about__skills {
+.pc-focus .about__skills,
+.pc-focus .paradigm {
   opacity: 0;
   visibility: hidden;
   pointer-events: none !important;
@@ -606,9 +600,8 @@ main,
 
   .about__panel,
   .about__skills,
-  .hhep__panel,
   .paradigm__node,
-  .page:not(.about):not(.hhep) {
+  .page:not(.about) {
     border-color: #bbbbbb;
     background: none;
     box-shadow: none;

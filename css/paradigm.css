@@ -1,5 +1,5 @@
 /*
- * Mapa del paradigma personal (sección 7 HHEP): un círculo central con seis tarjetas alrededor,
+ * Mapa del paradigma personal (sección "Sobre mí", después de las habilidades): un círculo central con seis tarjetas alrededor,
  * unidas por líneas que dibuja js/paradigm.js. Las tarjetas entran con el scroll igual que las de
  * habilidades (variable --p que pone js/fx.js). En pantallas estrechas van una debajo de otra.
  */
@@ -23,6 +23,23 @@
   border-radius: 4px;
   background: linear-gradient(90deg, var(--level-accent), var(--accent-2));
   box-shadow: 0 0 1rem var(--level-accent);
+}
+
+.paradigm .paradigm__intro {
+  max-width: 44rem;
+  margin: -0.75rem 0 0.4rem;
+  font-size: 1.05rem;
+  line-height: 1.5;
+  color: var(--ink);
+}
+
+.paradigm .paradigm__def {
+  max-width: 44rem;
+  margin: 0 0 2rem;
+  padding-left: 0.9rem;
+  border-left: 3px solid var(--level-accent);
+  color: var(--muted);
+  font-size: 0.875rem;
 }
 
 .paradigm__map {

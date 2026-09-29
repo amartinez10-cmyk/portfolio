@@ -98,6 +98,7 @@ window.TRANSLATIONS = {
     "paradigm.b6.q": "Una frase que resumeix com vull viure:",
     "paradigm.b6.quote": "«Si odies algú, aleshores ja t'ha derrotat»",
 
+    "hhep.body": "Contingut en preparació.",
     "contact.body": "Aviat hi afegiré les meves dades de contacte."
   },
 
@@ -192,6 +193,7 @@ window.TRANSLATIONS = {
     "paradigm.b6.q": "A sentence that sums up how I want to live:",
     "paradigm.b6.quote": "“If you hate someone, then they have already defeated you”",
 
+    "hhep.body": "Content in progress.",
     "contact.body": "My contact details are coming soon."
   },
 
@@ -286,6 +288,7 @@ window.TRANSLATIONS = {
     "paradigm.b6.q": "Una frase que resuma cómo quiero vivir:",
     "paradigm.b6.quote": "“Si odias a alguien, entonces ya te ha derrotado”",
 
+    "hhep.body": "Contenido en preparación.",
     "contact.body": "Pronto añadiré aquí mis datos de contacto."
   }
 };

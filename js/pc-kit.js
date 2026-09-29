@@ -6,7 +6,7 @@
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
-import { brushedMap, ventMap, finMap, braidMap, glowTexture, createLcd } from "./pc-textures.js";
+import { brushedMap, ventMap, finMap, braidMap, glowTexture } from "./pc-textures.js";
 
 // Forma de una aspa de ventilador (largo 1, curvada como una hoja)
 const BLADE = new THREE.Shape();
@@ -20,33 +20,32 @@ export function createKit({ palette, lite }) {
   const leds = [];        // { color, phase }: colores que van cambiando
   const parts = new Map();
   const disposables = [];
-  const lcd = createLcd(palette);
   const glow = glowTexture();
   const brushed = brushedMap();
   const vent = ventMap();
-  disposables.push(lcd.texture, glow, brushed, vent);
+  disposables.push(glow, brushed, vent);
 
   const fins = finMap();
   const braid = braidMap();
   disposables.push(fins, braid);
 
-  // Materiales en tonos pastel (como el resto de las maquetas): chapa blanca-lila, piezas navy
+  // Materiales: caja blanca con luces lila (como el PC de la foto de referencia), piezas negras y cristal
   const mats = {
-    steel: new THREE.MeshStandardMaterial({ color: 0xe6e0ff, metalness: 0.1, roughness: 0.42, roughnessMap: brushed, bumpMap: brushed, bumpScale: 0.12 }),
-    matte: new THREE.MeshStandardMaterial({ color: 0x2c2568, metalness: 0.15, roughness: 0.55 }),
-    alu: new THREE.MeshStandardMaterial({ color: 0xb9b0ee, metalness: 0.55, roughness: 0.34, roughnessMap: brushed }),
+    steel: new THREE.MeshStandardMaterial({ color: 0xc4bde0, metalness: 0.12, roughness: 0.42, roughnessMap: brushed, bumpMap: brushed, bumpScale: 0.08 }),
+    white: new THREE.MeshStandardMaterial({ color: 0xf1eefc, metalness: 0.05, roughness: 0.38 }),
+    matte: new THREE.MeshStandardMaterial({ color: 0x1c1838, metalness: 0.2, roughness: 0.5 }),
+    black: new THREE.MeshStandardMaterial({ color: 0x0f0c22, metalness: 0.35, roughness: 0.3 }),
+    alu: new THREE.MeshStandardMaterial({ color: 0xcfc8f2, metalness: 0.55, roughness: 0.34, roughnessMap: brushed }),
     finned: new THREE.MeshStandardMaterial({ color: 0xd9d3fb, metalness: 0.6, roughness: 0.4, map: fins }),
-    rubber: new THREE.MeshStandardMaterial({ color: 0x1b1642, metalness: 0, roughness: 0.9 }),
     chrome: new THREE.MeshStandardMaterial({ color: 0xf1eeff, metalness: 0.9, roughness: 0.18 }),
-    plate: new THREE.MeshStandardMaterial({ color: 0x3a2f86, metalness: 0.3, roughness: 0.4 }),
-    mesh: new THREE.MeshStandardMaterial({ color: 0x4a3f9a, metalness: 0.4, roughness: 0.5, alphaMap: vent, alphaTest: 0.5, side: THREE.DoubleSide }),
-    sleeve: new THREE.MeshStandardMaterial({ color: 0xff9ec4, metalness: 0.05, roughness: 0.82, map: braid, bumpMap: braid, bumpScale: 0.5 }),
-    frost: new THREE.MeshStandardMaterial({ color: 0x6a5fd0, metalness: 0.1, roughness: 0.3, transparent: true, opacity: 0.85, side: THREE.DoubleSide }),
+    mesh: new THREE.MeshStandardMaterial({ color: 0xf3f0ff, metalness: 0.2, roughness: 0.45, alphaMap: vent, alphaTest: 0.5, side: THREE.DoubleSide }),
+    sleeve: new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.05, roughness: 0.8, map: braid, bumpMap: braid, bumpScale: 0.45 }),
+    frost: new THREE.MeshStandardMaterial({ color: 0xf3edff, metalness: 0.05, roughness: 0.3, transparent: true, opacity: 0.82, side: THREE.DoubleSide }),
     glass: new THREE.MeshPhysicalMaterial({
-      color: 0xd8ccff, metalness: 0, roughness: 0.03, transparent: true, opacity: 0.1, depthWrite: false,
+      color: 0xe4e8ff, metalness: 0, roughness: 0.03, transparent: true, opacity: 0.09, depthWrite: false,
       clearcoat: 1, clearcoatRoughness: 0.03, envMapIntensity: 2
     }),
-    lcd: new THREE.MeshBasicMaterial({ map: lcd.texture, toneMapped: false })
+    edge: new THREE.MeshBasicMaterial({ color: 0xdde6ff, transparent: true, opacity: 0.75, toneMapped: false, depthWrite: false })
   };
   Object.values(mats).forEach((m) => disposables.push(m));
 
@@ -71,7 +70,8 @@ export function createKit({ palette, lite }) {
     return sprite;
   }
 
-  const cycleColors = [palette.accent, palette.accent2, palette.accent3];
+  // Las luces del PC pasan despacio de lila a blanco y a azul hielo, como las de la foto
+  const cycleColors = [new THREE.Color(0xc9b6ff), new THREE.Color(0xffffff), new THREE.Color(0xa8d4ff)];
   function cycle(target, x) {
     const p = ((x % 3) + 3) % 3;
     const i = Math.floor(p);
@@ -176,19 +176,19 @@ export function createKit({ palette, lite }) {
   }
 
   // Ventilador que mira a +Z: marco, dos aros RGB, aspas que giran, buje y un halo de luz
-  function fan(radius, phase, speed) {
+  function fan(radius, phase, speed, frameMat) {
     const g = new THREE.Group();
     const depth = 0.15;
-    g.add(new THREE.Mesh(frameGeometry(radius * 2, radius * 0.93, depth), mats.matte));
+    g.add(new THREE.Mesh(frameGeometry(radius * 2, radius * 0.93, depth), frameMat || mats.white));
 
-    const ringA = new THREE.Mesh(new THREE.TorusGeometry(radius * 0.9, radius * 0.028, 8, lite ? 32 : 72), glowMat(phase));
-    const ringB = new THREE.Mesh(new THREE.TorusGeometry(radius * 0.62, radius * 0.016, 6, lite ? 24 : 56), glowMat(phase + 1));
+    const ringA = new THREE.Mesh(new THREE.TorusGeometry(radius * 0.88, radius * 0.055, 8, lite ? 32 : 72), glowMat(phase));
+    const ringB = new THREE.Mesh(new THREE.TorusGeometry(radius * 0.6, radius * 0.03, 6, lite ? 24 : 56), glowMat(phase + 1));
     ringA.position.z = ringB.position.z = depth / 2 - 0.004;
     g.add(ringA, ringB);
 
     const blades = new THREE.Group();
     blades.add(new THREE.Mesh(bladesGeometry(radius), mats.frost));
-    const hub = new THREE.Mesh(new THREE.CylinderGeometry(radius * 0.19, radius * 0.2, 0.06, lite ? 20 : 36).rotateX(Math.PI / 2), mats.chrome);
+    const hub = new THREE.Mesh(new THREE.CylinderGeometry(radius * 0.19, radius * 0.2, 0.06, lite ? 20 : 36).rotateX(Math.PI / 2), mats.black);
     blades.add(hub);
     g.add(blades);
     const core = new THREE.Mesh(new THREE.CircleGeometry(radius * 0.11, lite ? 16 : 28), glowMat(phase + 2));
@@ -196,12 +196,28 @@ export function createKit({ palette, lite }) {
     g.add(core);
 
     if (!lite) {
-      const h = halo(radius * 3, phase, 0.5);
+      const h = halo(radius * 3.4, phase, 0.85);
       h.position.z = 0.02;
       g.add(h);
     }
     fans.push({ blades, speed });
     return g;
+  }
+
+  // Placa plana con un dibujo o un texto (logotipos de la caja, rótulo de la gráfica…). Mira a +Z.
+  function label(w, h, draw, res = 260) {
+    const c = document.createElement("canvas");
+    c.width = Math.round(w * res);
+    c.height = Math.round(h * res);
+    draw(c.getContext("2d"), c.width, c.height);
+    const map = new THREE.CanvasTexture(c);
+    map.colorSpace = THREE.SRGBColorSpace;
+    map.anisotropy = 16;
+    const m = new THREE.MeshBasicMaterial({ map, transparent: true, toneMapped: false, depthWrite: false });
+    disposables.push(map, m);
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), m);
+    mesh.renderOrder = 3;
+    return mesh;
   }
 
   /* ---------- Partes que se pueden señalar ---------- */
@@ -245,7 +261,6 @@ export function createKit({ palette, lite }) {
   function update(t) {
     fans.forEach((f) => { f.blades.rotation.z = t * f.speed; });
     leds.forEach((l) => cycle(l.color, t * 0.35 + l.phase));
-    lcd.update(t);
   }
 
   function dispose() {
@@ -259,6 +274,6 @@ export function createKit({ palette, lite }) {
     root, palette, lite, mats, parts, glow,
     // Registra algo más para liberarlo al final
     own: (d) => disposables.push(d),
-    box, rbox, cyl, meshPlane, tube, fan, glowMat, halo, part, finalize, update, dispose
+    box, rbox, cyl, meshPlane, tube, fan, glowMat, halo, label, part, finalize, update, dispose
   };
 }

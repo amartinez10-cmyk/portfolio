@@ -91,7 +91,6 @@ export function createHeroModel({ palette, lite }) {
   function buildProcedural() {
     kit = createKit({ palette, lite });
     group.add(kit.root, highlight.group);
-    group.position.y = 0.12;   // centra el conjunto (PC + plataforma) en el hueco
     // Cada bloque va por separado: si uno fallara en algún equipo, el resto del PC se sigue viendo
     const step = (name, fn) => { try { return fn(); } catch (err) { console.error("[3D] PC: falló " + name, err); } };
     step("carcasa", () => { edge = buildCase(kit).edge; });

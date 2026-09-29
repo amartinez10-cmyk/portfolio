@@ -244,8 +244,7 @@ main {
 
 /* ---------- Sobre mí ---------- */
 
-.about,
-.hhep {
+.about {
   flex: 1;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -283,18 +282,10 @@ main {
   line-height: 1.4;
 }
 
-.about__body p:last-child,
-.hhep__def {
+.about__body p:last-child {
   margin-bottom: 0;
 }
 
-.page .hhep__def {
-  margin-top: 1rem;
-  padding-left: 0.9rem;
-  border-left: 3px solid var(--level-accent);
-  color: var(--muted);
-  font-size: 0.875rem;
-}
 
 /* Habilidades: un escaparate de tarjetas debajo de la presentación (el aspecto de cada
    tarjeta, sus iconos y su entrada con el scroll están en theme3d.css y js/fx.js) */

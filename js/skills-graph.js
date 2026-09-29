@@ -24,25 +24,27 @@ function glowTexture() {
   return new THREE.CanvasTexture(c);
 }
 
-// Disco oscuro con un aro de neón y el icono (o iconos) de la habilidad dentro
+// Disco oscuro con un aro blanco y el icono (o iconos) de la habilidad dentro. Se dibuja en 512 × 512
+// para que se vea nítido aunque el icono se acerque a la cámara (modo "explorar el PC").
 function iconTexture(ids, palette) {
-  const size = 192;
+  const size = 512;
+  const k = size / 192;                      // los tamaños de SkillIcons.draw están pensados para 192 px
   const c = document.createElement("canvas");
   c.width = c.height = size;
   const g = c.getContext("2d");
   const h = size / 2;
   g.beginPath();
-  g.arc(h, h, h - 8, 0, Math.PI * 2);
+  g.arc(h, h, h - 20, 0, Math.PI * 2);
   g.fillStyle = "rgba(36, 26, 96, 0.97)";
   g.fill();
-  g.lineWidth = 7;
+  g.lineWidth = 18;
   g.strokeStyle = "#ffffff";
   g.stroke();
   const icons = window.SkillIcons;
-  if (icons && ids && ids.length) icons.draw(g, ids, h, h, ids.length === 1 ? 92 : 112, palette);
+  if (icons && ids && ids.length) icons.draw(g, ids, h, h, (ids.length === 1 ? 92 : 112) * k, palette);
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = 4;
+  tex.anisotropy = 8;
   return tex;
 }
 

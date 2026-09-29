@@ -310,69 +310,125 @@ export function createProps2(kit, base) {
 
   /* ---------- Currículum ---------- */
 
+  // La foto se carga una sola vez y avisa a quien la espera (el currículum y el cuadro de la pared)
+  let photoImg = null;
+  const photoWaiters = [];
+  function withPhoto(cb) {
+    if (!photoImg) {
+      photoImg = new Image();
+      photoImg.onload = () => photoWaiters.splice(0).forEach((f) => f(photoImg));
+      photoImg.src = CV_PHOTO;
+    }
+    if (photoImg.complete && photoImg.naturalWidth) cb(photoImg);
+    else photoWaiters.push(cb);
+  }
+
+  // Foto (3:4) con esquinas redondeadas; mientras carga, una silueta
+  function drawPhoto(c, img, x, y, w, h, r) {
+    c.save();
+    roundRect(c, x, y, w, h, r);
+    c.clip();
+    if (img) {
+      c.drawImage(img, x, y, w, h);
+    } else {
+      c.fillStyle = hex(C.lilac);
+      c.fillRect(x, y, w, h);
+      c.fillStyle = "#fff";
+      c.beginPath(); c.arc(x + w / 2, y + h * 0.38, w * 0.2, 0, 6.3); c.fill();
+      c.beginPath(); c.ellipse(x + w / 2, y + h * 0.98, w * 0.36, h * 0.28, 0, 0, 6.3); c.fill();
+    }
+    c.restore();
+  }
+
   const cvCache = {};
   function cvTex() {
     if (cvCache.tex) return cvCache.tex;
+    const fontStack = '"Outfit", "Avenir Next", "Segoe UI", system-ui, sans-serif';
     const draw = (c, w, h, img) => {
       c.fillStyle = "#fffdf8";
       c.fillRect(0, 0, w, h);
-      c.fillStyle = hex(C.blue);
-      c.fillRect(0, 0, w, 150);
-      // Foto
-      c.save();
-      c.beginPath(); c.arc(92, 96, 56, 0, 6.3); c.clip();
-      if (img) {
-        c.drawImage(img, 36, 40, 112, 112);   // la foto ya viene recortada en cuadrado
-      } else { c.fillStyle = hex(C.lilac); c.fillRect(30, 30, 130, 130); }
-      c.restore();
-      c.lineWidth = 6; c.strokeStyle = "#fff";
-      c.beginPath(); c.arc(92, 96, 56, 0, 6.3); c.stroke();
+      // Barra lateral con la foto grande
+      const sw = 380;
+      const grad = c.createLinearGradient(0, 0, 0, h);
+      grad.addColorStop(0, hex(C.blue));
+      grad.addColorStop(1, hex(C.violet));
+      c.fillStyle = grad;
+      c.fillRect(0, 0, sw, h);
       c.fillStyle = "#fff";
-      roundRect(c, 170, 62, 210, 22, 11); c.fill();
-      c.globalAlpha = 0.55;
-      roundRect(c, 170, 98, 150, 14, 7); c.fill();
+      roundRect(c, 20, 30, sw - 40, 442, 34); c.fill();
+      drawPhoto(c, img, 30, 40, sw - 60, 422, 26);
+      // Contacto, habilidades e idiomas (solo barras: el currículum real llegará más adelante)
+      const bar = (x, y, bw, bh, alpha) => { c.globalAlpha = alpha; c.fillStyle = "#fff"; roundRect(c, x, y, bw, bh, bh / 2); c.fill(); c.globalAlpha = 1; };
+      bar(30, 520, 150, 24, 0.95);
+      for (let i = 0; i < 4; i++) { bar(30, 576 + i * 54, 30, 30, 0.9); bar(76, 584 + i * 54, 220 - i * 22, 14, 0.6); }
+      bar(30, 820, 170, 24, 0.95);
+      for (let i = 0; i < 4; i++) { bar(30, 874 + i * 50, 300, 16, 0.25); bar(30, 874 + i * 50, 130 + ((i * 73) % 150), 16, 0.95); }
+      bar(30, 1100, 150, 24, 0.95);
+      for (let i = 0; i < 3; i++) {
+        bar(30, 1152 + i * 52, 110, 16, 0.6);
+        for (let k = 0; k < 5; k++) { c.globalAlpha = k < 5 - i ? 0.95 : 0.3; c.fillStyle = "#fff"; c.beginPath(); c.arc(200 + k * 26, 1160 + i * 52, 9, 0, 6.3); c.fill(); }
+      }
       c.globalAlpha = 1;
-      // Bloques
-      const blocks = [[190, C.pink], [340, C.yellow], [490, C.mint]];
-      blocks.forEach(([y, color], i) => {
+      // Nombre y cargo
+      c.fillStyle = hex(C.navy);
+      c.font = "800 150px " + fontStack;
+      c.textBaseline = "alphabetic";
+      c.fillText("ALEX", 430, 190);
+      c.fillStyle = hex(C.yellow);
+      roundRect(c, 432, 224, 150, 14, 7); c.fill();
+      c.fillStyle = hex(C.violet);
+      roundRect(c, 430, 274, 440, 22, 11); c.fill();
+      c.globalAlpha = 0.5; roundRect(c, 430, 312, 310, 16, 8); c.fill(); c.globalAlpha = 1;
+      // Bloques de contenido
+      [[400, C.pink], [740, C.yellow], [1060, C.mint]].forEach(([y, color], i) => {
         c.fillStyle = hex(color);
-        roundRect(c, 36, y, 26, 26, 8); c.fill();
+        roundRect(c, 430, y, 230, 40, 20); c.fill();
         c.fillStyle = hex(C.navy);
-        roundRect(c, 78, y, 170, 16, 8); c.fill();
-        c.fillStyle = "#cfc7ea";
-        for (let k = 0; k < 4; k++) { roundRect(c, 78, y + 30 + k * 22, 300 - k * 34 - i * 10, 10, 5); c.fill(); }
+        for (let k = 0; k < 5; k++) { c.globalAlpha = 0.75 - k * 0.04; roundRect(c, 460, y + 78 + k * 42, 520 - ((k * 61 + i * 40) % 160), 16, 8); c.fill(); }
+        c.globalAlpha = 1;
+        c.fillStyle = hex(color);
+        c.beginPath(); c.arc(438, y + 86, 6, 0, 6.3); c.fill();
       });
-      c.fillStyle = "#e8e2fa";
-      roundRect(c, 400, 190, 84, 300, 12); c.fill();
-      [0, 1, 2, 3].forEach((k) => { c.fillStyle = hex([C.blue, C.pink, C.yellow, C.mint][k]); roundRect(c, 412, 208 + k * 66, 60, 20, 10); c.fill(); });
     };
-    cvCache.tex = canvasTex(512, 660, (c, w, h) => draw(c, w, h, null));
-    const img = new Image();
-    img.onload = () => {
-      const c = cvCache.tex.image;
-      draw(c.getContext("2d"), c.width, c.height, img);
+    cvCache.tex = canvasTex(1024, 1372, (c, w, h) => draw(c, w, h, null));
+    withPhoto((img) => {
+      const cv = cvCache.tex.image;
+      draw(cv.getContext("2d"), cv.width, cv.height, img);
       cvCache.tex.needsUpdate = true;
-    };
-    img.src = CV_PHOTO;
+    });
     return cvCache.tex;
   }
 
   // Currículum grande sobre un caballete. Mira a +Z.
   Q.cvEasel = () => {
     const g = grp();
-    const H = 8.4;
+    const H = 8.9;
     [-1, 1].forEach((sx) => {
-      const leg = rbox(0.3, H, 0.3, C.woodDark, sx * 1.9, H / 2, 0.55, g, 0.08);
-      leg.rotation.z = -sx * 0.06;
+      const leg = rbox(0.3, H, 0.3, C.woodDark, sx * 2.3, H / 2, 0.55, g, 0.08);
+      leg.rotation.z = -sx * 0.05;
       leg.rotation.x = 0.06;
     });
     const back = rbox(0.3, H - 0.6, 0.3, C.woodDark, 0, (H - 0.6) / 2, -1.6, g, 0.08);
     back.rotation.x = -0.34;
-    rbox(4.6, 0.3, 0.4, C.woodDark, 0, 2.3, 0.35, g, 0.08);
-    const board = grp(0, 5.6, 0.25, g);
+    rbox(5.2, 0.3, 0.4, C.woodDark, 0, 2.0, 0.35, g, 0.08);
+    const board = grp(0, 5.45, 0.25, g);
     board.rotation.x = -0.06;
-    rbox(4.7, 6.2, 0.2, C.white, 0, 0, 0, board, 0.1);
-    screen(cvTex(), 4.4, 5.9, 0, 0, 0.11, board);
+    rbox(5.15, 6.9, 0.2, C.white, 0, 0, 0, board, 0.1);
+    screen(cvTex(), 4.9, 6.57, 0, 0, 0.11, board);
+    return g;
+  };
+
+  // Retrato enmarcado con tu foto, para colgar en la pared. Mira a +Z.
+  Q.photoFrame = ({ w = 2.7, frame = C.white } = {}) => {
+    const g = grp();
+    const iw = w - 0.46;
+    const ih = iw * 4 / 3;
+    const h = ih + 0.46;
+    rbox(w, h, 0.24, frame, 0, 0, 0, g, 0.09);
+    rbox(iw + 0.1, ih + 0.1, 0.06, C.gold, 0, 0, 0.13, g, 0.03);
+    const tex = canvasTex(480, 640, (c, ww, hh) => drawPhoto(c, null, 0, 0, ww, hh, 0));
+    withPhoto((img) => { kit.redraw(tex, (c, ww, hh) => c.drawImage(img, 0, 0, ww, hh)); });
+    screen(tex, iw, ih, 0, 0, 0.17, g);
     return g;
   };
 

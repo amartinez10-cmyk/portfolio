@@ -22,6 +22,14 @@ export function buildExtras({ kit, props }) {
     return o;
   };
 
+  // Como place(), pero un objeto suelto (planta, lámpara, globo…) se desplaza hacia dentro si sus hojas,
+  // su pantalla o su base atravesaran una pared
+  const stand = (root, o, x, y, z, ry = 0) => {
+    kit.fit(o, x, y, z, ry);
+    root.add(o);
+    return o;
+  };
+
   // Objetos que dan vueltas en el aire (sobres, aviones de papel…): { obj, radius, height, speed, phase }
   function orbiters(root, cx, cz, list) {
     const g = grp(cx, 0, cz, root);
@@ -43,7 +51,7 @@ export function buildExtras({ kit, props }) {
   function resume({ root }) {
     place(root, Q.corkboard({ w: 6.4, h: 3.8 }), -2.4, 5.7, -6.86);
     place(root, P.clock({ r: 1.05, rim: C.pink }), 2.3, 6.9, -6.82);
-    place(root, P.frame({ w: 2.2, h: 2.8, seed: 14, palette: [C.blue, C.pink, C.yellow, C.white] }), 5.3, 6.4, -6.86);
+    place(root, Q.photoFrame({ w: 2.7 }), 5.3, 6.1, -6.86);
 
     const desk = P.desk({ w: 6.4, d: 3, accent: C.blue, top: C.wood });
     place(root, desk, 3.7, 0, -5.4);
@@ -51,15 +59,15 @@ export function buildExtras({ kit, props }) {
     place(root, P.laptop({ seed: 9, color: C.white }), 3.1, top, -5.5);
     place(root, P.books({ n: 5, seed: 6 }), 5.6, top, -5.2, 0.3);
     place(root, P.mug({ color: C.pink }), 1.3, top, -4.8);
-    place(root, P.deskLamp({ color: C.teal }), 5.9, top, -6.3, -0.5);
-    place(root, P.plants.succulent({ size: 0.8, pot: C.pink }), 1.2, top, -6.2);
+    stand(root, P.deskLamp({ color: C.teal }), 5.9, top, -6.1, -0.5);
+    stand(root, P.plants.succulent({ size: 0.8, pot: C.pink }), 1.2, top, -6.2);
     place(root, P.chair({ color: C.blue, trim: C.white, gaming: false }), 4.2, 0, -2.2, Math.PI + 0.45);
 
     place(root, P.rug({ w: 7, round: true, color: C.blue, border: C.white }), -1.8, 0, 2.6);
     place(root, Q.cvEasel(), -1.8, 0, 2.6, 0.75);
     place(root, Q.cabinet({ color: C.white, drawers: 2 }), -5.4, 0, 4.2, Math.PI / 2);
-    place(root, P.plants.fiddle({ size: 1.05, pot: C.white }), -5.9, 0, -5.9);
-    place(root, P.plants.bush({ size: 0.85, pot: C.blue }), 6.0, 0, 3.6);
+    stand(root, P.plants.fiddle({ size: 1.05, pot: C.white }), -5.9, 0, -5.9);
+    stand(root, P.plants.bush({ size: 0.85, pot: C.blue }), 6.0, 0, 3.6);
 
     // Cajas de archivo apiladas
     place(root, P.crate({ s: 1.5, color: C.white, band: C.blue }), -0.5, 0, -5.9, 0.1);
@@ -98,13 +106,13 @@ export function buildExtras({ kit, props }) {
     place(root, Q.cert({ w: 2.4, h: 1.8, seed: 6, frame: C.white }), 2.4, 3.9, -6.86);
 
     place(root, Q.trophyShelf({ w: 6.2, h: 4.2 }), -6.2, 0, -1.5);
-    place(root, P.plants.monstera({ size: 1.05, pot: C.white }), 6.1, 0, -5.9);
-    place(root, P.plants.bush({ size: 0.95, pot: C.pink }), -5.7, 0, 5.0);
-    place(root, P.floorLamp({ shade: C.pink, h: 5.6 }), 6.2, 0, 2.6);
+    stand(root, P.plants.monstera({ size: 1.05, pot: C.white }), 6.1, 0, -5.9);
+    stand(root, P.plants.bush({ size: 0.95, pot: C.pink }), -5.7, 0, 5.0);
+    stand(root, P.floorLamp({ shade: C.pink, h: 5.6 }), 6.2, 0, -2.6);
 
     // Globos atados
     [[6.5, -3.4, C.pink], [6.0, -4.9, C.sky], [6.7, -5.9, C.orange]].forEach(([x, z, color], i) => {
-      place(root, Q.balloon({ color, len: 4.2 }), x, 5.4 + i * 0.7, z);
+      stand(root, Q.balloon({ color, len: 4.2 }), x, 5.4 + i * 0.7, z);
     });
 
     // Lluvia de confeti
@@ -145,8 +153,10 @@ export function buildExtras({ kit, props }) {
     // Mesa de trabajo con la impresora 3D, un portátil y un monitor con código
     place(root, P.desk({ w: 7.4, d: 3, body: C.white, top: C.wood, accent: C.mint }), 3.2, 0, -5.4);
     const top = 2.7;
-    place(root, Q.printer3d(), 1.4, top, -5.5);
-    place(root, P.monitor({ seed: 15, w: 3.2, h: 1.9 }), 5.1, top, -6.3, -0.15);
+    const printer = Q.printer3d();
+    printer.scale.setScalar(0.8);
+    place(root, printer, 1.6, top, -5.05);
+    place(root, P.monitor({ seed: 15, w: 3.2, h: 1.9 }), 5.1, top, -6.12, -0.15);
     place(root, P.deskMat({ w: 4.6, d: 2, color: C.navy, edge: C.teal }), 5.0, top, -5.0);
     place(root, P.keyboard({ color: C.white }), 4.75, top + 0.05, -4.8);
     place(root, P.mouse({ accent: C.teal }), 6.3, top + 0.05, -4.7);
@@ -154,7 +164,7 @@ export function buildExtras({ kit, props }) {
     place(root, P.chair({ color: C.teal, trim: C.white }), 4.5, 0, -2.3, Math.PI + 0.5);
 
     // Pizarra kanban
-    place(root, Q.whiteboard({ w: 6.2, h: 3.8 }), -3.4, 0, -6.1);
+    stand(root, Q.whiteboard({ w: 6.2, h: 3.8 }), -3.4, 0, -6.1);
 
     // Zona de aterrizaje y dron
     place(root, Q.landingPad({ s: 5 }), -0.2, 0, 2.6);
@@ -165,9 +175,9 @@ export function buildExtras({ kit, props }) {
     place(root, P.crate({ s: 1.4, color: C.wood, band: C.woodDark }), -5.6, 1.7, 4.9, -0.2);
     place(root, P.crate({ s: 1.5, color: C.wood, band: C.woodDark }), -3.9, 0, 5.6, 0.1);
     place(root, Q.cubeTower(), -5.5, 0, 0.6, 0.4);
-    place(root, P.plants.cactus({ size: 1, pot: C.white }), 6.0, 0, 3.4);
-    place(root, P.plants.succulent({ size: 0.9, pot: C.mint }), 6.2, top, -6.1);
-    place(root, P.floorLamp({ shade: C.mint, h: 5.4 }), 6.2, 0, -1.2);
+    stand(root, P.plants.cactus({ size: 1, pot: C.white }), 6.0, 0, 3.4);
+    stand(root, P.plants.succulent({ size: 0.9, pot: C.mint }), 6.2, top, -6.1);
+    stand(root, P.floorLamp({ shade: C.yellow, h: 5.4 }), 6.2, 0, -1.2);
     place(root, P.rug({ w: 5, d: 3.2, color: C.teal, border: C.white }), 4.5, 0, -2.4);
   }
 
@@ -216,8 +226,8 @@ export function buildExtras({ kit, props }) {
       });
     };
 
-    place(root, P.floorLamp({ shade: C.violet, h: 5.8 }), -5.9, 0, -5.9);
-    place(root, P.plants.fiddle({ size: 1.1, pot: C.white }), -5.7, 0, 5.2);
+    stand(root, P.floorLamp({ shade: C.cream, h: 5.8 }), -5.9, 0, -5.9);
+    stand(root, P.plants.fiddle({ size: 1.1, pot: C.white }), -5.7, 0, 5.2);
     place(root, P.books({ n: 5, seed: 4 }), -5.5, 0, 2.4, 0.4);
     place(root, P.rug({ w: 6.4, round: true, color: C.violet, border: C.lilac }), 2.4, 0, 3.4);
   }
@@ -237,11 +247,11 @@ export function buildExtras({ kit, props }) {
     place(root, P.mug({ color: C.pink }), 2.9, 1.3, -1.3);
     place(root, P.books({ n: 3, seed: 8 }), 2.6, 1.3, -2.3, 0.5);
 
-    place(root, Q.mailbox({ color: C.red }), -5.4, 0, 4.6, 0.7);
-    place(root, Q.dish(), -5.5, 0, -5.4, 0.75);
-    place(root, Q.globe({ r: 1.25 }), 5.9, 0, 3.6);
-    place(root, P.floorLamp({ shade: C.yellow, h: 5.8 }), 6.3, 0, -5.9);
-    place(root, P.plants.monstera({ size: 1.0, pot: C.white }), -5.9, 0, -0.8);
+    stand(root, Q.mailbox({ color: C.red }), -5.4, 0, 4.6, 0.7);
+    stand(root, Q.dish(), -5.5, 0, -5.4, 0.75);
+    stand(root, Q.globe({ r: 1.25 }), 5.9, 0, 3.6);
+    stand(root, P.floorLamp({ shade: C.yellow, h: 5.8 }), 6.3, 0, -5.9);
+    stand(root, P.plants.monstera({ size: 1.0, pot: C.white }), -5.9, 0, -0.8);
 
     // Sobres, aviones de papel y un móvil dando vueltas
     const phone = P.phone({ seed: 33 });

@@ -440,7 +440,8 @@ export function createProps(kit) {
     bar([0, 0.2, 0], [0, h - 0.9, 0], 0.05, C.steel, g, 10);
     // Pantalla
     const cy = h - 0.35;
-    const cloth = mat(shade, { emissive: shade, emissiveIntensity: 0.42, side: THREE.DoubleSide, rough: 0.95 });
+    const warm = new THREE.Color(shade).lerp(new THREE.Color(0xfff0c8), 0.55).getHex();
+    const cloth = mat(shade, { emissive: warm, emissiveIntensity: 0.5, side: THREE.DoubleSide, rough: 0.95 });
     const drum = mesh(new THREE.CylinderGeometry(0.95, 1.12, 1.35, 40, 1, true), cloth, 0, cy, 0, g, false);
     drum.castShadow = true;
     [[0.95, 0.68], [1.12, -0.68]].forEach(([r, y]) => {
@@ -455,7 +456,10 @@ export function createProps(kit) {
     cyl(0.07, 0.07, 0.2, C.steel, 0, cy + 0.6, 0, g, 8);
     // Bombilla y resplandor
     ball(0.24, glow(0xfff1c0), 0, cy - 0.1, 0, g).castShadow = false;
-    kit.halo(0xffd27a, 8.5, 0, cy - 0.05, 0, g, 0.42);
+    // La luz sale por debajo de la pantalla: un resplandor pequeño, un charco en el suelo y una luz real
+    kit.halo(0xffd27a, 4.6, 0, cy - 0.8, 0, g, 0.5);
+    kit.pool(0xffcf80, 4.6, 0, 0.035, 0, g, 0.42);
+    g.userData.lamp = { y: cy - 0.5, color: 0xffd9a8, power: 22 };
     return g;
   };
 
@@ -476,7 +480,9 @@ export function createProps(kit) {
     const dome = mesh(new THREE.SphereGeometry(0.48, 24, 14, 0, Math.PI * 2, 0, Math.PI / 2), mat(color, { side: THREE.DoubleSide, rough: 0.5 }), 0, 0.05, 0, head);
     cyl(0.06, 0.06, 0.2, C.steel, 0, 0.5, 0, head, 8);
     ball(0.17, glow(0xfff1c0), 0, -0.03, 0, head).castShadow = false;
-    kit.halo(0xffd27a, 3.4, 0, -0.15, 0, head, 0.5);
+    kit.halo(0xffd27a, 2.6, 0, -0.3, 0, head, 0.5);
+    kit.pool(0xffcf80, 3.4, 1.15, 0.02, 0, g, 0.45);          // charco de luz sobre la mesa
+    g.userData.lamp = { y: 2.1, color: 0xffd9a8, power: 6 };
     return g;
   };
 
