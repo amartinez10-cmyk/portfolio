@@ -62,6 +62,11 @@
     return settle(el.animate([{ opacity: 0, transform: from }, { opacity: 1, transform: "none" }], timing));
   }
 
+  // Avisa a la capa 3D (js/scene3d.js) de los cambios de sección, idioma y fondo
+  function emit(name, detail) {
+    document.dispatchEvent(new CustomEvent("portfolio:" + name, { detail: detail }));
+  }
+
   /* ---------- Idioma ---------- */
 
   function initialLang() {
@@ -103,6 +108,7 @@
       btn.setAttribute("aria-pressed", String(btn.dataset.lang === lang));
     });
     updateBgToggle();
+    emit("lang", { lang: lang });
   }
 
   function switchLang(lang) {
@@ -130,6 +136,7 @@
   function setBgState(state) {
     bgToggle.dataset.state = state;
     updateBgToggle();
+    emit("bg", { playing: state === "playing" });
   }
 
   // Al pausar o reanudar con el botón, el vídeo frena o arranca poco a poco
@@ -305,6 +312,7 @@
     var from = visiblePage();
     markCurrent(id);
     targetId = id;
+    emit("section", { id: id, from: from ? from.id : null, animate: !!animate });
     if (animate) flushReveals();
 
     if (!animate || !from || !to.animate || document.hidden) {

@@ -1,0 +1,85 @@
+/*
+ * Arranque perezoso de la capa 3D (js/scene3d.js + Three.js desde el CDN).
+ *
+ * Se espera a que la página esté pintada y el navegador libre, y solo se sigue
+ * si el dispositivo puede con ello. Si algo falla (sin WebGL, sin conexión al CDN,
+ * dispositivo flojo, ahorro de datos) la página se queda como está, sin 3D.
+ *
+ * Estado en <html data-scene="…">:  loading · full · lite · off
+ * Para probar:  ?3d=off (sin 3D) · ?3d=lite (ligero) · ?3d=full (completo) · ?3d=force
+ *               (completo aunque el navegador diga que el WebGL es lento)
+ */
+(function () {
+  "use strict";
+
+  var root = document.documentElement;
+  var flag = new URLSearchParams(location.search).get("3d");
+  var base = document.currentScript
+    ? new URL(".", document.currentScript.src).href
+    : new URL("js/", location.href).href;
+
+  function off(reason) {
+    root.dataset.scene = "off";
+    root.classList.remove("has-3d");
+    root.classList.add("no-3d");
+    if (reason && window.console) console.info("[3D] desactivado:", reason);
+  }
+
+  function webglAvailable() {
+    try {
+      var c = document.createElement("canvas");
+      var gl = c.getContext("webgl2") || c.getContext("webgl");
+      if (!gl) return false;
+      var lose = gl.getExtension("WEBGL_lose_context");
+      if (lose) lose.loseContext();
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // "full", "lite" o null (sin 3D)
+  function pickLevel() {
+    if (flag === "off") return null;
+    if (!webglAvailable()) return null;
+    if (flag === "lite" || flag === "full" || flag === "force") return flag === "lite" ? "lite" : "full";
+
+    var conn = navigator.connection || {};
+    if (conn.saveData) return null;
+    if (navigator.deviceMemory && navigator.deviceMemory <= 2) return null;
+    if (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 2) return null;
+
+    var small = window.matchMedia("(max-width: 899px)").matches || window.matchMedia("(pointer: coarse)").matches;
+    if (small || (navigator.deviceMemory && navigator.deviceMemory <= 4)) return "lite";
+    return "full";
+  }
+
+  function load() {
+    var level = pickLevel();
+    if (!level) return off(flag === "off" ? "?3d=off" : "sin WebGL o dispositivo limitado");
+
+    root.dataset.scene = "loading";
+    import(base + "scene3d.js")
+      .then(function (scene) {
+        return scene.start({ level: level, force: flag === "force" });
+      })
+      .then(function (info) {
+        root.dataset.scene = info.level;
+        root.classList.add("has-3d");
+      })
+      .catch(function (err) {
+        off(err && err.message ? err.message : err);
+      });
+  }
+
+  // Después de pintar y con el navegador libre; el margen deja acabar la animación de entrada
+  function schedule() {
+    setTimeout(function () {
+      if (window.requestIdleCallback) window.requestIdleCallback(load, { timeout: 2000 });
+      else load();
+    }, 1800);
+  }
+
+  if (document.readyState === "complete") schedule();
+  else window.addEventListener("load", schedule);
+})();

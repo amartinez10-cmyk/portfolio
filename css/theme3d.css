@@ -1,0 +1,77 @@
+/*
+ * Tema oscuro y neón + capa 3D.
+ * Se carga después de styles.css y solo cambia los tokens de color y añade capas:
+ * para cambiar los colores de toda la web (y del 3D, que los lee de aquí) edita
+ * --accent, --accent-2 y --accent-3.
+ */
+
+:root {
+  color-scheme: dark;
+
+  --paper: #03040a;        /* negro azulado: el fondo del vídeo, invertido */
+  --ink: #eef1ff;
+  --muted: #a9b0cc;
+  --photo: #10121c;
+
+  --accent: #6c86ff;       /* el azul de las ondas del vídeo, en versión neón */
+  --accent-2: #33e1ff;     /* cian */
+  --accent-3: #b57cff;     /* violeta (se usa poco) */
+
+  --glass: rgba(11, 14, 30, 0.5);
+  --glass-strong: rgba(9, 11, 24, 0.72);
+  --glass-edge: rgba(150, 170, 255, 0.2);
+}
+
+/* ---------- Capas: vídeo (abajo) → escena 3D → contenido ----------
+   No poner background en <html>: el del <body> (styles.css) tiene que llegar al lienzo
+   para que el vídeo y el canvas, con z-index negativo, se vean por encima. */
+
+.backdrop {
+  z-index: -2;
+}
+
+/* El vídeo original es blanco con ondas azules: se invierte para que quede
+   negro con ondas azules (y el matiz vuelve al azul con hue-rotate) */
+.backdrop__video {
+  filter: invert(1) hue-rotate(180deg) brightness(1.35) saturate(1.5);
+}
+
+.scene3d {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: -1;
+  width: 100%;
+  height: 100vh;
+  height: 100lvh;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 1s ease;
+}
+
+.has-3d .scene3d {
+  opacity: 1;
+}
+
+.no-3d .scene3d {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scene3d {
+    transition: none;
+  }
+}
+
+@media print {
+  :root {
+    --paper: #ffffff;
+    --ink: #000000;
+    --muted: #444444;
+  }
+
+  .backdrop,
+  .scene3d {
+    display: none;
+  }
+}
