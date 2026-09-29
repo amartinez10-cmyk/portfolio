@@ -1,0 +1,292 @@
+/*
+ * Mapa del paradigma personal (sección 7 HHEP): un círculo central con seis tarjetas alrededor,
+ * unidas por líneas que dibuja js/paradigm.js. Las tarjetas entran con el scroll igual que las de
+ * habilidades (variable --p que pone js/fx.js). En pantallas estrechas van una debajo de otra.
+ */
+
+.paradigm {
+  margin-top: clamp(1rem, 4vh, 2.5rem);
+}
+
+.paradigm__title {
+  margin: 0 0 1.75rem;
+  font: 700 1.5rem/1.25 var(--display);
+  letter-spacing: -0.015em;
+}
+
+.paradigm__title::after {
+  content: "";
+  display: block;
+  width: 3.5rem;
+  height: 4px;
+  margin-top: 0.6rem;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--level-accent), var(--accent-2));
+  box-shadow: 0 0 1rem var(--level-accent);
+}
+
+.paradigm__map {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  perspective: 1100px;
+}
+
+.paradigm__lines {
+  display: none;
+}
+
+/* ---------- Círculo central ---------- */
+
+.paradigm__hub {
+  --p: 1;
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: clamp(9rem, 44vw, 14rem);
+  aspect-ratio: 1;
+  margin: 1rem auto 1.25rem;
+  border-radius: 50%;
+  padding: 1.25rem;
+  text-align: center;
+  font: 800 clamp(1.1rem, 4.4vw, 1.55rem) / 1.15 var(--display);
+  letter-spacing: -0.01em;
+  color: #fff;
+  background:
+    radial-gradient(circle at 34% 28%, color-mix(in srgb, var(--level-accent) 70%, white), color-mix(in srgb, var(--level-accent) 60%, #1b1250) 52%, #1b1250 100%);
+  box-shadow:
+    0 0 3.5rem color-mix(in srgb, var(--level-accent) 55%, transparent),
+    inset 0 0 2.5rem rgba(255, 255, 255, 0.2),
+    inset 0 -1rem 2rem rgba(10, 4, 40, 0.35);
+  text-shadow: 0 2px 14px rgba(20, 8, 70, 0.6);
+  opacity: calc(0.06 + var(--p) * 0.94);
+  transform: scale(calc(0.6 + var(--p) * 0.4));
+}
+
+.paradigm__hub::before,
+.paradigm__hub::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.paradigm__hub::before {
+  inset: -0.9rem;
+  border: 2px dashed rgba(255, 255, 255, 0.4);
+  animation: paradigm-spin 32s linear infinite;
+}
+
+.paradigm__hub::after {
+  inset: -1.9rem;
+  border: 1px solid color-mix(in srgb, var(--level-accent) 70%, transparent);
+  border-left-color: transparent;
+  border-bottom-color: transparent;
+  animation: paradigm-spin 20s linear infinite reverse;
+}
+
+@keyframes paradigm-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ---------- Tarjetas ---------- */
+
+.paradigm__node {
+  --node: var(--accent);
+  --p: 1;
+  position: relative;
+  z-index: 1;
+  isolation: isolate;
+  padding: 1.2rem 1.3rem 1.3rem;
+  border: 1px solid color-mix(in srgb, var(--node) 42%, rgba(196, 178, 255, 0.18));
+  border-radius: 1.5rem;
+  background: linear-gradient(155deg, rgba(52, 36, 132, 0.6), rgba(22, 14, 62, 0.68));
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+  backdrop-filter: blur(14px) saturate(1.4);
+  box-shadow:
+    0 1.5rem 3rem -1.75rem rgba(0, 0, 0, 0.75),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 0 2.5rem -1.5rem var(--node);
+  opacity: calc(0.08 + var(--p) * 0.92);
+  transform:
+    translate3d(0, calc((1 - var(--p)) * 80px), calc((1 - var(--p)) * -240px))
+    rotateX(calc((1 - var(--p)) * 58deg));
+  transform-origin: 50% 100%;
+  transition: border-color 200ms ease, box-shadow 200ms ease;
+}
+
+.paradigm__node:hover {
+  border-color: var(--node);
+  box-shadow:
+    0 0 2rem -0.5rem var(--node),
+    0 1.5rem 3rem -1.75rem rgba(0, 0, 0, 0.75),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.paradigm__node[data-node="values"]     { --node: #ff8fb3; }
+.paradigm__node[data-node="goals"]      { --node: #ffc247; }
+.paradigm__node[data-node="being"]      { --node: #a48cff; }
+.paradigm__node[data-node="living"]     { --node: #37d6c0; }
+.paradigm__node[data-node="avoid"]      { --node: #ff7a6b; }
+.paradigm__node[data-node="philosophy"] { --node: #5aa8ff; }
+
+.paradigm__head {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.paradigm__icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 2.9rem;
+  height: 2.9rem;
+  border-radius: 0.95rem;
+  border: 1px solid color-mix(in srgb, var(--node) 55%, transparent);
+  background: color-mix(in srgb, var(--node) 20%, transparent);
+  color: var(--node);
+  box-shadow: 0 0 1.25rem -0.25rem var(--node);
+}
+
+.paradigm__icon svg {
+  width: 1.55rem;
+  height: 1.55rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.paradigm__node h3 {
+  margin: 0;
+  font: 700 1.2rem/1.2 var(--display);
+  letter-spacing: -0.01em;
+}
+
+.paradigm .paradigm__q {
+  max-width: none;
+  margin: 0.2rem 0 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.paradigm__items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.paradigm__items li {
+  padding: 0.4rem 0.95rem;
+  border: 1px solid color-mix(in srgb, var(--node) 55%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--node) 15%, transparent);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.95rem;
+  line-height: 1.35;
+}
+
+.paradigm__node[data-node="avoid"] .paradigm__items li::before {
+  content: "✕";
+  margin-right: 0.5rem;
+  color: var(--node);
+  font-size: 0.8em;
+}
+
+.paradigm__quote {
+  position: relative;
+  margin: 0;
+  padding-left: 1.1rem;
+  border-left: 4px solid var(--node);
+  font: 600 clamp(1.15rem, 1rem + 0.7vw, 1.5rem) / 1.4 var(--display);
+  letter-spacing: -0.01em;
+  color: #fff;
+}
+
+/* ---------- Pantalla ancha: círculo en medio y tarjetas a los lados, unidas por líneas ---------- */
+
+@media (min-width: 1000px) {
+  .paradigm__map {
+    grid-template-columns: minmax(0, 1fr) clamp(11rem, 20vw, 16rem) minmax(0, 1fr);
+    column-gap: clamp(3rem, 7vw, 7rem);
+    row-gap: 1.25rem;
+    align-items: stretch;
+  }
+
+  .paradigm__lines {
+    display: block;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    pointer-events: none;
+    opacity: var(--map-p, 1);
+  }
+
+  .paradigm__hub {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+    align-self: center;
+    width: 100%;
+    margin: 0;
+  }
+
+  .paradigm__node[data-node="values"]     { grid-column: 1; grid-row: 1; }
+  .paradigm__node[data-node="goals"]      { grid-column: 3; grid-row: 1; }
+  .paradigm__node[data-node="being"]      { grid-column: 1; grid-row: 2; }
+  .paradigm__node[data-node="living"]     { grid-column: 3; grid-row: 2; }
+  .paradigm__node[data-node="avoid"]      { grid-column: 1; grid-row: 3; }
+  .paradigm__node[data-node="philosophy"] { grid-column: 3; grid-row: 3; }
+}
+
+/* Líneas (las crea js/paradigm.js): una base tenue y encima puntos que van hacia la tarjeta */
+.paradigm__lines path {
+  fill: none;
+  stroke-linecap: round;
+}
+
+.paradigm__lines .line-base {
+  stroke-width: 2.5;
+  opacity: 0.55;
+}
+
+.paradigm__lines .line-flow {
+  stroke: #fff;
+  stroke-width: 4.5;
+  stroke-dasharray: 0.1 15;
+  opacity: 0.9;
+  animation: paradigm-flow 1.6s linear infinite;
+}
+
+@keyframes paradigm-flow {
+  to { stroke-dashoffset: -30.2; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .paradigm__hub::before,
+  .paradigm__hub::after,
+  .paradigm__lines .line-flow {
+    animation: none;
+  }
+
+  .paradigm__hub {
+    transform: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .paradigm__node {
+    background: rgba(0, 0, 0, 0.9);
+  }
+}

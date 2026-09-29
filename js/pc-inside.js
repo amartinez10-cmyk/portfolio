@@ -37,6 +37,15 @@ export function buildInside(kit) {
     cyl(0.022, 0.022, 0.02, mats.chrome, x, y, zb + 0.01, "z", board);                    // tornillos
   });
 
+  // Condensadores de la fuente de la CPU (fila de cilindros) y conectores SATA en el borde derecho
+  for (let i = 0; i < 7; i++) {
+    cyl(0.028, 0.028, 0.07, i % 2 ? mats.chrome : mats.alu, -1.02 + i * 0.1, 1.02, zb + 0.035, "z", board);
+  }
+  [-0.2, -0.32, -0.44, -0.56].forEach((y) => {
+    box(0.15, 0.06, 0.07, mats.matte, 0.22, y, zb + 0.035, board);
+    box(0.05, 0.06, 0.1, mats.matte, 0.28, y, zb + 0.05, board);
+  });
+
   /* ---------- Memoria RAM: se ve de canto, con su barra de luz en el borde ---------- */
 
   const ram = kit.part("ram");
@@ -45,6 +54,7 @@ export function buildInside(kit) {
     if (i % 2 === 1) {
       box(0.05, 0.84, 0.2, mats.alu, x, 0.75, zb + 0.14, ram);                            // disipador
       box(0.056, 0.78, 0.035, kit.glowMat(2 + i), x, 0.75, zb + 0.235, ram);              // barra RGB
+      [-0.3, -0.1, 0.1, 0.3].forEach((dy) => box(0.06, 0.02, 0.16, mats.chrome, x, 0.75 + dy, zb + 0.15, ram));   // aletas del disipador
     }
   });
 
@@ -106,11 +116,14 @@ export function buildInside(kit) {
 
   /* ---------- Fuente de alimentación y cables con funda trenzada ---------- */
 
-  const psu = kit.part("psu");
+  // La parte "psu" incluye los cables (se pueden señalar), pero el contorno que se marca es solo la caja
+  const shroud = new THREE.Group();
+  const psu = kit.part("psu", shroud);
+  psu.add(shroud);
   const sy = -H / 2 + 0.05 + 0.3;
-  rbox(2.5, 0.6, W - 0.08, 0.05, mats.matte, -0.2, sy, 0, psu);
-  kit.meshPlane(2.2, W - 0.3, -0.25, sy + 0.302, 0, -Math.PI / 2, 0, psu);
-  box(2.4, 0.012, 0.012, kit.glowMat(1.1), -0.2, sy + 0.15, W / 2 - 0.045, psu);
+  rbox(2.5, 0.6, W - 0.08, 0.05, mats.matte, -0.2, sy, 0, shroud);
+  kit.meshPlane(2.2, W - 0.3, -0.25, sy + 0.302, 0, -Math.PI / 2, 0, shroud);
+  box(2.4, 0.012, 0.012, kit.glowMat(1.1), -0.2, sy + 0.15, W / 2 - 0.045, shroud);
 
   tube([[0.27, -0.01, zb + 0.045], [0.5, -0.15, -0.5], [0.88, -0.4, -0.4], [0.88, -0.75, -0.3], [0.8, -0.9, -0.2]], 0.075, mats.sleeve, psu);
   tube([[-1, 1.24, -0.5], [-1.2, 1.3, -0.5], [-1.38, 1, -0.55], [-1.38, -0.4, -0.58], [-1.3, -0.86, -0.55]], 0.035, mats.sleeve, psu);

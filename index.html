@@ -12,6 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Mulish:wght@300;400;600&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
   <link rel="stylesheet" href="css/theme3d.css">
+  <link rel="stylesheet" href="css/paradigm.css">
   <link rel="stylesheet" href="css/boot.css">
   <!-- Three.js desde CDN (sin instalar nada). El 3D se carga más tarde, desde js/boot3d.js:
        si el CDN o WebGL fallan, la página funciona igual sin él. -->
@@ -106,7 +107,6 @@
     <!-- SOBRE MÍ -->
     <section id="about" class="page about" aria-labelledby="about-title">
       <div class="about__panel" data-tilt data-depth="10">
-        <p class="level-tag" aria-hidden="true"><span data-i18n="level.name">Nivel</span> <b>01</b></p>
         <div class="about__intro">
           <figure class="about__photo">
             <img src="img/alex.jpg" width="960" height="1280"
@@ -157,59 +157,113 @@
 
     <!-- CURRÍCULUM -->
     <section id="resume" class="page" aria-labelledby="resume-title" data-tilt data-depth="12" hidden>
-      <p class="level-tag" aria-hidden="true"><span data-i18n="level.name">Nivel</span> <b>02</b></p>
       <h1 id="resume-title" tabindex="-1" data-i18n="nav.resume">Currículum</h1>
       <p data-i18n="resume.body">Pronto encontrarás aquí mi currículum.</p>
     </section>
 
     <!-- CERTIFICADOS -->
     <section id="certificates" class="page" aria-labelledby="certificates-title" data-tilt data-depth="12" hidden>
-      <p class="level-tag" aria-hidden="true"><span data-i18n="level.name">Nivel</span> <b>03</b></p>
       <h1 id="certificates-title" tabindex="-1" data-i18n="nav.certificates">Certificados</h1>
       <p data-i18n="certificates.body">Aquí iré añadiendo los certificados que obtenga.</p>
     </section>
 
     <!-- PROYECTOS -->
     <section id="projects" class="page" aria-labelledby="projects-title" data-tilt data-depth="12" hidden>
-      <p class="level-tag" aria-hidden="true"><span data-i18n="level.name">Nivel</span> <b>04</b></p>
       <h1 id="projects-title" tabindex="-1" data-i18n="nav.projects">Proyectos</h1>
       <p data-i18n="projects.body">Aquí iré publicando los proyectos que haga en clase y por mi cuenta.</p>
     </section>
 
-    <!-- 7 HHEP -->
-    <section id="hhep" class="page" aria-labelledby="hhep-title" data-tilt data-depth="12" hidden>
-      <p class="level-tag" aria-hidden="true"><span data-i18n="level.name">Nivel</span> <b>05</b></p>
-      <h1 id="hhep-title" tabindex="-1" data-i18n="nav.hhep">7 HHEP</h1>
-      <p data-i18n="hhep.body">Contenido en preparación.</p>
+    <!-- 7 HHEP: mapa del paradigma personal -->
+    <section id="hhep" class="page hhep" aria-labelledby="hhep-title" hidden>
+      <div class="hhep__panel" data-tilt data-depth="12">
+        <h1 id="hhep-title" tabindex="-1" data-i18n="nav.hhep">7 HHEP</h1>
+        <p data-i18n="paradigm.intro">Crea tu mapa de paradigma personal para vivir al máximo.</p>
+        <p class="hhep__def" data-i18n="paradigm.def">Paradigma personal = sistema de creencias: los principios básicos de nuestra filosofía de vida.</p>
+      </div>
+
+      <div class="paradigm" data-depth="6">
+        <h2 class="paradigm__title" data-i18n="paradigm.title">Mi paradigma personal</h2>
+        <div class="paradigm__map">
+          <svg class="paradigm__lines" aria-hidden="true"></svg>
+          <div class="paradigm__hub" aria-hidden="true"><span data-i18n="paradigm.hub">Mi paradigma</span></div>
+        <article class="paradigm__node" data-node="values">
+          <header class="paradigm__head">
+            <span class="paradigm__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg></span>
+            <div>
+              <h3 data-i18n="paradigm.b1.title">Título</h3>
+              <p class="paradigm__q" data-i18n="paradigm.b1.q">Pregunta</p>
+            </div>
+          </header>
+          <ul class="paradigm__items" data-i18n-list="paradigm.b1.items"><li></li></ul>
+        </article>
+        <article class="paradigm__node" data-node="goals">
+          <header class="paradigm__head">
+            <span class="paradigm__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 21V4 M5 4h12l-2.5 4.2L17 12H5"/></svg></span>
+            <div>
+              <h3 data-i18n="paradigm.b2.title">Título</h3>
+              <p class="paradigm__q" data-i18n="paradigm.b2.q">Pregunta</p>
+            </div>
+          </header>
+          <ul class="paradigm__items" data-i18n-list="paradigm.b2.items"><li></li></ul>
+        </article>
+        <article class="paradigm__node" data-node="being">
+          <header class="paradigm__head">
+            <span class="paradigm__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l2.4 5.4 5.9.6-4.4 4 1.3 5.8L12 15.6 6.8 18.8l1.3-5.8-4.4-4 5.9-.6z"/></svg></span>
+            <div>
+              <h3 data-i18n="paradigm.b3.title">Título</h3>
+              <p class="paradigm__q" data-i18n="paradigm.b3.q">Pregunta</p>
+            </div>
+          </header>
+          <ul class="paradigm__items" data-i18n-list="paradigm.b3.items"><li></li></ul>
+        </article>
+        <article class="paradigm__node" data-node="living">
+          <header class="paradigm__head">
+            <span class="paradigm__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 11l8-7 8 7 M6 10v10h12V10 M10 20v-5h4v5"/></svg></span>
+            <div>
+              <h3 data-i18n="paradigm.b4.title">Título</h3>
+              <p class="paradigm__q" data-i18n="paradigm.b4.q">Pregunta</p>
+            </div>
+          </header>
+          <ul class="paradigm__items" data-i18n-list="paradigm.b4.items"><li></li></ul>
+        </article>
+        <article class="paradigm__node" data-node="avoid">
+          <header class="paradigm__head">
+            <span class="paradigm__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z M5.6 5.6l12.8 12.8"/></svg></span>
+            <div>
+              <h3 data-i18n="paradigm.b5.title">Título</h3>
+              <p class="paradigm__q" data-i18n="paradigm.b5.q">Pregunta</p>
+            </div>
+          </header>
+          <ul class="paradigm__items" data-i18n-list="paradigm.b5.items"><li></li></ul>
+        </article>
+        <article class="paradigm__node" data-node="philosophy">
+          <header class="paradigm__head">
+            <span class="paradigm__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 17h3l2-4V7H5v6h3 M14 17h3l2-4V7h-6v6h3"/></svg></span>
+            <div>
+              <h3 data-i18n="paradigm.b6.title">Título</h3>
+              <p class="paradigm__q" data-i18n="paradigm.b6.q">Pregunta</p>
+            </div>
+          </header>
+          <blockquote class="paradigm__quote" data-i18n="paradigm.b6.quote">Frase</blockquote>
+        </article>
+        </div>
+      </div>
     </section>
 
     <!-- CONTACTO -->
     <section id="contact" class="page" aria-labelledby="contact-title" data-tilt data-depth="12" hidden>
-      <p class="level-tag" aria-hidden="true"><span data-i18n="level.name">Nivel</span> <b>06</b></p>
       <h1 id="contact-title" tabindex="-1" data-i18n="nav.contact">Contacto</h1>
       <p data-i18n="contact.body">Pronto añadiré aquí mis datos de contacto.</p>
     </section>
   </main>
 
-  <!-- Selector de nivel: las mismas seis secciones del menú, como los niveles de un juego -->
-  <nav class="level-nav" data-i18n-aria-label="level.label" aria-label="Niveles">
-    <button type="button" class="level-nav__btn" data-step="-1" data-i18n-aria-label="level.prev" aria-label="Nivel anterior">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>
-    </button>
-    <p class="level-nav__label" aria-live="polite">
-      <span data-i18n="level.name">Nivel</span> <b class="level-nav__num">01</b><i class="level-nav__total">/06</i>
-    </p>
-    <button type="button" class="level-nav__btn" data-step="1" data-i18n-aria-label="level.next" aria-label="Nivel siguiente">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
-    </button>
-  </nav>
-
   <script src="js/translations.js"></script>
   <script src="js/boot-screen.js"></script>
   <script src="js/skill-icons.js"></script>
   <script src="js/main.js"></script>
-  <script src="js/level-nav.js"></script>
+  <script src="js/section-theme.js"></script>
   <script src="js/fx.js"></script>
+  <script src="js/paradigm.js"></script>
   <script src="js/boot3d.js"></script>
 </body>
 </html>

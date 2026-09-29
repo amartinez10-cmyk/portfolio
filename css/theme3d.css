@@ -49,8 +49,7 @@ body::after {
 }
 
 .no-3d .scene3d,
-.no-3d .stage,
-.no-3d .level-nav {
+.no-3d .stage {
   display: none;
 }
 
@@ -208,82 +207,11 @@ body::after {
   opacity: 1;
 }
 
-/* ---------- Selector de nivel (abajo, en el centro) ---------- */
-
-.level-nav {
-  position: fixed;
-  left: 50%;
-  bottom: max(1.25rem, env(safe-area-inset-bottom));
-  z-index: 30;
-  translate: -50% 0;
-  display: none;
-  align-items: center;
-  border-radius: 999px;
-  background: #fff;
-  color: #1b1642;
-  box-shadow: 0 1.25rem 2.5rem -0.75rem rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.5);
-  overflow: hidden;
-}
-
-.has-3d .level-nav {
-  display: flex;
-}
-
-.level-nav__btn {
-  display: grid;
-  place-items: center;
-  width: 3.4rem;
-  height: 3.1rem;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--level-accent);
-  cursor: pointer;
-  transition: background-color 160ms ease, color 160ms ease;
-}
-
-.level-nav__btn svg {
-  width: 1.3rem;
-  height: 1.3rem;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 3;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.level-nav__btn:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--level-accent) 14%, white);
-}
-
-.level-nav__btn:disabled {
-  opacity: 0.28;
-  cursor: default;
-}
-
-.level-nav__label {
-  margin: 0;
-  padding: 0 1.3rem;
-  min-width: 8.5rem;
-  text-align: center;
-  font: 600 1.05rem/1 var(--display);
-  border-inline: 1px solid rgba(27, 22, 66, 0.1);
-  white-space: nowrap;
-}
-
-.level-nav__label b {
-  font-weight: 800;
-}
-
-.level-nav__label i {
-  font-style: normal;
-  opacity: 0.4;
-}
-
 /* ---------- Tarjetas de cristal: el texto se lee siempre sobre el 3D ---------- */
 
 .about__panel,
-.page:not(.about) {
+.hhep__panel,
+.page:not(.about):not(.hhep) {
   position: relative;
   isolation: isolate;
   padding: clamp(1.4rem, 2.4vw, 2.1rem);
@@ -298,7 +226,8 @@ body::after {
 
 /* Borde con un destello del color del nivel que le da la vuelta a la tarjeta */
 .about__panel::after,
-.page:not(.about)::after {
+.hhep__panel::after,
+.page:not(.about):not(.hhep)::after {
   content: "";
   position: absolute;
   inset: -1px;
@@ -318,35 +247,39 @@ body::after {
 
 @media (prefers-reduced-motion: reduce) {
   .about__panel::after,
-  .page:not(.about)::after {
+  .hhep__panel::after,
+  .page:not(.about):not(.hhep)::after {
     animation: none;
   }
 }
 
-.page:not(.about) {
+.page:not(.about):not(.hhep) {
   align-self: flex-start;
   width: min(100%, 34rem);
 }
 
-.page:not(.about) p:last-child {
+.page:not(.about):not(.hhep) p:last-child {
   margin-bottom: 0;
 }
 
 /* Sin 3D (sin WebGL, ahorro de datos…) la tarjeta no debe estirarse por toda la pantalla */
-html:not(.has-3d) .about__panel {
+html:not(.has-3d) .about__panel,
+html:not(.has-3d) .hhep__panel {
   max-width: 52rem;
 }
 
 /* Perspectiva para el tilt de las tarjetas y las transiciones entre secciones */
 main,
-.about {
+.about,
+.hhep {
   perspective: 1200px;
 }
 
 /* Brillo que sigue al cursor (js/fx.js pone --mx, --my y --glare); va detrás del texto */
 .about__panel::before,
+.hhep__panel::before,
 .skills__list li::before,
-.page:not(.about)::before {
+.page:not(.about):not(.hhep)::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -380,22 +313,26 @@ main,
    El 3D ocupa la pantalla y el texto va en una tarjeta a la derecha (como en el móvil, debajo). */
 
 .has-3d main,
-.has-3d .about {
+.has-3d .about,
+.has-3d .hhep {
   pointer-events: none;
 }
 
 .has-3d .about > *,
-.has-3d .page:not(.about) {
+.has-3d .hhep > *,
+.has-3d .page:not(.about):not(.hhep) {
   pointer-events: auto;
 }
 
 .has-3d .about__panel,
-.has-3d .page:not(.about) {
+.has-3d .hhep__panel,
+.has-3d .page:not(.about):not(.hhep) {
   margin-top: 44vh;
   margin-top: 44svh;
 }
 
-.has-3d .about {
+.has-3d .about,
+.has-3d .hhep {
   gap: 1.5rem;
 }
 
@@ -405,24 +342,27 @@ main,
     max-width: none;
   }
 
-  .has-3d .about {
+  .has-3d .about,
+  .has-3d .hhep {
     grid-template-columns: minmax(0, 1fr) minmax(0, 29rem);
     grid-template-rows: minmax(calc(100svh - 5.5rem), auto) auto;
   }
 
-  .has-3d .about__panel {
+  .has-3d .about__panel,
+  .has-3d .hhep__panel {
     grid-column: 2;
     grid-row: 1;
     align-self: start;
     margin-top: 0;
   }
 
-  .has-3d .about__skills {
+  .has-3d .about__skills,
+  .has-3d .paradigm {
     grid-column: 1 / -1;
     grid-row: 2;
   }
 
-  .has-3d .page:not(.about) {
+  .has-3d .page:not(.about):not(.hhep) {
     align-self: flex-end;
     width: min(100%, 29rem);
     margin-top: 0;
@@ -653,22 +593,22 @@ main,
 @media (forced-colors: active) {
   .scene3d,
   .cursor,
-  .stage,
-  .level-nav {
+  .stage {
     display: none;
   }
 }
 
 @media print {
   .stage,
-  .cursor,
-  .level-nav {
+  .cursor {
     display: none;
   }
 
   .about__panel,
   .about__skills,
-  .page:not(.about) {
+  .hhep__panel,
+  .paradigm__node,
+  .page:not(.about):not(.hhep) {
     border-color: #bbbbbb;
     background: none;
     box-shadow: none;

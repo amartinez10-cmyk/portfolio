@@ -374,8 +374,8 @@
     }
     writeSession(INTRO_KEY, "1");
 
-    // 1. Los controles flotantes del 3D (nivel y ayuda) aparecen con un fundido
-    document.querySelectorAll(".level-nav, .stage__focus, .stage__hint").forEach(function (el) {
+    // 1. Los controles flotantes del 3D (ayuda y botón del PC) aparecen con un fundido
+    document.querySelectorAll(".stage__focus, .stage__hint").forEach(function (el) {
       settle(el.animate([{ opacity: 0, transform: "translateY(14px)" }, { opacity: 1, transform: "none" }],
         { duration: 800, delay: 500, easing: curve("ease-out"), fill: "backwards" }));
     });

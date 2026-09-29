@@ -67,21 +67,23 @@ export function createLevels({ palette, lite, order }) {
     const m2 = P.monitor({ seed: 8, w: 3.5, h: 2 });
     m2.position.set(4.5, top, -6.3);
     m2.rotation.y = -0.12;
+    const mat = P.deskMat({ w: 5.4, d: 2.15, color: C.navy, edge: C.violet });
+    mat.position.set(2.85, top, -5.1);
     const kb = P.keyboard();
-    kb.position.set(2.7, top, -4.7);
+    kb.position.set(2.5, top + 0.05, -4.75);
     const mouse = P.mouse();
-    mouse.position.set(4.6, top, -4.6);
+    mouse.position.set(4.6, top + 0.05, -4.7);
     const lamp = P.deskLamp({ color: C.coral });
     lamp.position.set(6.55, top, -6.1);
     lamp.rotation.y = -0.5;
     const mug = P.mug({ color: C.yellow });
     mug.position.set(-0.35, top, -4.9);
-    const cactus = P.plant({ kind: "cactus", size: 0.55, pot: C.white });
-    cactus.position.set(-0.9, top, -6.3);
+    const cactus = P.plants.barrel({ size: 0.75, pot: C.white });
+    cactus.position.set(-0.85, top, -6.25);
     const phones = P.headphones({ color: C.pink });
-    phones.position.set(6.1, top, -4.5);
-    phones.rotation.y = 0.6;
-    [m1, m2, kb, mouse, lamp, mug, cactus, phones].forEach((o) => root.add(o));
+    phones.position.set(6.15, top, -4.35);
+    phones.rotation.y = -0.5;
+    [mat, m1, m2, kb, mouse, lamp, mug, cactus, phones].forEach((o) => root.add(o));
 
     const chair = P.chair({ color: C.violet, trim: C.white });
     chair.position.set(4.9, 0, -2.4);
@@ -89,7 +91,7 @@ export function createLevels({ palette, lite, order }) {
     root.add(chair);
 
     // Estantería y lámpara contra la pared izquierda
-    const shelfPlant = P.plant({ size: 0.5, pot: C.pink });
+    const shelfPlant = P.plants.pothos({ size: 0.55, pot: C.pink });
     const shelfBooks = P.books({ n: 4, seed: 7 });
     const shelf = P.bookshelf({ w: 6.6, h: 4.2, rows: 3, seed: 3, items: [] });
     shelf.position.set(-6.2, 0, -1.6);
@@ -101,7 +103,7 @@ export function createLevels({ palette, lite, order }) {
     const floorLamp = P.floorLamp({ shade: C.yellow });
     floorLamp.position.set(-5.9, 0, -6.0);
     root.add(floorLamp);
-    const bush = P.plant({ size: 1.2, pot: C.white });
+    const bush = P.plants.monstera({ size: 1.05, pot: C.white });
     bush.position.set(-5.6, 0, 4.9);
     root.add(bush);
 
@@ -150,7 +152,7 @@ export function createLevels({ palette, lite, order }) {
 
   // Los títulos de las paredes salen del menú, en el idioma actual
   function setTitles(dict) {
-    items.forEach((it) => it.room.setTitle(String(it.index + 1).padStart(2, "0"), dict["nav." + it.id] || ""));
+    items.forEach((it) => it.room.setTitle(dict["nav." + it.id] || ""));
   }
 
   function dispose() {

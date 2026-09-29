@@ -253,32 +253,40 @@ export function createProps2(kit, base) {
     return g;
   };
 
-  // Franjas amarillas y negras (zona de aterrizaje del dron)
-  let hazard = null;
-  function hazardMat() {
-    if (hazard) return hazard;
-    const tex = canvasTex(128, 128, (c, w, h) => {
-      c.fillStyle = hex(C.yellow);
-      c.fillRect(0, 0, w, h);
-      c.fillStyle = hex(C.ink);
-      for (let i = -2; i < 6; i++) {
-        c.beginPath();
-        c.moveTo(i * 32, 0); c.lineTo(i * 32 + 16, 0); c.lineTo(i * 32 + 16 + h, h); c.lineTo(i * 32 + h, h);
-        c.fill();
-      }
-    }, [3, 1]);
-    hazard = mat(0xffffff, { map: tex, rough: 0.7 });
-    return hazard;
+  // Franjas amarillas y negras (zona de aterrizaje del dron): cada tira lleva su propia repetición
+  // de la textura para que las rayas midan lo mismo en todas
+  let hazardTex = null;
+  function hazardMat(length) {
+    if (!hazardTex) {
+      hazardTex = canvasTex(128, 128, (c, w, h) => {
+        c.fillStyle = hex(C.yellow);
+        c.fillRect(0, 0, w, h);
+        c.fillStyle = hex(C.ink);
+        for (let i = -3; i < 6; i++) {
+          c.beginPath();
+          c.moveTo(i * 40, 0); c.lineTo(i * 40 + 20, 0); c.lineTo(i * 40 + 20 + h, h); c.lineTo(i * 40 + h, h);
+          c.fill();
+        }
+      });
+    }
+    const t = hazardTex.clone();
+    t.needsUpdate = true;
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.repeat.set(Math.max(1, Math.round(length / 0.9)), 1);
+    return mat(0xffffff, { map: t, rough: 0.7 });
   }
 
   Q.landingPad = ({ s = 5 } = {}) => {
     const g = grp();
-    const hz = hazardMat();
     rbox(s, 0.18, s, C.white, 0, 0.09, 0, g, 0.08);
-    [[0, s / 2 - 0.2, s, 0.4], [0, -s / 2 + 0.2, s, 0.4], [s / 2 - 0.2, 0, 0.4, s - 0.8], [-s / 2 + 0.2, 0, 0.4, s - 0.8]].forEach(([x, z, w, d]) => {
-      rbox(w, 0.06, d, hz, x, 0.2, z, g, 0.02);
+    [[0, s / 2 - 0.22, s - 0.1, 0.44], [0, -s / 2 + 0.22, s - 0.1, 0.44], [s / 2 - 0.22, 0, 0.44, s - 0.9], [-s / 2 + 0.22, 0, 0.44, s - 0.9]].forEach(([x, z, w, d]) => {
+      const long = Math.max(w, d);
+      const strip = rbox(w, 0.06, d, hazardMat(long), x, 0.2, z, g, 0.02);
+      if (d > w) strip.rotation.y = 0;
     });
-    const ringM = torus(s * 0.32, 0.12, C.yellow, 0, 0.22, 0, g, true);
+    torus(s * 0.3, 0.12, C.yellow, 0, 0.22, 0, g, true);
+    // La "H" del helipuerto
+    [[-0.55, 0, 0.22, 1.5], [0.55, 0, 0.22, 1.5], [0, 0, 1.3, 0.22]].forEach(([x, z, w, d]) => rbox(w, 0.05, d, C.yellow, x, 0.22, z, g, 0.02));
     return g;
   };
 
@@ -473,24 +481,59 @@ export function createProps2(kit, base) {
     return g;
   };
 
-  // Brújula sobre el suelo: aro, marcas y una aguja que se orienta despacio
+  // Brújula sobre el suelo: esfera con rosa de los vientos, marcas y una aguja que se orienta despacio
   Q.compass = ({ r = 2.8 } = {}) => {
     const g = grp();
     cyl(r, r, 0.16, C.white, 0, 0.09, 0, g, 44).castShadow = false;
     torus(r - 0.08, 0.1, C.yellow, 0, 0.2, 0, g, true);
-    for (let i = 0; i < 12; i++) {
-      const a = (i / 12) * Math.PI * 2;
-      const tick = box(i % 3 === 0 ? 0.16 : 0.08, 0.05, i % 3 === 0 ? 0.55 : 0.32, C.navy, Math.sin(a) * (r - 0.55), 0.19, Math.cos(a) * (r - 0.55), g);
-      tick.rotation.y = a;
-    }
-    const needle = grp(0, 0.28, 0, g);
-    const n1 = cone(0.32, r * 0.95, C.red, 0, 0, -r * 0.42, needle, 4);
+    const face = canvasTex(512, 512, (c, w, h) => {
+      c.clearRect(0, 0, w, h);
+      const cx = w / 2;
+      const cy = h / 2;
+      // Marcas de los grados
+      for (let i = 0; i < 72; i++) {
+        const a = (i / 72) * Math.PI * 2;
+        const long = i % 9 === 0;
+        c.strokeStyle = long ? hex(C.navy) : "rgba(74,58,153,0.55)";
+        c.lineWidth = long ? 6 : 3;
+        c.beginPath();
+        c.moveTo(cx + Math.sin(a) * (long ? 200 : 214), cy - Math.cos(a) * (long ? 200 : 214));
+        c.lineTo(cx + Math.sin(a) * 236, cy - Math.cos(a) * 236);
+        c.stroke();
+      }
+      // Rosa de los vientos de ocho puntas
+      for (let i = 0; i < 8; i++) {
+        const a = (i / 8) * Math.PI * 2;
+        const len = i % 2 ? 100 : 165;
+        c.fillStyle = i % 2 ? "rgba(139,108,255,0.55)" : hex(C.violet);
+        c.beginPath();
+        c.moveTo(cx + Math.sin(a) * len, cy - Math.cos(a) * len);
+        c.lineTo(cx + Math.sin(a + 0.28) * 34, cy - Math.cos(a + 0.28) * 34);
+        c.lineTo(cx + Math.sin(a - 0.28) * 34, cy - Math.cos(a - 0.28) * 34);
+        c.closePath();
+        c.fill();
+      }
+      // Puntos cardinales
+      c.font = '800 54px "Outfit", "Segoe UI", system-ui, sans-serif';
+      c.textAlign = "center";
+      c.textBaseline = "middle";
+      [["N", 0], ["E", 1], ["S", 2], ["O", 3]].forEach(([t, k]) => {
+        const a = k * Math.PI / 2;
+        c.fillStyle = t === "N" ? hex(C.red) : hex(C.navy);
+        c.fillText(t, cx + Math.sin(a) * 178, cy - Math.cos(a) * 178);
+      });
+    });
+    const d = decal(face, r * 1.88, r * 1.88, 0, 0.19, 0, g);
+    d.rotation.x = -Math.PI / 2;
+    const needle = grp(0, 0.3, 0, g);
+    const n1 = cone(0.3, r * 0.9, C.red, 0, 0, -r * 0.4, needle, 4);
     n1.rotation.x = -Math.PI / 2;
     n1.rotation.y = Math.PI / 4;
-    const n2 = cone(0.32, r * 0.95, C.white, 0, 0, r * 0.42, needle, 4);
+    n1.scale.y = 1;
+    const n2 = cone(0.3, r * 0.9, C.white, 0, 0, r * 0.4, needle, 4);
     n2.rotation.x = Math.PI / 2;
     n2.rotation.y = Math.PI / 4;
-    ball(0.16, C.gold, 0, 0.08, 0, needle);
+    ball(0.17, C.gold, 0, 0.06, 0, needle);
     g.userData.tick = (t) => { needle.rotation.y = Math.sin(t * 0.5) * 0.7 + t * 0.06; };
     return g;
   };

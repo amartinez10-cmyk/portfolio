@@ -114,6 +114,30 @@ export function createKit({ lite = false } = {}) {
     return g;
   }
 
+  // Barra (cilindro) entre dos puntos: brazos de lámpara, patas de trípode, ramitas…
+  // r2 = radio en el extremo B (por defecto, igual que en A)
+  const UP = new THREE.Vector3(0, 1, 0);
+  const tmpA = new THREE.Vector3();
+  const tmpB = new THREE.Vector3();
+  function bar(a, b, r, c, parent, s = 10, r2 = r) {
+    tmpA.set(a[0], a[1], a[2]);
+    tmpB.set(b[0], b[1], b[2]);
+    const len = tmpA.distanceTo(tmpB);
+    const m = put(
+      new THREE.Mesh(geo(`bar${r},${r2},${len.toFixed(3)},${s}`, () => new THREE.CylinderGeometry(r2, r, len, s)), asMat(c)),
+      (a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2, parent
+    );
+    m.quaternion.setFromUnitVectors(UP, tmpB.sub(tmpA).normalize());
+    return m;
+  }
+
+  // Pieza de revolución a partir de un perfil [[radio, altura], …] (vasos, macetas, tazas…)
+  function lathe(profile, c, x, y, z, parent, s = seg, side) {
+    const pts = profile.map((p) => new THREE.Vector2(p[0], p[1]));
+    const material = side !== undefined ? mat(c, { side }) : asMat(c);
+    return put(new THREE.Mesh(new THREE.LatheGeometry(pts, s), material), x, y, z, parent);
+  }
+
   // Suelo de la habitación, las piezas que cuelgan de la pared… cualquier malla propia
   function mesh(geometry, material, x, y, z, parent, shadow = true) {
     return put(new THREE.Mesh(geometry, asMat(material)), x, y, z, parent, shadow);
@@ -213,7 +237,7 @@ export function createKit({ lite = false } = {}) {
   }
 
   return {
-    C, lite, seg, mat, glow, asMat, box, rbox, cyl, cone, ball, torus, plane, grp, mesh,
+    C, lite, seg, mat, glow, asMat, box, rbox, cyl, cone, ball, torus, plane, grp, mesh, bar, lathe,
     canvasTex, redraw, decal, screen, roundRect, halo, dispose
   };
 }

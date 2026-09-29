@@ -151,6 +151,7 @@
 
   // Funciona con ratón y con dedo; solo se apaga con "reducir movimiento"
   var scrollQueued = 0;
+  var CARDS = ".skills__list li, .paradigm__node, .paradigm__hub";
 
   // 0 cuando la tarjeta asoma por abajo, 1 cuando ha subido hasta quedar del todo dentro.
   // Al llegar al final de la página todas quedan en 1 (si no, las de la última fila, que ya no
@@ -168,9 +169,19 @@
     scrollQueued = 0;
     if (reduceMotion.matches) return;
     root.style.setProperty("--sy", window.scrollY.toFixed(1));
-    var cards = document.querySelectorAll(".skills__list li");
+    // Tarjetas de habilidades y del paradigma personal: entran desde atrás según el scroll
+    var cards = document.querySelectorAll(CARDS);
     for (var i = 0; i < cards.length; i++) {
       cards[i].style.setProperty("--p", entryProgress(cards[i], i % 4).toFixed(3));
+    }
+    // Las líneas del mapa del paradigma aparecen con la primera tarjeta que llega
+    var map = document.querySelector(".paradigm__map");
+    if (map) {
+      var maxP = 0;
+      map.querySelectorAll(".paradigm__node").forEach(function (n) {
+        maxP = Math.max(maxP, parseFloat(n.style.getPropertyValue("--p")) || 0);
+      });
+      map.style.setProperty("--map-p", maxP.toFixed(3));
     }
   }
 
@@ -180,7 +191,9 @@
 
   function resetScroll() {
     root.style.removeProperty("--sy");
-    document.querySelectorAll(".skills__list li").forEach(function (li) { li.style.removeProperty("--p"); });
+    document.querySelectorAll(CARDS).forEach(function (li) { li.style.removeProperty("--p"); });
+    var map = document.querySelector(".paradigm__map");
+    if (map) map.style.removeProperty("--map-p");
   }
 
   /* ---------- Bucle único ---------- */

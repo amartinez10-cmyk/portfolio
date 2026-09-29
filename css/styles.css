@@ -25,7 +25,7 @@
   --accent: #9b7bff;
   --accent-2: #ffc247;
   --accent-3: #ff7eb6;
-  --level-accent: #8b6cff;   /* lo cambia js/level-nav.js según el nivel */
+  --level-accent: #8b6cff;   /* lo cambia js/section-theme.js según la sección */
 
   --glass: rgba(30, 20, 84, 0.55);
   --glass-strong: rgba(22, 14, 62, 0.8);
@@ -242,39 +242,10 @@ main {
   line-height: 1.65;
 }
 
-/* Etiqueta "NIVEL 02" de cada tarjeta */
-.page .level-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  max-width: none;
-  margin: 0 0 1.1rem;
-  padding: 0.35rem 0.85rem 0.35rem 0.7rem;
-  border: 1px solid color-mix(in srgb, var(--level-accent) 60%, transparent);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--level-accent) 22%, transparent);
-  font: 600 0.7rem/1 var(--display);
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: #fff;
-}
-
-.level-tag::before {
-  content: "";
-  width: 0.5rem;
-  height: 0.5rem;
-  border-radius: 50%;
-  background: var(--level-accent);
-  box-shadow: 0 0 0.8rem var(--level-accent);
-}
-
-.level-tag b {
-  font-weight: 800;
-}
-
 /* ---------- Sobre mí ---------- */
 
-.about {
+.about,
+.hhep {
   flex: 1;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -312,8 +283,17 @@ main {
   line-height: 1.4;
 }
 
-.about__body p:last-child {
+.about__body p:last-child,
+.hhep__def {
   margin-bottom: 0;
+}
+
+.page .hhep__def {
+  margin-top: 1rem;
+  padding-left: 0.9rem;
+  border-left: 3px solid var(--level-accent);
+  color: var(--muted);
+  font-size: 0.875rem;
 }
 
 /* Habilidades: un escaparate de tarjetas debajo de la presentación (el aspecto de cada
@@ -396,7 +376,6 @@ main {
 /* El <head> pone esta clase hasta que main.js lanza la entrada */
 .intro-pending .site-header,
 .intro-pending main,
-.intro-pending .level-nav,
 .intro-pending .stage__focus,
 .intro-pending .stage__hint {
   opacity: 0;

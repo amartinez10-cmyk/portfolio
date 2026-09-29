@@ -6,10 +6,12 @@
  */
 import * as THREE from "three";
 import { rng } from "./journey-kit.js";
+import { createPlants } from "./journey-plants.js";
 
 export function createProps(kit) {
-  const { C, box, rbox, cyl, cone, ball, torus, plane, grp, mat, glow, canvasTex, decal, screen, roundRect, mesh, halo } = kit;
+  const { C, box, rbox, cyl, cone, ball, torus, plane, grp, mat, glow, canvasTex, decal, screen, roundRect, mesh, halo, bar, lathe } = kit;
   const P = {};
+  P.plants = createPlants(kit);      // monstera, ficus lira, arbusto redondo, suculenta, cactus, potos…
   const hex = (n) => "#" + n.toString(16).padStart(6, "0");
 
   /* ---------- Texturas de pantallas y cuadros ---------- */
@@ -94,28 +96,44 @@ export function createProps(kit) {
     return g;
   };
 
-  // Silla de oficina / gaming. Mira a +Z.
+  // Silla gaming / de oficina con respaldo inclinado, alas laterales, cojines, reposabrazos, pistón y base
+  // de cinco brazos con ruedas. Mira a +Z.
   P.chair = ({ color = C.violet, trim = C.white, gaming = true } = {}) => {
     const g = grp();
     const swivel = grp(0, 0, 0, g);
-    rbox(2, 0.4, 2, color, 0, 1.75, 0, swivel, 0.16);
-    const back = rbox(2, gaming ? 2.9 : 2.2, 0.42, color, 0, gaming ? 3.35 : 3.0, -0.9, swivel, 0.18);
-    back.rotation.x = -0.1;
-    if (gaming) {
-      rbox(1.2, 0.7, 0.36, trim, 0, 4.55, -1.0, swivel, 0.14).rotation.x = -0.1;
-      rbox(0.22, 2.3, 0.46, trim, -0.72, 3.25, -0.86, swivel, 0.08).rotation.x = -0.1;
-      rbox(0.22, 2.3, 0.46, trim, 0.72, 3.25, -0.86, swivel, 0.08).rotation.x = -0.1;
-    }
-    [-1.15, 1.15].forEach((x) => {
-      rbox(0.3, 0.26, 1.5, trim, x, 2.55, 0.05, swivel, 0.08);
-      rbox(0.2, 0.8, 0.2, C.ink, x, 2.15, -0.3, swivel, 0.06);
+    const dark = new THREE.Color(color).offsetHSL(0, 0, -0.1).getHex();
+    const seatY = 1.9;
+    // Asiento: base, centro más claro y dos alas laterales
+    rbox(2.15, 0.44, 2.05, color, 0, seatY, 0.05, swivel, 0.2);
+    rbox(1.2, 0.1, 1.55, trim, 0, seatY + 0.21, 0.18, swivel, 0.05);
+    [-1, 1].forEach((sd) => rbox(0.34, 0.34, 1.95, dark, sd * 0.93, seatY + 0.16, 0.05, swivel, 0.15));
+    // Respaldo inclinado hacia atrás
+    const back = grp(0, seatY + 0.22, -0.92, swivel);
+    back.rotation.x = -0.14;
+    const bh = gaming ? 3.1 : 2.3;
+    rbox(1.95, bh, 0.42, color, 0, bh / 2 + 0.05, 0, back, 0.22);
+    rbox(0.5, bh * 0.82, 0.07, trim, 0, bh * 0.5, 0.23, back, 0.03);
+    [-1, 1].forEach((sd) => rbox(0.36, bh * 0.66, 0.56, dark, sd * 0.84, bh * 0.44, 0.06, back, 0.16));
+    rbox(1.15, 0.5, 0.32, trim, 0, bh * 0.3, 0.32, back, 0.16);      // cojín lumbar
+    if (gaming) rbox(1.05, 0.62, 0.34, trim, 0, bh + 0.28, 0.14, back, 0.18);   // cojín del cuello
+    // Reposabrazos
+    [-1, 1].forEach((sd) => {
+      rbox(0.22, 0.95, 0.24, C.ink, sd * 1.22, seatY + 0.55, -0.2, swivel, 0.07);
+      rbox(0.36, 0.15, 1.25, C.ink, sd * 1.22, seatY + 1.06, 0.1, swivel, 0.07);
     });
-    cyl(0.2, 0.2, 1.05, C.ink, 0, 1.15, 0, swivel, 14);
+    // Pistón, tapa y base de cinco brazos con ruedas
+    cyl(0.34, 0.26, 0.42, C.ink, 0, seatY - 0.4, 0, swivel, 18);
+    cyl(0.14, 0.14, 1.05, C.steel, 0, 1.15, 0, swivel, 14);
+    cyl(0.32, 0.4, 0.3, C.ink, 0, 0.62, 0, swivel, 18);
     for (let i = 0; i < 5; i++) {
       const a = (i / 5) * Math.PI * 2;
-      const leg = rbox(1.6, 0.16, 0.24, C.ink, Math.cos(a) * 0.8, 0.45, Math.sin(a) * 0.8, swivel, 0.06);
-      leg.rotation.y = -a;
-      ball(0.2, C.navy, Math.cos(a) * 1.55, 0.2, Math.sin(a) * 1.55, swivel);
+      bar([0, 0.6, 0], [Math.cos(a) * 1.5, 0.36, Math.sin(a) * 1.5], 0.12, C.ink, swivel, 10, 0.09);
+      const wx = Math.cos(a) * 1.55;
+      const wz = Math.sin(a) * 1.55;
+      cyl(0.09, 0.09, 0.2, C.steel, wx, 0.3, wz, swivel, 8);
+      const wheel = cyl(0.19, 0.19, 0.16, C.navy, wx, 0.19, wz, swivel, 14);
+      wheel.rotation.z = Math.PI / 2;
+      wheel.rotation.y = -a;
     }
     g.userData.swivel = swivel;
     return g;
@@ -185,76 +203,223 @@ export function createProps(kit) {
 
   /* ---------- Electrónica ---------- */
 
-  // Monitor con soporte. Mira a +Z.
+  // Monitor de marco fino con carcasa trasera, cuello inclinado y peana ovalada. Mira a +Z.
+  let sheenTex = null;
   P.monitor = ({ w = 3.7, h = 2.1, seed = 5, bezel = C.ink, tex } = {}) => {
     const g = grp();
-    rbox(w, h, 0.2, bezel, 0, 1.15 + h / 2, 0, g, 0.1);
+    const y0 = 1.08;
+    const cy = y0 + h / 2;
+    rbox(w, h, 0.13, bezel, 0, cy, 0, g, 0.06);                                   // marco fino
+    rbox(w * 0.6, h * 0.62, 0.17, 0x241f52, 0, cy + 0.04, -0.13, g, 0.07);       // abultamiento trasero
     const t = tex || codeTex(seed, false);
-    const s = screen(t, w - 0.26, h - 0.26, 0, 1.15 + h / 2, 0.11, g);
+    const s = screen(t, w - 0.17, h - 0.19, 0, cy + 0.015, 0.07, g);
     g.userData.screen = s;
     g.userData.tick = (time) => { if (!tex) t.offset.y = (time * 0.03) % 1; };
-    cyl(0.14, 0.18, 0.95, C.navy, 0, 0.72, -0.05, g, 12);
-    rbox(1.6, 0.14, 1.0, C.navy, 0, 0.18, 0.05, g, 0.06);
+    if (!sheenTex) {
+      sheenTex = canvasTex(128, 128, (c, ww, hh) => {
+        const grad = c.createLinearGradient(0, 0, ww, hh);
+        grad.addColorStop(0, "rgba(255,255,255,0.0)");
+        grad.addColorStop(0.35, "rgba(255,255,255,0.13)");
+        grad.addColorStop(0.5, "rgba(255,255,255,0.03)");
+        grad.addColorStop(1, "rgba(255,255,255,0.0)");
+        c.fillStyle = grad;
+        c.fillRect(0, 0, ww, hh);
+      });
+    }
+    decal(sheenTex, w - 0.17, h - 0.19, 0, cy + 0.015, 0.075, g);                 // reflejo en el cristal
+    ball(0.035, glow(0x66ffb0), w / 2 - 0.35, y0 + 0.055, 0.07, g).castShadow = false;   // led de encendido
+    // Soporte: cuello algo inclinado hacia atrás y peana ovalada
+    const neck = rbox(0.34, 1.1, 0.1, C.steel, 0, y0 - 0.38, -0.2, g, 0.05);
+    neck.rotation.x = 0.08;
+    rbox(0.5, 0.42, 0.14, C.steel, 0, y0 + 0.12, -0.12, g, 0.06);
+    const base = cyl(1.0, 1.0, 0.07, C.steel, 0, 0.035, -0.02, g, 32);
+    base.scale.set(1, 1, 0.6);
     return g;
   };
 
-  P.keyboard = ({ color = C.white } = {}) => {
-    const g = grp();
-    rbox(2.3, 0.14, 0.78, color, 0, 0.07, 0, g, 0.06);
-    const keys = canvasTex(256, 96, (c, w, h) => {
+  // Teclado con teclas de verdad (6 filas, letras y modificadores), algo inclinado y con tira RGB.
+  let keysTexture = null;
+  function keysTex() {
+    if (keysTexture) return keysTexture;
+    keysTexture = canvasTex(1536, 624, (c, w, h) => {
       c.clearRect(0, 0, w, h);
-      const rows = 4;
-      for (let r = 0; r < rows; r++) {
-        const n = 14 - (r === 3 ? 4 : 0);
+      const u = w / 15.2;
+      const gap = u * 0.09;
+      const font = '600 ' + Math.round(u * 0.34) + 'px "Outfit", "Segoe UI", system-ui, sans-serif';
+      // Definición sencilla: [texto, ancho en unidades, tono]
+      const layout = [
+        { y: 0.0, h: 0.8, keys: [["Esc", 1, 1], [null, 0.55], ["F1", 1], ["F2", 1], ["F3", 1], ["F4", 1], [null, 0.35], ["F5", 1], ["F6", 1], ["F7", 1], ["F8", 1], [null, 0.35], ["F9", 1], ["F10", 1], ["F11", 1], ["F12", 1], [null, 0.4], ["Del", 1.15, 1]] },
+        { y: 1.05, h: 1, keys: "` 1 2 3 4 5 6 7 8 9 0 - =".split(" ").map((t) => [t, 1]).concat([["⌫", 2, 1]]) },
+        { y: 2.1, h: 1, keys: [["Tab", 1.5, 1]].concat("Q W E R T Y U I O P [ ]".split(" ").map((t) => [t, 1]), [["\\", 1.5]]) },
+        { y: 3.15, h: 1, keys: [["Caps", 1.75, 1]].concat("A S D F G H J K L ; '".split(" ").map((t) => [t, 1]), [["Enter", 2.25, 1]]) },
+        { y: 4.2, h: 1, keys: [["Shift", 2.25, 1]].concat("Z X C V B N M , . /".split(" ").map((t) => [t, 1]), [["Shift", 2.75, 1]]) },
+        { y: 5.25, h: 1, keys: [["Ctrl", 1.25, 1], ["Win", 1.25, 1], ["Alt", 1.25, 1], ["", 6.25], ["Alt", 1.25, 1], ["Fn", 1.25, 1], ["Ctrl", 1.25, 1], [null, 0.0]] }
+      ];
+      layout.forEach((row) => {
+        let x = 0;
+        row.keys.forEach(([label, wu, dark]) => {
+          if (label === null) { x += wu; return; }
+          const kx = x * u + gap / 2;
+          const ky = row.y * u + gap / 2;
+          const kw = wu * u - gap;
+          const kh = row.h * u - gap;
+          // sombra, cuerpo de la tecla y brillo del borde superior
+          c.fillStyle = "rgba(30,20,90,0.35)";
+          roundRect(c, kx, ky + u * 0.05, kw, kh, u * 0.14); c.fill();
+          c.fillStyle = dark ? hex(C.lilac) : "#f7f4ff";
+          roundRect(c, kx, ky, kw, kh - u * 0.04, u * 0.14); c.fill();
+          c.fillStyle = dark ? "rgba(255,255,255,0.22)" : "rgba(255,255,255,0.9)";
+          roundRect(c, kx + u * 0.06, ky + u * 0.05, kw - u * 0.12, kh * 0.5, u * 0.1); c.fill();
+          if (label) {
+            c.fillStyle = dark ? "#2a2361" : "#4a3a99";
+            c.font = font;
+            c.textAlign = "center";
+            c.textBaseline = "middle";
+            c.fillText(label, kx + kw / 2, ky + kh / 2 - u * 0.03);
+          }
+          x += wu;
+        });
+      });
+    });
+    return keysTexture;
+  }
+
+  P.keyboard = ({ color = C.white, rgb = 0xff7eb6 } = {}) => {
+    const g = grp();
+    const body = grp(0, 0, 0, g);
+    body.rotation.x = 0.06;
+    rbox(2.7, 0.2, 1.12, color, 0, 0.13, 0, body, 0.08);
+    rbox(2.56, 0.05, 0.98, 0x3b3380, 0, 0.245, 0, body, 0.04);
+    const keys = decal(keysTex(), 2.48, 1.0, 0, 0.275, 0.02, body);
+    keys.rotation.x = -Math.PI / 2;
+    box(2.6, 0.025, 0.03, glow(rgb), 0, 0.09, 0.57, body).castShadow = false;
+    return g;
+  };
+
+  // Ratón ergonómico: cuerpo ovalado, botones separados, rueda y franja de color. Los botones miran a -Z.
+  P.mouse = ({ color = C.white, accent = C.violet } = {}) => {
+    const g = grp();
+    const body = mesh(new THREE.SphereGeometry(1, 28, 18), color, 0, 0.06, 0, g);
+    body.scale.set(0.33, 0.2, 0.52);
+    box(0.014, 0.012, 0.3, 0x2a2361, 0, 0.255, -0.26, g).castShadow = false;
+    box(0.5, 0.012, 0.014, 0x2a2361, 0, 0.245, -0.11, g).castShadow = false;
+    const wheel = cyl(0.045, 0.045, 0.07, accent, 0, 0.27, -0.2, g, 12);
+    wheel.rotation.z = Math.PI / 2;
+    [-1, 1].forEach((sd) => box(0.012, 0.06, 0.24, accent, sd * 0.31, 0.11, 0.04, g).castShadow = false);
+    return g;
+  };
+
+  // Alfombrilla grande de escritorio, con borde cosido
+  P.deskMat = ({ w = 5.6, d = 2.2, color = C.navy, edge = C.violet } = {}) => {
+    const g = grp();
+    rbox(w, 0.05, d, edge, 0, 0.025, 0, g, 0.03).castShadow = false;
+    rbox(w - 0.14, 0.055, d - 0.14, color, 0, 0.03, 0, g, 0.03).castShadow = false;
+    g.userData.noHover = true;
+    return g;
+  };
+
+  // Portátil de aluminio: base fina con teclado y trackpad, bisagra, tapa con marco negro y cámara
+  let deckTexture = null;
+  function deckTex() {
+    if (deckTexture) return deckTexture;
+    deckTexture = canvasTex(768, 384, (c, w, h) => {
+      c.fillStyle = "rgba(0,0,0,0)";
+      c.clearRect(0, 0, w, h);
+      const rows = [14, 14, 13, 12, 11];
+      rows.forEach((n, r) => {
+        const kw = (w - 60) / 14;
+        const off = (14 - n) * kw / 2;
         for (let i = 0; i < n; i++) {
-          c.fillStyle = (i + r) % 5 === 0 ? hex(C.lilac) : hex(C.grey);
-          const kw = r === 3 && i === 4 ? 100 : 15;
-          if (r === 3 && i > 4) break;
-          roundRect(c, 8 + i * 17.2 + (r === 3 && i > 4 ? 90 : 0), 8 + r * 21, kw, 15, 4);
-          c.fill();
+          c.fillStyle = "rgba(60,50,120,0.35)";
+          roundRect(c, 30 + off + i * kw + 3, 24 + r * 38 + 3, kw - 6, 32, 6); c.fill();
+          c.fillStyle = "#3a3170";
+          roundRect(c, 30 + off + i * kw + 3, 24 + r * 38, kw - 6, 32, 6); c.fill();
         }
-      }
+      });
+      c.fillStyle = "rgba(255,255,255,0.14)";
+      roundRect(c, w / 2 - 110, 230, 220, 120, 12); c.fill();
+      c.strokeStyle = "rgba(255,255,255,0.28)";
+      c.lineWidth = 2;
+      roundRect(c, w / 2 - 110, 230, 220, 120, 12); c.stroke();
     });
-    const d = decal(keys, 2.1, 0.7, 0, 0.16, 0, g);
-    d.rotation.x = -Math.PI / 2;
-    return g;
-  };
+    return deckTexture;
+  }
 
-  P.mouse = ({ color = C.white } = {}) => {
+  P.laptop = ({ tilt = 0.3, seed = 9, color = C.steel } = {}) => {
     const g = grp();
-    const m = rbox(0.5, 0.2, 0.8, color, 0, 0.1, 0, g, 0.18);
-    rbox(0.06, 0.05, 0.22, C.violet, 0, 0.21, -0.12, g, 0.02);
+    rbox(2.7, 0.1, 1.85, color, 0, 0.06, 0, g, 0.05);
+    const deck = decal(deckTex(), 2.4, 1.2, 0, 0.115, -0.15, g);
+    deck.rotation.x = -Math.PI / 2;
+    cyl(0.05, 0.05, 2.3, 0xaba6cf, 0, 0.11, -0.9, g, 8).rotation.z = Math.PI / 2;          // bisagra
+    const lid = grp(0, 0.11, -0.9, g);
+    lid.rotation.x = -tilt;      // la tapa se inclina un poco hacia atrás desde la vertical
+    rbox(2.7, 1.8, 0.07, color, 0, 0.92, 0, lid, 0.05);
+    rbox(2.6, 1.7, 0.02, 0x14102e, 0, 0.92, 0.04, lid, 0.03);                                  // marco negro
+    screen(codeTex(seed, true), 2.44, 1.52, 0, 0.9, 0.056, lid);
+    ball(0.025, 0x222244, 0, 1.75, 0.055, lid).castShadow = false;                            // cámara
     return g;
   };
 
-  P.laptop = ({ open = 1.7, seed = 9, color = C.steel } = {}) => {
-    const g = grp();
-    rbox(2.6, 0.13, 1.8, color, 0, 0.07, 0, g, 0.06);
-    const lid = grp(0, 0.13, -0.85, g);
-    lid.rotation.x = -open;
-    rbox(2.6, 1.75, 0.1, color, 0, 0.87, 0, lid, 0.06);
-    screen(codeTex(seed, true), 2.34, 1.5, 0, 0.87, 0.06, lid);
-    const kb = canvasTex(128, 64, (c, w, h) => {
-      for (let r = 0; r < 4; r++) for (let i = 0; i < 12; i++) { c.fillStyle = hex(C.grey); roundRect(c, 4 + i * 10, 6 + r * 13, 8, 10, 2); c.fill(); }
-    });
-    const d = decal(kb, 2.2, 0.85, 0, 0.145, 0.2, g);
-    d.rotation.x = -Math.PI / 2;
-    return g;
-  };
-
+  // Cascos cerrados colgados de su soporte: diadema acolchada, arcos, auriculares con almohadillas.
   P.headphones = ({ color = C.coral } = {}) => {
     const g = grp();
-    torus(0.55, 0.09, color, 0, 0.6, 0, g).scale.set(1, 1.1, 1);
-    [-1, 1].forEach((s) => rbox(0.3, 0.55, 0.5, color, s * 0.55, 0.32, 0, g, 0.12));
-    g.rotation.x = -0.1;
+    const light = new THREE.Color(color).offsetHSL(0, 0, 0.16).getHex();
+    // Soporte
+    cyl(0.5, 0.56, 0.1, C.navy, 0, 0.05, 0, g, 28);
+    bar([0, 0.08, 0], [0, 1.85, 0], 0.05, C.steel, g, 10);
+    const cap = ball(0.15, C.navy, 0, 1.92, 0, g);
+    cap.scale.y = 0.7;
+    // Cascos: el punto más alto de la diadema apoya en el soporte
+    const hp = grp(0, 2.04, 0, g);
+    const R = 0.66;
+    const band = mesh(new THREE.TorusGeometry(R, 0.06, 10, 40, Math.PI * 1.06), color, 0, -R, 0, hp);
+    band.rotation.z = Math.PI * -0.03;
+    band.scale.z = 2.3;
+    const pad = mesh(new THREE.TorusGeometry(R - 0.03, 0.075, 10, 24, Math.PI * 0.42), C.cream, 0, -R, 0, hp);
+    pad.rotation.z = Math.PI / 2 - Math.PI * 0.21;
+    pad.scale.z = 2.0;
+    [-1, 1].forEach((sd) => {
+      // Arco y auricular, ligeramente girado hacia dentro
+      rbox(0.07, 0.42, 0.15, 0xaba6cf, sd * (R + 0.02), -R - 0.2, 0, hp, 0.03);
+      const cup = grp(sd * (R + 0.06), -R - 0.6, 0, hp);
+      cup.rotation.z = -sd * 0.12;
+      const shell = cyl(0.43, 0.43, 0.26, color, 0, 0, 0, cup, 32);
+      shell.rotation.z = Math.PI / 2;
+      const plate = cyl(0.33, 0.33, 0.05, light, sd * 0.15, 0, 0, cup, 32);
+      plate.rotation.z = Math.PI / 2;
+      const ring = torus(0.27, 0.022, glow(0xffffff), sd * 0.18, 0, 0, cup);
+      ring.rotation.y = Math.PI / 2;
+      ring.castShadow = false;
+      const cushion = torus(0.34, 0.11, C.cream, -sd * 0.2, 0, 0, cup);
+      cushion.rotation.y = Math.PI / 2;
+    });
     return g;
   };
 
+  // Taza de cerámica hueca con café dentro y asa
   P.mug = ({ color = C.white } = {}) => {
     const g = grp();
-    cyl(0.3, 0.26, 0.5, color, 0, 0.25, 0, g, 16);
-    cyl(0.25, 0.25, 0.02, C.ink, 0, 0.49, 0, g, 16);
-    const h = torus(0.16, 0.05, color, 0.32, 0.26, 0, g);
+    lathe([[0.001, 0], [0.24, 0], [0.29, 0.05], [0.33, 0.55], [0.3, 0.55], [0.275, 0.5], [0.255, 0.14], [0.001, 0.14]], color, 0, 0, 0, g, 28);
+    const coffee = cyl(0.27, 0.27, 0.01, 0x4a2a1c, 0, 0.44, 0, g, 28);
+    coffee.material = mat(0x4a2a1c, { rough: 0.25 });
+    coffee.castShadow = false;
+    const handle = torus(0.17, 0.05, color, 0.36, 0.3, 0, g);
+    handle.scale.set(0.85, 1.1, 1);
+    // Hilos de vapor
+    const steam = [0, 1, 2].map((i) => {
+      const s = ball(0.055, 0xffffff, (i - 1) * 0.1, 0.75, 0, g);
+      s.material = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.35, depthWrite: false, toneMapped: false });
+      s.castShadow = false;
+      return s;
+    });
+    g.userData.tick = (t) => {
+      steam.forEach((s, i) => {
+        const k = (t * 0.4 + i / 3) % 1;
+        s.position.set((i - 1) * 0.1 + Math.sin(t * 2 + i * 2) * 0.05, 0.6 + k * 0.7, 0);
+        s.scale.setScalar(0.7 + k * 1.4);
+        s.material.opacity = 0.4 * (1 - k);
+      });
+    };
     return g;
   };
 
@@ -267,55 +432,55 @@ export function createProps(kit) {
 
   /* ---------- Luces ---------- */
 
-  P.floorLamp = ({ h = 6.2, shade = C.yellow, color = C.white } = {}) => {
+  // Lámpara de pie: base pesada, varilla fina y pantalla de tambor de tela que brilla por dentro
+  P.floorLamp = ({ h = 6.2, shade = C.yellow } = {}) => {
     const g = grp();
-    cyl(0.75, 0.85, 0.22, C.navy, 0, 0.11, 0, g, 24);
-    cyl(0.07, 0.07, h, color, 0, h / 2, 0, g, 10);
-    const cap = cyl(0.55, 1.05, 1.15, shade, 0, h, 0, g, 24);
-    cap.material = mat(shade, { rough: 0.6, emissive: shade, emissiveIntensity: 0.55 });
-    cyl(0.5, 0.98, 0.02, 0xfff3c8, 0, h - 0.57, 0, g, 24).material = glow(0xfff0b8);
-    halo(0xffd27a, 7, 0, h - 0.4, 0, g, 0.5);
+    cyl(0.85, 0.95, 0.14, C.navy, 0, 0.07, 0, g, 32);
+    cyl(0.16, 0.2, 0.16, C.steel, 0, 0.22, 0, g, 16);
+    bar([0, 0.2, 0], [0, h - 0.9, 0], 0.05, C.steel, g, 10);
+    // Pantalla
+    const cy = h - 0.35;
+    const cloth = mat(shade, { emissive: shade, emissiveIntensity: 0.42, side: THREE.DoubleSide, rough: 0.95 });
+    const drum = mesh(new THREE.CylinderGeometry(0.95, 1.12, 1.35, 40, 1, true), cloth, 0, cy, 0, g, false);
+    drum.castShadow = true;
+    [[0.95, 0.68], [1.12, -0.68]].forEach(([r, y]) => {
+      const ring = torus(r, 0.025, C.steel, 0, cy + y, 0, g, true);
+      ring.castShadow = false;
+    });
+    // Varillas del armazón hasta el casquillo
+    [0, 1, 2].forEach((i) => {
+      const a = (i / 3) * Math.PI * 2;
+      bar([0, cy + 0.66, 0], [Math.cos(a) * 0.93, cy + 0.68, Math.sin(a) * 0.93], 0.012, C.steel, g, 5).castShadow = false;
+    });
+    cyl(0.07, 0.07, 0.2, C.steel, 0, cy + 0.6, 0, g, 8);
+    // Bombilla y resplandor
+    ball(0.24, glow(0xfff1c0), 0, cy - 0.1, 0, g).castShadow = false;
+    kit.halo(0xffd27a, 8.5, 0, cy - 0.05, 0, g, 0.42);
     return g;
   };
 
+  // Lámpara de escritorio articulada (estilo flexo): base, brazo doble, codo, brazo alto y pantalla en cúpula
   P.deskLamp = ({ color = C.coral } = {}) => {
     const g = grp();
-    cyl(0.5, 0.55, 0.14, color, 0, 0.07, 0, g, 20);
-    cyl(0.06, 0.06, 1.6, color, 0, 0.9, 0, g, 8);
-    const arm = cyl(0.05, 0.05, 1.3, color, 0.5, 1.65, 0, g, 8);
-    arm.rotation.z = -1.0;
-    const head = cone(0.5, 0.7, color, 1.0, 1.95, 0, g, 18);
-    head.rotation.z = -2.2;
-    ball(0.2, glow(0xfff0b8), 1.18, 1.72, 0, g).castShadow = false;
-    halo(0xffd27a, 3.4, 1.2, 1.6, 0, g, 0.55);
+    cyl(0.5, 0.56, 0.12, C.ink, 0, 0.06, 0, g, 30);
+    cyl(0.2, 0.24, 0.12, color, 0, 0.18, 0, g, 18);
+    ball(0.13, C.steel, 0, 0.3, 0, g);
+    const knee = [-0.42, 1.65, 0];
+    const top = [0.55, 2.3, 0];
+    [0, 0.09].forEach((dz) => bar([0, 0.3, dz - 0.045], [knee[0], knee[1], knee[2] + dz - 0.045], 0.026, color, g, 8));   // brazo bajo (doble varilla)
+    ball(0.12, C.steel, knee[0], knee[1], knee[2], g);
+    bar(knee, top, 0.045, color, g, 8);                                                                                     // brazo alto
+    // Cabeza: cúpula abierta por abajo hacia delante, bombilla y resplandor
+    const head = grp(top[0], top[1], top[2], g);
+    head.rotation.z = 0.85;
+    const dome = mesh(new THREE.SphereGeometry(0.48, 24, 14, 0, Math.PI * 2, 0, Math.PI / 2), mat(color, { side: THREE.DoubleSide, rough: 0.5 }), 0, 0.05, 0, head);
+    cyl(0.06, 0.06, 0.2, C.steel, 0, 0.5, 0, head, 8);
+    ball(0.17, glow(0xfff1c0), 0, -0.03, 0, head).castShadow = false;
+    kit.halo(0xffd27a, 3.4, 0, -0.15, 0, head, 0.5);
     return g;
   };
 
   /* ---------- Plantas y decoración ---------- */
-
-  P.plant = ({ pot = C.white, leaf = C.leaf, size = 1, kind = "bush" } = {}) => {
-    const g = grp();
-    cyl(0.75 * size, 0.55 * size, 1.1 * size, pot, 0, 0.55 * size, 0, g, 18);
-    cyl(0.68 * size, 0.68 * size, 0.06, 0x4b3a2a, 0, 1.08 * size, 0, g, 18);
-    if (kind === "cactus") {
-      rbox(0.8 * size, 2.2 * size, 0.8 * size, leaf, 0, 2.1 * size, 0, g, 0.38 * size);
-      rbox(0.45 * size, 1.1 * size, 0.45 * size, leaf, 0.7 * size, 2.3 * size, 0, g, 0.2 * size);
-      rbox(0.45 * size, 0.6 * size, 0.45 * size, leaf, 0.45 * size, 1.75 * size, 0, g, 0.2 * size);
-      rbox(0.4 * size, 0.9 * size, 0.4 * size, leaf, -0.6 * size, 2.5 * size, 0, g, 0.18 * size);
-      rbox(0.4 * size, 0.4 * size, 0.4 * size, leaf, -0.4 * size, 1.95 * size, 0, g, 0.18 * size);
-      ball(0.2 * size, C.pink, 0, 3.2 * size, 0, g);
-    } else {
-      const r = rng(11 + Math.floor(size * 10));
-      for (let i = 0; i < 9; i++) {
-        const a = (i / 9) * Math.PI * 2 + r();
-        const len = (1.5 + r() * 1.3) * size;
-        const leafM = cone(0.34 * size, len, i % 3 === 0 ? C.green : leaf, Math.cos(a) * 0.35 * size, 1.1 * size + len * 0.45, Math.sin(a) * 0.35 * size, g, 5);
-        leafM.rotation.set(Math.sin(a) * 0.45, 0, -Math.cos(a) * 0.45);
-        leafM.scale.z = 0.5;
-      }
-    }
-    return g;
-  };
 
   // Cuadro colgado. Mira a +Z.
   P.frame = ({ w = 2.6, h = 3.2, frame = C.white, seed = 1, palette = [C.violet, C.pink, C.yellow, C.sky], tex } = {}) => {

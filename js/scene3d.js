@@ -454,7 +454,8 @@ export function start({ level = "full", force = false } = {}) {
 
     // Cámara
     const inAbout = section === "about";
-    const sy = inAbout && !input.focus ? scrollS : 0;
+    // En "Sobre mí" y "7 HHEP" hay contenido debajo: al bajar, la cámara gira y se acerca
+    const sy = (inAbout || section === "hhep") && !input.focus ? scrollS : 0;
     // Al bajar hacia las habilidades la escena se atenúa un poco para que las tarjetas se lean
     const fade = 1 - 0.5 * THREE.MathUtils.smoothstep(sy, 0.08, 0.5);
     if (fade < 0.999) {
@@ -659,6 +660,14 @@ export function start({ level = "full", force = false } = {}) {
       render();
     },
     focus: (v) => input.setFocus(v),
+    // Para revisar un objeto de cerca: mira al punto (x, y, z) de la sala actual desde 'dist' unidades
+    look: (x, y, z, dist = 10, yaw, pitch) => {
+      const lv = levels.items[activeIndex()];
+      rig.cx.t = lv.pos.x + x; rig.cy.t = y; rig.cz.t = lv.pos.z + z;
+      rig.dist.t = dist; rig.ox.t = 0; rig.oy.t = 0;
+      if (yaw !== undefined) rig.yaw.t = yaw;
+      if (pitch !== undefined) rig.pitch.t = pitch;
+    },
     // Posición en pantalla (px) de una pieza del PC o de un icono de habilidad: para pruebas
     partScreen: (id) => {
       const v = new THREE.Vector3();

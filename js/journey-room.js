@@ -82,25 +82,42 @@ export function buildRoom(kit, { wall, accent }) {
   /* ---------- Título en la pared: número grande y nombre del nivel ---------- */
 
   const titleTex = canvasTex(1024, 512, () => {});
-  function setTitle(num, text) {
+  function setTitle(text) {
     redraw(titleTex, (g, w, h) => {
       g.clearRect(0, 0, w, h);
       g.textBaseline = "alphabetic";
       const fontStack = '"Outfit", "Avenir Next", "Segoe UI", system-ui, sans-serif';
-      const draw = (str, size, y, alpha) => {
+      // El nombre de la sala, grande, en una o dos líneas si no cabe
+      const words = String(text).split(" ");
+      let lines = [text];
+      let size = 270;
+      g.font = "800 " + size + "px " + fontStack;
+      while (size > 90 && g.measureText(text).width > w - 70) {
+        size -= 8;
         g.font = "800 " + size + "px " + fontStack;
-        let s = size;
-        while (g.measureText(str).width > w - 60 && s > 30) { s -= 6; g.font = "800 " + s + "px " + fontStack; }
-        g.fillStyle = "rgba(20, 8, 70, " + (0.22 * alpha) + ")";
-        g.fillText(str, 34, y + 7);
-        g.fillStyle = "rgba(255, 255, 255, " + alpha + ")";
-        g.fillText(str, 30, y);
-      };
-      draw(num, 330, 300, 0.96);
-      draw(text, 112, 445, 0.9);
+      }
+      if (g.measureText(text).width > w - 70 && words.length > 1) {
+        const half = Math.ceil(words.length / 2);
+        lines = [words.slice(0, half).join(" "), words.slice(half).join(" ")];
+        size = 210;
+        g.font = "800 " + size + "px " + fontStack;
+        while (size > 80 && Math.max(...lines.map((l) => g.measureText(l).width)) > w - 70) {
+          size -= 8;
+          g.font = "800 " + size + "px " + fontStack;
+        }
+      }
+      const lineH = size * 1.02;
+      const y0 = h / 2 + (size * 0.36) - ((lines.length - 1) * lineH) / 2;
+      lines.forEach((line, i) => {
+        const y = y0 + i * lineH;
+        g.fillStyle = "rgba(20, 8, 70, 0.22)";
+        g.fillText(line, 36, y + 8);
+        g.fillStyle = "rgba(255, 255, 255, 0.96)";
+        g.fillText(line, 30, y);
+      });
     });
   }
-  setTitle("01", "");
+  setTitle("");
   const titleG = grp(-6.78, 6.05, 1.6, group, Math.PI / 2);
   const title = decal(titleTex, 8.6, 4.3, 0, 0, 0, titleG);
   title.position.z = 0.02;
