@@ -115,8 +115,12 @@
       var kr = 1 - Math.exp(-dt * 16);
       rx += (cx - rx) * kr;
       ry += (cy - ry) * kr;
-      dot.style.transform = "translate3d(" + cx.toFixed(1) + "px," + cy.toFixed(1) + "px,0)";
-      ring.style.transform = "translate3d(" + rx.toFixed(1) + "px," + ry.toFixed(1) + "px,0)";
+      // Con la propiedad "translate" y no con "transform": el aro se agranda con "scale" (CSS) y
+      // el orden de las propiedades sueltas es translate → rotate → scale → transform, de modo
+      // que un translate() dentro de "transform" también se escalaría y el aro se alejaría
+      // del cursor (60 % de su distancia a la esquina al agrandarse sobre un enlace).
+      dot.style.translate = cx.toFixed(1) + "px " + cy.toFixed(1) + "px";
+      ring.style.translate = rx.toFixed(1) + "px " + ry.toFixed(1) + "px";
       if (Math.abs(cx - rx) + Math.abs(cy - ry) > 0.2) moving = true;
     }
 
