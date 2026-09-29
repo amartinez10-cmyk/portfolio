@@ -104,10 +104,13 @@
     document.querySelectorAll("[data-i18n-list]").forEach(function (list) {
       var items = dict[list.getAttribute("data-i18n-list")];
       if (!items) return;
+      var key = list.getAttribute("data-i18n-list");
       list.textContent = "";
-      items.forEach(function (text) {
+      items.forEach(function (text, index) {
         var li = document.createElement("li");
         li.textContent = text;
+        // Iconos y etiquetas de cada habilidad (js/skill-icons.js)
+        if (window.SkillIcons) window.SkillIcons.decorate(li, key, index);
         list.appendChild(li);
       });
     });
@@ -460,10 +463,10 @@
     rise(document.querySelector(".about__role"), depth(0, 14, -80, 0, -10),
       { duration: 700, delay: 620, easing: ease, fill: "backwards" });
 
-    // Los párrafos y los bloques de habilidades que ya se ven entran ahora;
-    // los que están más abajo, con el scroll
+    // Los párrafos que ya se ven entran ahora; los que están más abajo, con el scroll.
+    // Las tarjetas de habilidades tienen su propia entrada con el scroll (js/fx.js).
     var shown = 0;
-    document.querySelectorAll(".about__body p, .about__skills .skills").forEach(function (p) {
+    document.querySelectorAll(".about__body p").forEach(function (p) {
       if (p.getBoundingClientRect().top < window.innerHeight * 0.92) {
         rise(p, depth(0, 22, -110, 0, -8), { duration: 800, delay: 760 + shown++ * 100, easing: ease, fill: "backwards" });
       } else {

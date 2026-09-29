@@ -198,7 +198,7 @@
     var span = put(line, "", cls);
     for (var i = 0; i < text.length; i++) {
       span.textContent += text.charAt(i);
-      if (!state.skipped) await sleep(rand(4, 10));
+      if (!state.skipped) await sleep(rand(3, 7));
     }
   }
 
@@ -271,7 +271,7 @@
     rain.speed = 2.4;
     rain.hot = true;
     flash();
-    await sleep(1000);
+    await sleep(850);
   }
 
   // Avisa a la página: empieza su entrada y el 3D vuela hasta su sitio
@@ -342,7 +342,7 @@
     var head = newLine();
     await type(head, "alex@portfolio:~$ ", "cmd");
     await type(head, "./boot.sh", "cmd");
-    await sleep(150);
+    await sleep(100);
 
     for (var i = 0; i < steps.length && !state.skipped; i++) {
       var step = steps[i];
@@ -354,13 +354,13 @@
       put(line, "[ " + (result === "ok" ? t("boot.ok", "OK") : t("boot.omitted", "SKIPPED")) + " ]", result === "ok" ? "ok" : "skip");
       progress.target = (i + 1) / steps.length;
       rain.intensity = 0.5 + 0.5 * progress.target;
-      await sleep(rand(40, 90));
+      await sleep(rand(25, 60));
     }
     if (state.skipped) return;
 
     var last = newLine();
     await type(last, "> " + t("boot.user", "user: guest"), "cmd");
-    await sleep(280);
+    await sleep(180);
     if (state.skipped) return;
     await granted();
     if (!state.skipped) reveal(false);

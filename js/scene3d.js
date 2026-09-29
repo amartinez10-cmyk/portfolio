@@ -16,6 +16,8 @@
  */
 import * as THREE from "three";
 import { createWorldProps } from "./world-props.js";
+import { createCrystals } from "./world-crystals.js";
+import { createStudioEnv } from "./studio-env.js";
 import { createHeroStage } from "./hero-stage.js";
 
 const SPACING = 70; // separación entre emblemas en el eje X del mundo
@@ -33,7 +35,7 @@ const POSES = {
   contact:      { off: [-7, 4, 25],   ndcL: [0.5, -0.02],  ndcP: [0, -0.42],    k: 55, c: 14,  roll: 0,     fov: 42 }
 };
 
-const PARTICLES = { full: 2600, lite: 900 };
+const PARTICLES = { full: 4800, lite: 1200 };
 const BOX = new THREE.Vector3(84, 48, 84); // volumen de partículas que rodea a la cámara
 
 const VERTEX = /* glsl */ `
@@ -162,6 +164,13 @@ export function start({ level = "full", force = false } = {}) {
   const particles = makeParticles(lite ? PARTICLES.lite : PARTICLES.full, palette);
   const props = createWorldProps({ palette, lite, order, spacing: SPACING });
   world.add(particles, props.group);
+
+  // Estudio con luces de neón: da los reflejos a los cristales del mundo y al PC (hero-stage.js)
+  const envMap = createStudioEnv(renderer, palette);
+  world.environment = envMap.texture;
+  world.environmentIntensity = 0.9;
+  const crystals = createCrystals({ palette, lite });
+  world.add(crystals.group);
 
   /* ---------- Estado ---------- */
 
@@ -332,13 +341,19 @@ export function start({ level = "full", force = false } = {}) {
     cam.position.copy(rig.pos);
     cam.position.x += ptr.x * 1.6 + Math.sin(simTime * 0.13) * 0.7 * ambient;
     cam.position.y += ptr.y * 1 + Math.cos(simTime * 0.11) * 0.5 * ambient;
-    cam.position.z -= scrollS * 8;
+    // En "Sobre mí", al hacer scroll la cámara avanza entre los cristales y atraviesa los aros
+    const inAbout = section === "about";
+    cam.position.z -= scrollS * (inAbout ? 34 : 6);
+    if (inAbout) {
+      cam.position.x += Math.sin(scrollS * 3.2) * 4;
+      cam.position.y += scrollS * 2;
+    }
     scratch.copy(rig.look);
     scratch.x += ptr.x * 1.1;
     scratch.y += ptr.y * 0.7;
     cam.up.set(0, 1, 0);
     cam.lookAt(scratch);
-    cam.rotateZ(rig.roll + scrollS * 0.06);
+    cam.rotateZ(rig.roll + scrollS * (inAbout ? 0.18 : 0.06));
     if (Math.abs(cam.fov - rig.fov) > 0.005) {
       cam.fov = rig.fov;
       cam.updateProjectionMatrix();
@@ -350,6 +365,7 @@ export function start({ level = "full", force = false } = {}) {
     cam.getWorldDirection(forward);
     u.uCenter.value.copy(cam.position).addScaledVector(forward, BOX.z * 0.3);
     props.update(simTime, cam.position.x);
+    crystals.update(simTime, dt * ambient, scrollS, cam.position.x);
 
     const heroActive = hero ? hero.update(dt, simTime, ambient, animated) : false;
 
@@ -465,10 +481,12 @@ export function start({ level = "full", force = false } = {}) {
     ready = false;
     cancelAnimationFrame(raf);
     if (hero) hero.dispose();
+    crystals.dispose();
     world.traverse((o) => {
       if (o.geometry) o.geometry.dispose();
       if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach((m) => m.dispose());
     });
+    envMap.dispose();
     renderer.dispose();
     renderer.forceContextLoss();
     root.classList.remove("has-3d");
@@ -500,7 +518,7 @@ export function start({ level = "full", force = false } = {}) {
 
   const stageEl = document.getElementById("stage");
   if (stageEl) {
-    hero = createHeroStage({ renderer, palette, lite, stage: stageEl, wake });
+    hero = createHeroStage({ renderer, palette, lite, stage: stageEl, wake, envMap });
     hero.setSection(section, section, false);
     if (held) hero.setHold(true);
   }

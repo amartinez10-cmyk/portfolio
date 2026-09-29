@@ -99,7 +99,7 @@
   <main id="content">
     <!-- SOBRE MÍ -->
     <section id="about" class="page about" aria-labelledby="about-title">
-      <div class="about__intro" data-depth="10">
+      <div class="about__intro" data-depth="10" data-scroll="0.14">
         <figure class="about__photo">
           <img src="img/alex.jpg" width="960" height="1280"
                data-i18n-alt="about.photoAlt" alt="Retrato de Alex">
@@ -110,13 +110,15 @@
         </div>
       </div>
 
-      <div class="about__body" data-tilt data-depth="16">
+      <div class="about__body" data-tilt data-depth="16" data-scroll="0.1">
         <p data-i18n="about.p1">Actualmente estudio SMX en Sa Palomera, y en este portfolio voy recogiendo lo que aprendo por el camino.</p>
         <p data-i18n="about.p2">Me interesa sobre todo la Inteligencia Artificial, y disfruto del trabajo que me deja resolver problemas reales y ver el resultado. Fuera de clase dedico mi tiempo a entrenar y aprender habilidades de alto valor.</p>
       </div>
 
-      <!-- Habilidades: las listas se rellenan desde js/translations.js (skills.hard y skills.soft) -->
-      <div class="about__skills" data-tilt data-depth="6">
+      <!-- Habilidades: las listas se rellenan desde js/translations.js (skills.hard y skills.soft)
+           y cada elemento recibe sus iconos desde js/skill-icons.js. Son tarjetas que aparecen con
+           profundidad al hacer scroll. -->
+      <div class="about__skills" data-depth="6">
         <div class="skills">
           <h2 data-i18n="skills.hardTitle">Habilidades técnicas</h2>
           <ul class="skills__list" data-i18n-list="skills.hard">
@@ -126,7 +128,7 @@
             <li>Redes locales</li>
             <li>Máquinas virtuales</li>
             <li>Seguridad informática</li>
-            <li>HTML, CSS y JavaScript</li>
+            <li>HTML y CSS</li>
             <li>Herramientas de IA</li>
           </ul>
         </div>
@@ -144,8 +146,8 @@
       </div>
 
       <!-- Escenario 3D: hueco donde js/hero-stage.js dibuja el modelo y la red de habilidades.
-           Solo se muestra si el 3D está activo; las habilidades siguen en las listas de arriba. -->
-      <div class="about__stage" id="stage" tabindex="0" role="group"
+           Solo se muestra si el 3D está activo; las habilidades siguen en las listas de abajo. -->
+      <div class="about__stage" id="stage" tabindex="0" role="group" data-scroll="0.08"
            data-i18n-aria-label="stage.label" aria-label="Modelo 3D interactivo"
            aria-describedby="stage-hint" aria-keyshortcuts="ArrowLeft ArrowRight ArrowUp ArrowDown Home">
         <p class="about__stage-hint" id="stage-hint">
@@ -189,6 +191,7 @@
 
   <script src="js/translations.js"></script>
   <script src="js/boot-screen.js"></script>
+  <script src="js/skill-icons.js"></script>
   <script src="js/main.js"></script>
   <script src="js/fx.js"></script>
   <script src="js/boot3d.js"></script>

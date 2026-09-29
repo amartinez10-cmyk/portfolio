@@ -1,11 +1,13 @@
 /*
- * Efectos de puntero que no necesitan WebGL (funcionan también sin el 3D):
- *   · tilt 3D con brillo en las tarjetas  → elementos con data-tilt
- *   · parallax por capas                  → elementos con data-depth="N" (píxeles de desplazamiento)
+ * Efectos que no necesitan WebGL (funcionan también sin el 3D):
+ *   · tilt 3D con brillo en las tarjetas  → elementos con data-tilt y las tarjetas de habilidades
+ *   · parallax por capas con el puntero   → elementos con data-depth="N" (píxeles de desplazamiento)
  *   · cursor personalizado sutil          → un punto y un aro; el cursor normal sigue visible
+ *   · parallax con el scroll              → elementos con data-scroll="F"
+ *   · entrada de las tarjetas de habilidades con el scroll (variable --p de cada tarjeta)
  *
- * Solo con ratón (puntero fino con hover) y sin "reducir movimiento": en pantallas táctiles
- * o con esa preferencia no se activa nada y la página queda estática.
+ * Lo del puntero solo con ratón (puntero fino con hover); lo del scroll también con el dedo.
+ * Con "reducir movimiento" no se activa nada y la página queda estática.
  */
 (function () {
   "use strict";
@@ -90,8 +92,95 @@
       return false;
     }
     // Eje de giro perpendicular a la posición del puntero: el punto señalado se "hunde"
-    s.el.style.rotate = (-s.y).toFixed(3) + " " + s.x.toFixed(3) + " 0 " + (mag * TILT_MAX).toFixed(2) + "deg";
+    s.el.style.rotate = (-s.y).toFixed(3) + " " + s.x.toFixed(3) + " 0 " + (mag * (s.max || TILT_MAX)).toFixed(2) + "deg";
     return true;
+  }
+
+  // Las tarjetas de habilidades se crean de nuevo al cambiar de idioma, así que el tilt se
+  // gestiona por delegación sobre su contenedor y no elemento a elemento
+  var cardStates = new WeakMap();
+
+  function cardState(li) {
+    var s = cardStates.get(li);
+    if (!s) {
+      s = { el: li, x: 0, y: 0, tx: 0, ty: 0, on: false, max: 13 };
+      cardStates.set(li, s);
+      tilts.push(s);
+    }
+    return s;
+  }
+
+  function leaveCard(li) {
+    var s = cardStates.get(li);
+    if (!s) return;
+    s.tx = s.ty = 0;
+    s.on = false;
+    li.style.setProperty("--glare", "0");
+    wake();
+  }
+
+  function setupCardTilt() {
+    var box = document.querySelector(".about__skills");
+    if (!box) return;
+    var current = null;
+    box.addEventListener("pointermove", function (e) {
+      if (!active || e.pointerType === "touch") return;
+      var li = e.target.closest && e.target.closest(".skills__list li");
+      if (current && current !== li) leaveCard(current);
+      current = li;
+      if (!li) return;
+      var s = cardState(li);
+      var r = li.getBoundingClientRect();
+      var nx = ((e.clientX - r.left) / r.width) * 2 - 1;
+      var ny = ((e.clientY - r.top) / r.height) * 2 - 1;
+      s.tx = Math.max(-1, Math.min(1, nx));
+      s.ty = Math.max(-1, Math.min(1, ny));
+      s.on = true;
+      li.style.setProperty("--mx", ((nx + 1) * 50).toFixed(1) + "%");
+      li.style.setProperty("--my", ((ny + 1) * 50).toFixed(1) + "%");
+      li.style.setProperty("--glare", "1");
+      wake();
+    });
+    box.addEventListener("pointerleave", function () {
+      if (current) leaveCard(current);
+      current = null;
+    });
+  }
+
+  /* ---------- Scroll: parallax y entrada de las tarjetas ---------- */
+
+  // Funciona con ratón y con dedo; solo se apaga con "reducir movimiento"
+  var scrollQueued = 0;
+
+  // 0 cuando la tarjeta asoma por abajo, 1 cuando ha subido hasta quedar del todo dentro.
+  // Al llegar al final de la página todas quedan en 1 (si no, las de la última fila, que ya no
+  // pueden subir más, se quedarían a medias).
+  function entryProgress(el, column) {
+    var vh = window.innerHeight;
+    var p = (vh * 0.98 - el.getBoundingClientRect().top) / (vh * 0.36) - column * 0.06;
+    var remaining = root.scrollHeight - vh - window.scrollY;
+    p = Math.max(p, 1 - remaining / (vh * 0.3));
+    p = Math.max(0, Math.min(1, p));
+    return 1 - Math.pow(1 - p, 3);
+  }
+
+  function updateScroll() {
+    scrollQueued = 0;
+    if (reduceMotion.matches) return;
+    root.style.setProperty("--sy", window.scrollY.toFixed(1));
+    var cards = document.querySelectorAll(".skills__list li");
+    for (var i = 0; i < cards.length; i++) {
+      cards[i].style.setProperty("--p", entryProgress(cards[i], i % 4).toFixed(3));
+    }
+  }
+
+  function queueScroll() {
+    if (!scrollQueued) scrollQueued = requestAnimationFrame(updateScroll);
+  }
+
+  function resetScroll() {
+    root.style.removeProperty("--sy");
+    document.querySelectorAll(".skills__list li").forEach(function (li) { li.style.removeProperty("--p"); });
   }
 
   /* ---------- Bucle único ---------- */
@@ -125,7 +214,10 @@
     }
 
     var kt = 1 - Math.exp(-dt * 10);
-    tilts.forEach(function (s) { if (applyTilt(s, kt)) moving = true; });
+    for (var i = tilts.length - 1; i >= 0; i--) {
+      if (!tilts[i].el.isConnected) { tilts.splice(i, 1); continue; }   // tarjetas ya sustituidas
+      if (applyTilt(tilts[i], kt)) moving = true;
+    }
 
     if (moving) raf = requestAnimationFrame(frame);
   }
@@ -204,10 +296,29 @@
   document.querySelectorAll("[data-depth]").forEach(function (el) {
     el.style.setProperty("--depth", el.getAttribute("data-depth"));
   });
+  document.querySelectorAll("[data-scroll]").forEach(function (el) {
+    el.style.setProperty("--sfactor", el.getAttribute("data-scroll"));
+  });
   document.querySelectorAll("[data-tilt]").forEach(setupTilt);
+  setupCardTilt();
 
   [reduceMotion, finePointer].forEach(function (mq) {
     if (mq.addEventListener) mq.addEventListener("change", sync);
   });
   sync();
+
+  // Scroll: parallax de capas y entrada de las tarjetas (también en pantallas táctiles)
+  window.addEventListener("scroll", queueScroll, { passive: true });
+  window.addEventListener("resize", queueScroll);
+  window.addEventListener("load", queueScroll);
+  ["portfolio:lang", "portfolio:section", "portfolio:boot-done"].forEach(function (name) {
+    document.addEventListener(name, queueScroll);
+  });
+  if (reduceMotion.addEventListener) {
+    reduceMotion.addEventListener("change", function () {
+      if (reduceMotion.matches) resetScroll();
+      else queueScroll();
+    });
+  }
+  queueScroll();
 })();

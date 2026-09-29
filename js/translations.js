@@ -36,7 +36,7 @@ window.TRANSLATIONS = {
       "Xarxes locals",
       "Màquines virtuals",
       "Seguretat informàtica",
-      "HTML, CSS i JavaScript",
+      "HTML i CSS",
       "Eines d'IA"
     ],
     "skills.softTitle": "Habilitats personals",
@@ -108,7 +108,7 @@ window.TRANSLATIONS = {
       "Local networks",
       "Virtual machines",
       "IT security",
-      "HTML, CSS and JavaScript",
+      "HTML and CSS",
       "AI tools"
     ],
     "skills.softTitle": "Soft skills",
@@ -180,7 +180,7 @@ window.TRANSLATIONS = {
       "Redes locales",
       "Máquinas virtuales",
       "Seguridad informática",
-      "HTML, CSS y JavaScript",
+      "HTML y CSS",
       "Herramientas de IA"
     ],
     "skills.softTitle": "Habilidades personales",

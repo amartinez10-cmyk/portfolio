@@ -8,7 +8,6 @@
  * muestra su nombre; con el hueco enfocado, las flechas del teclado lo giran.
  */
 import * as THREE from "three";
-import { createStudioEnv } from "./studio-env.js";
 import { createHeroModel } from "./hero-model.js";
 import { createSkillsGraph } from "./skills-graph.js";
 
@@ -21,7 +20,8 @@ const DEFAULT_YAW = -0.55;     // vista de tres cuartos: cristal y frontal
 const DEFAULT_PITCH = 0.1;
 const clamp = THREE.MathUtils.clamp;
 
-export function createHeroStage({ renderer, palette, lite, stage, wake }) {
+// envMap: el estudio de luces de neón de studio-env.js (lo crea y lo libera scene3d.js)
+export function createHeroStage({ renderer, palette, lite, stage, wake, envMap }) {
   const ac = new AbortController();
   const on = (target, type, fn, opts) => target.addEventListener(type, fn, Object.assign({ signal: ac.signal }, opts));
 
@@ -29,8 +29,7 @@ export function createHeroStage({ renderer, palette, lite, stage, wake }) {
   const camera = new THREE.PerspectiveCamera(FOV, 1, 0.1, 60);
   camera.position.set(0, 0, CAM_Z);
 
-  // Reflejos: un estudio con luces de neón generado por código (sin descargar nada)
-  const envMap = createStudioEnv(renderer, palette);
+  // Reflejos del metal y del cristal
   scene.environment = envMap.texture;
   scene.environmentIntensity = 0.9;
 
@@ -69,7 +68,9 @@ export function createHeroStage({ renderer, palette, lite, stage, wake }) {
   const labelPos = new THREE.Vector3();
 
   function readLabels() {
-    labels = hardList ? Array.from(hardList.children).map((li) => li.textContent.trim()) : [];
+    labels = hardList
+      ? Array.from(hardList.children).map((li) => (li.querySelector(".skill__name") || li).textContent.trim())
+      : [];
     graph.setCount(labels.length);
     labelKey = "";
     litIdx = -1;   // los <li> son nuevos: hay que volver a iluminar el que toque
@@ -370,7 +371,6 @@ export function createHeroStage({ renderer, palette, lite, stage, wake }) {
     resizeObserver.disconnect();
     model.dispose();
     graph.dispose();
-    envMap.dispose();
   }
 
   return {

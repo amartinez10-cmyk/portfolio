@@ -29,28 +29,9 @@ export function createWorldProps({ palette, lite, order, spacing }) {
     return new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), lines(color, opacity));
   }
 
+  // "Sobre mí" no tiene emblema: su fondo son los cristales, los aros y los logos de
+  // js/world-crystals.js. Las demás secciones tienen el suyo.
   const builders = {
-    // Órbitas: esfera de alambre con un núcleo y dos anillos
-    about() {
-      const g = new THREE.Group();
-      const shell = new THREE.Mesh(new THREE.IcosahedronGeometry(5.5, lite ? 1 : 2), wire(palette.accent, 0.2));
-      const core = new THREE.Mesh(new THREE.IcosahedronGeometry(2.5, 1), wire(palette.accent2, 0.45));
-      const ringA = ring(7.5, palette.accent2, 0.5);
-      const ringB = ring(9, palette.accent, 0.32);
-      ringA.rotation.x = 1.2;
-      ringB.rotation.set(0.5, 0, 0.9);
-      g.add(shell, core, ringA, ringB);
-      return {
-        group: g,
-        update(t) {
-          shell.rotation.set(t * 0.05, t * 0.12, 0);
-          core.rotation.y = -t * 0.25;
-          ringA.rotation.z = t * 0.2;
-          ringB.rotation.y = t * 0.15;
-        }
-      };
-    },
-
     // Pila de hojas en abanico
     resume() {
       const g = new THREE.Group();
