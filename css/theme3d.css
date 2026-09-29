@@ -332,6 +332,11 @@ body::after {
   margin-bottom: 0;
 }
 
+/* Sin 3D (sin WebGL, ahorro de datos…) la tarjeta no debe estirarse por toda la pantalla */
+html:not(.has-3d) .about__panel {
+  max-width: 52rem;
+}
+
 /* Perspectiva para el tilt de las tarjetas y las transiciones entre secciones */
 main,
 .about {

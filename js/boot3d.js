@@ -57,12 +57,31 @@
     return small ? "lite" : "full";
   }
 
+  // Con doble clic sobre index.html (file://) el navegador no permite cargar módulos: se usa el
+  // paquete js/3d.bundle.js, que lleva Three.js y todo el 3D dentro (ver js/entry3d.js).
+  // ?bundle=1 fuerza el paquete también con un servidor, para probarlo.
+  var useBundle = location.protocol === "file:" || new URLSearchParams(location.search).get("bundle") === "1";
+
+  function loadScene() {
+    if (!useBundle) return import(base + "scene3d.js");
+    return new Promise(function (resolve, reject) {
+      var tag = document.createElement("script");
+      tag.src = base + "3d.bundle.js";
+      tag.onload = function () {
+        if (window.Portfolio3D) resolve(window.Portfolio3D);
+        else reject(new Error("js/3d.bundle.js no define Portfolio3D"));
+      };
+      tag.onerror = function () { reject(new Error("No se pudo cargar js/3d.bundle.js")); };
+      document.head.appendChild(tag);
+    });
+  }
+
   function load() {
     var level = pickLevel();
     if (!level) return off(flag === "off" ? "?3d=off" : "sin WebGL o ahorro de datos");
 
     root.dataset.scene = "loading";
-    import(base + "scene3d.js")
+    loadScene()
       .then(function (scene) {
         return scene.start({ level: level, force: flag === "force" });
       })

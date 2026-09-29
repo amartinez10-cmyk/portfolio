@@ -1,0 +1,12 @@
+{
+  "name": "portfolio-alex",
+  "private": true,
+  "description": "Solo se necesita para regenerar js/3d.bundle.js (la versión del 3D que funciona al abrir index.html con doble clic).",
+  "scripts": {
+    "build:3d": "esbuild js/entry3d.js --bundle --format=iife --minify --target=es2020 --outfile=js/3d.bundle.js --legal-comments=none"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2",
+    "three": "0.170.0"
+  }
+}

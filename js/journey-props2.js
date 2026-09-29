@@ -6,6 +6,7 @@
  */
 import * as THREE from "three";
 import { rng } from "./journey-kit.js";
+import { CV_PHOTO } from "./cv-photo.js";
 
 export function createProps2(kit, base) {
   const { C, box, rbox, cyl, cone, ball, torus, plane, grp, mat, glow, canvasTex, decal, screen, roundRect, mesh } = kit;
@@ -313,8 +314,7 @@ export function createProps2(kit, base) {
       c.save();
       c.beginPath(); c.arc(92, 96, 56, 0, 6.3); c.clip();
       if (img) {
-        const k = Math.max(112 / img.width, 112 / img.height);
-        c.drawImage(img, 92 - (img.width * k) / 2, 96 - (img.height * k) * 0.42, img.width * k, img.height * k);
+        c.drawImage(img, 36, 40, 112, 112);   // la foto ya viene recortada en cuadrado
       } else { c.fillStyle = hex(C.lilac); c.fillRect(30, 30, 130, 130); }
       c.restore();
       c.lineWidth = 6; c.strokeStyle = "#fff";
@@ -345,7 +345,7 @@ export function createProps2(kit, base) {
       draw(c.getContext("2d"), c.width, c.height, img);
       cvCache.tex.needsUpdate = true;
     };
-    img.src = "img/alex.jpg";
+    img.src = CV_PHOTO;
     return cvCache.tex;
   }
 

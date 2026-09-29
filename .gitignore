@@ -7,3 +7,7 @@ Copia de Fondo def..png
 
 # Copia comprimida para adjuntar a mano
 *.zip
+
+# Solo para regenerar js/3d.bundle.js
+node_modules/
+package-lock.json
