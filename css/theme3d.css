@@ -63,7 +63,80 @@
   }
 }
 
+/* ---------- Escenario del modelo 3D (Sobre mí) ---------- */
+
+.about__stage {
+  display: none;                       /* solo con el 3D activo */
+  position: relative;
+  grid-column: 1 / -1;
+  grid-row: 2;
+  min-height: clamp(13rem, 30vh, 24rem);
+  cursor: grab;
+  touch-action: pan-y;                 /* el scroll vertical sigue funcionando en el móvil */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  border-radius: 1.5rem;
+}
+
+.has-3d .about__stage {
+  display: block;
+}
+
+.about__stage.is-dragging {
+  cursor: grabbing;
+}
+
+.about__stage.is-pointing {
+  cursor: pointer;
+}
+
+.about__stage:focus-visible {
+  outline-offset: -2px;
+}
+
+.about .about__stage-hint {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  max-width: none;
+  margin: 0;
+  font-size: 0.8125rem;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.hint-touch {
+  display: none;
+}
+
+@media (hover: none) {
+  .hint-mouse {
+    display: none;
+  }
+
+  .hint-touch {
+    display: inline;
+  }
+}
+
+/* En el móvil el escenario ocupa el hueco que antes dejaba el margen del texto */
+@media (max-width: 699px) {
+  .about__stage {
+    min-height: 40svh;
+  }
+
+  .has-3d .about__body {
+    margin-top: 0;
+  }
+}
+
 @media print {
+  .about__stage {
+    display: none;
+  }
+
   :root {
     --paper: #ffffff;
     --ink: #000000;

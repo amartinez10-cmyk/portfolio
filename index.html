@@ -112,6 +112,18 @@
           </ul>
         </div>
       </div>
+
+      <!-- Escenario 3D: hueco donde js/hero-stage.js dibuja el modelo y la red de habilidades.
+           Solo se muestra si el 3D está activo; las habilidades siguen en las listas de arriba. -->
+      <div class="about__stage" id="stage" tabindex="0" role="group"
+           data-i18n-aria-label="stage.label" aria-label="Modelo 3D interactivo"
+           aria-describedby="stage-hint" aria-keyshortcuts="ArrowLeft ArrowRight ArrowUp ArrowDown Home">
+        <p class="about__stage-hint" id="stage-hint">
+          <span class="hint-mouse" data-i18n="stage.hint">Arrastra para girar · Pasa el cursor por los nodos</span>
+          <span class="hint-touch" data-i18n="stage.hintTouch">Arrastra para girar · Toca los nodos</span>
+        </p>
+        <div class="node-label" aria-hidden="true"></div>
+      </div>
     </section>
 
     <!-- CURRÍCULUM -->

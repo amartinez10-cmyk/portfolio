@@ -13,6 +13,7 @@
  */
 import * as THREE from "three";
 import { createWorldProps } from "./world-props.js";
+import { createHeroStage } from "./hero-stage.js";
 
 const SPACING = 70; // separación entre emblemas en el eje X del mundo
 
@@ -21,7 +22,7 @@ const SPACING = 70; // separación entre emblemas en el eje X del mundo
 //   (apaisado / vertical) · k y c: rigidez y amortiguación del muelle (cada sección "se
 //   siente" distinta) · roll: giro de la cámara · fov: campo de visión
 const POSES = {
-  about:        { off: [0, 1.5, 44],  ndcL: [0.76, -0.12], ndcP: [0.5, 0.05],   k: 34, c: 8.5, roll: 0,     fov: 46 },
+  about:        { off: [0, 1.5, 60],  ndcL: [0.8, 0.12],   ndcP: [0.5, 0.05],   k: 34, c: 8.5, roll: 0,     fov: 46 },
   resume:       { off: [-17, 2, 25],  ndcL: [0.5, -0.02],  ndcP: [0, -0.42],    k: 70, c: 15,  roll: 0,     fov: 50 },
   certificates: { off: [13, -7, 23],  ndcL: [0.5, -0.02],  ndcP: [0, -0.42],    k: 30, c: 4.5, roll: 0.32,  fov: 54 },
   projects:     { off: [0, 17, 21],   ndcL: [0.46, -0.08], ndcP: [0, -0.42],    k: 22, c: 10,  roll: -0.1,  fov: 48 },
@@ -455,6 +456,7 @@ export function start({ level = "full", force = false } = {}) {
       fps: Math.round(1 / perf.avg), dpr: renderer.getPixelRatio(),
       calls: renderer.info.render.calls, triangles: renderer.info.render.triangles,
       cam: { pos: cam.position.toArray().map((n) => +n.toFixed(2)), fov: +cam.fov.toFixed(2), aspect: +cam.aspect.toFixed(3) },
+      hero: hero ? hero.state() : null,
       target: { pos: rig.target.pos.toArray(), look: rig.target.look.toArray(), fov: rig.target.fov },
       anchorNdc: new THREE.Vector3(order.indexOf(section) * SPACING, 0, -10).project(cam).toArray().slice(0, 2).map((n) => +n.toFixed(2))
     }),
@@ -465,6 +467,12 @@ export function start({ level = "full", force = false } = {}) {
     },
     dispose
   };
+
+  const stageEl = document.getElementById("stage");
+  if (stageEl) {
+    hero = createHeroStage({ renderer, palette, lite, stage: stageEl, wake });
+    hero.setSection(section, section, false);
+  }
 
   resize();
   update(1 / 60);

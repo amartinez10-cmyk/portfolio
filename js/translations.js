@@ -49,6 +49,10 @@ window.TRANSLATIONS = {
       "Comunicació"
     ],
 
+    "stage.label": "Model 3D interactiu d'un ordinador de torre amb les meves habilitats tècniques al voltant. Es gira amb el ratolí, el dit o les fletxes del teclat.",
+    "stage.hint": "Arrossega per girar · Passa el cursor pels nodes",
+    "stage.hintTouch": "Arrossega per girar · Toca els nodes",
+
     "resume.body": "Aviat hi trobaràs el meu currículum.",
     "certificates.body": "Aquí aniré afegint els certificats que obtingui.",
     "projects.body": "Aquí aniré publicant els projectes que faci a classe i pel meu compte.",
@@ -98,6 +102,10 @@ window.TRANSLATIONS = {
       "Communication"
     ],
 
+    "stage.label": "Interactive 3D model of a desktop PC with my technical skills orbiting around it. Rotate it with the mouse, your finger or the arrow keys.",
+    "stage.hint": "Drag to rotate · Hover over the nodes",
+    "stage.hintTouch": "Drag to rotate · Tap the nodes",
+
     "resume.body": "My resume is coming soon.",
     "certificates.body": "I'll add my certificates here as I earn them.",
     "projects.body": "I'll post the projects I build in class and on my own here.",
@@ -146,6 +154,10 @@ window.TRANSLATIONS = {
       "Trabajo en equipo",
       "Comunicación"
     ],
+
+    "stage.label": "Modelo 3D interactivo de un ordenador de torre con mis habilidades técnicas a su alrededor. Se gira con el ratón, el dedo o las flechas del teclado.",
+    "stage.hint": "Arrastra para girar · Pasa el cursor por los nodos",
+    "stage.hintTouch": "Arrastra para girar · Toca los nodos",
 
     "resume.body": "Pronto encontrarás aquí mi currículum.",
     "certificates.body": "Aquí iré añadiendo los certificados que obtenga.",

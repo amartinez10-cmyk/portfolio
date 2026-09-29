@@ -227,12 +227,14 @@ main {
   flex: 1;
   display: grid;
   grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto minmax(0, 1fr) auto;   /* presentación · escenario 3D · habilidades */
   gap: 1.75rem clamp(2rem, 5vw, 4.5rem);
   align-items: start;
 }
 
 .about__intro {
+  grid-column: 1;
+  grid-row: 1;
   display: flex;
   align-items: flex-start;
   gap: 1.5rem;
@@ -261,6 +263,8 @@ main {
 }
 
 .about__body {
+  grid-column: 2;
+  grid-row: 1;
   columns: 2 14rem;
   column-gap: 2rem;
 }
@@ -273,6 +277,7 @@ main {
 /* Habilidades: en el ordenador ocupan la franja blanca de abajo, debajo de las ondas */
 .about__skills {
   grid-column: 1 / -1;
+  grid-row: 3;
   align-self: end;
   display: grid;
   grid-template-columns: max-content minmax(0, 1fr);
@@ -329,6 +334,8 @@ main {
   }
 
   .about__body {
+    grid-column: 1;
+    grid-row: 3;
     align-self: end;
   }
 
