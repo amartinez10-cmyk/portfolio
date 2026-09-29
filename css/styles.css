@@ -404,6 +404,7 @@ main {
   /* En el móvil las habilidades siguen al texto, con el título encima de cada lista */
   .about__skills {
     position: static;
+    grid-row: 4;
     grid-template-columns: minmax(0, 1fr);
     margin-top: 0;
     padding-bottom: 0;

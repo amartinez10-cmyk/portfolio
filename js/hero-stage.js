@@ -14,6 +14,7 @@ import { createSkillsGraph } from "./skills-graph.js";
 const CAM_Z = 16;
 const FOV = 30;
 const DESIGN_H = 3.5;          // alto (en unidades de escena) que ocupa el conjunto en el hueco
+const MIN_WIDTH = 5.6;         // ancho mínimo (unidades) para que quepan la torre y los nodos
 const DEFAULT_YAW = -0.55;     // vista de tres cuartos: cristal y frontal
 const DEFAULT_PITCH = 0.1;
 const clamp = THREE.MathUtils.clamp;
@@ -263,7 +264,8 @@ export function createHeroStage({ renderer, palette, lite, stage, wake }) {
     // Colocación: el centro del hueco → posición en la escena; su alto → escala
     const wpp = (2 * CAM_Z * Math.tan(THREE.MathUtils.degToRad(FOV / 2))) / H;
     root.position.set((rect.left + rect.width / 2 - W / 2) * wpp, -(rect.top + rect.height / 2 - H / 2) * wpp, 0);
-    const s = (rect.height * wpp) / DESIGN_H;
+    // En huecos estrechos (móvil) manda el ancho, para que nada se salga por los lados
+    const s = Math.min((rect.height * wpp) / DESIGN_H, (rect.width * wpp) / MIN_WIDTH);
     root.scale.setScalar(Math.max(0.0001, s * Math.max(0, enter)));
     camera.aspect = W / H;
     camera.updateProjectionMatrix();
@@ -295,7 +297,7 @@ export function createHeroStage({ renderer, palette, lite, stage, wake }) {
     slow += ((shown >= 0 ? 0.12 : 1) - slow) * (1 - Math.exp(-dt * 5));
     if (animated) orbit += dt * 0.12 * ambient * slow;
     graph.group.rotation.y = orbit + (yaw - DEFAULT_YAW) * 0.35;
-    const widthUnits = (DESIGN_H * rect.width) / rect.height;
+    const widthUnits = (rect.width * wpp) / s;
     const rx = clamp(widthUnits * 0.45, 1.9, 5.4);
     graph.setLayout(rx, 1.35, Math.min(rx * 0.55, 2.4));
     const graphActive = graph.update(dt, t, ambient, animated, shown);

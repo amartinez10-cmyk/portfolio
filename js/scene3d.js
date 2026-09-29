@@ -10,6 +10,9 @@
  * Con "reducir movimiento" no hay bucle de animación: se dibujan fotogramas estáticos
  * solo cuando cambia algo (sección, tamaño, o al arrastrar el modelo).
  * El botón de fondo (play/pausa) también congela el movimiento ambiente del 3D.
+ *
+ * Depuración desde la consola: portfolio3d.stats() (fps, llamadas de dibujo, cámara…) y
+ * portfolio3d.step(segundos), que avanza la simulación de golpe aunque la pestaña esté oculta.
  */
 import * as THREE from "three";
 import { createWorldProps } from "./world-props.js";
@@ -27,7 +30,7 @@ const POSES = {
   certificates: { off: [13, -7, 23],  ndcL: [0.5, -0.02],  ndcP: [0, -0.42],    k: 30, c: 4.5, roll: 0.32,  fov: 54 },
   projects:     { off: [0, 17, 21],   ndcL: [0.46, -0.08], ndcP: [0, -0.42],    k: 22, c: 10,  roll: -0.1,  fov: 48 },
   hhep:         { off: [25, 1, 46],   ndcL: [0.5, -0.02],  ndcP: [0, -0.42],    k: 40, c: 6.5, roll: 0,     fov: 60 },
-  contact:      { off: [-7, 4, 17],   ndcL: [0.5, -0.02],  ndcP: [0, -0.42],    k: 55, c: 14,  roll: 0,     fov: 42 }
+  contact:      { off: [-7, 4, 25],   ndcL: [0.5, -0.02],  ndcP: [0, -0.42],    k: 55, c: 14,  roll: 0,     fov: 42 }
 };
 
 const PARTICLES = { full: 2600, lite: 900 };

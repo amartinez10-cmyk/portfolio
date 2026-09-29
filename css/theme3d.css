@@ -312,10 +312,37 @@ main,
   }
 }
 
+@media (prefers-contrast: more) {
+  :root {
+    --muted: #d3d8ec;
+    --glass: rgba(0, 0, 0, 0.88);
+    --glass-strong: rgba(0, 0, 0, 0.95);
+    --glass-edge: rgba(255, 255, 255, 0.55);
+  }
+}
+
+@media (forced-colors: active) {
+  .scene3d,
+  .cursor,
+  .about__stage {
+    display: none;
+  }
+}
+
 @media print {
   .about__stage,
   .cursor {
     display: none;
+  }
+
+  .about__body,
+  .about__skills,
+  .page:not(.about) {
+    border-color: #bbbbbb;
+    background: none;
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
   }
 
   :root {
