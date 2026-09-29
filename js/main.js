@@ -472,14 +472,15 @@
     });
   }
 
-  function playIntro() {
+  // fromBoot: la entrada empieza justo al terminar la pantalla de carga (js/boot-screen.js)
+  function playIntro(fromBoot) {
     var root = document.documentElement;
     if (!root.classList.contains("intro-pending") || document.hidden || !main.animate) {
       root.classList.remove("intro-pending");
       return;
     }
 
-    if (reduceMotion.matches || readSession(INTRO_KEY) === "1") {
+    if (reduceMotion.matches || (!fromBoot && readSession(INTRO_KEY) === "1")) {
       [document.querySelector(".backdrop"), document.querySelector(".site-header"), main].forEach(function (el) {
         settle(el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 300, easing: curve("ease-out") }));
       });
@@ -491,15 +492,20 @@
     // 1. La cortina: el fondo del vídeo es blanco como la página, así que al
     //    retirarse parece que las ondas se dibujan de izquierda a derecha
     var backdrop = document.querySelector(".backdrop");
-    var curtain = document.createElement("div");
-    curtain.className = "backdrop__curtain";
-    backdrop.appendChild(curtain);
-    var sweep = settle(curtain.animate(
-      [{ transform: "translateX(0)" }, { transform: "translateX(100%)" }],
-      { duration: 1600, easing: curve("ease-in-out"), fill: "forwards" }
-    ));
-    function removeCurtain() { curtain.remove(); }
-    sweep.finished.then(removeCurtain, removeCurtain);
+    if (fromBoot) {
+      // La pantalla de carga ya ha hecho de cortina: el fondo solo se enciende
+      settle(backdrop.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 700, easing: curve("ease-out") }));
+    } else {
+      var curtain = document.createElement("div");
+      curtain.className = "backdrop__curtain";
+      backdrop.appendChild(curtain);
+      var sweep = settle(curtain.animate(
+        [{ transform: "translateX(0)" }, { transform: "translateX(100%)" }],
+        { duration: 1600, easing: curve("ease-in-out"), fill: "forwards" }
+      ));
+      var removeCurtain = function () { curtain.remove(); };
+      sweep.finished.then(removeCurtain, removeCurtain);
+    }
 
     // 2. El menú y los botones bajan a su sitio, uno detrás de otro
     var header = Array.prototype.slice.call(document.querySelectorAll(".main-nav li"));
@@ -526,7 +532,12 @@
 
   applyLang(initialLang());
   showPage(false);
-  playIntro();
+  // Con la pantalla de carga delante, la entrada espera a que termine
+  if (document.documentElement.classList.contains("booting")) {
+    document.addEventListener("portfolio:boot-done", function () { playIntro(true); }, { once: true });
+  } else {
+    playIntro(false);
+  }
 
   if (reduceMotion.matches || readStore(BG_KEY) === "1") setBgState("paused");
   else playBg(resumeWhenPossible);

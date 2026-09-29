@@ -18,8 +18,14 @@
     ? new URL(".", document.currentScript.src).href
     : new URL("js/", location.href).href;
 
+  // Avisa a la pantalla de carga de cómo ha ido (ver js/boot-screen.js)
+  function announce(status) {
+    document.dispatchEvent(new CustomEvent("portfolio:3d-status", { detail: { status: status } }));
+  }
+
   function off(reason) {
     root.dataset.scene = "off";
+    announce("off");
     root.classList.remove("has-3d");
     root.classList.add("no-3d");
     if (reason && window.console) console.info("[3D] desactivado:", reason);
@@ -66,13 +72,15 @@
       .then(function (info) {
         root.dataset.scene = info.level;
         root.classList.add("has-3d");
+        announce("ready");
       })
       .catch(function (err) {
         off(err && err.message ? err.message : err);
       });
   }
 
-  // Después de pintar y con el navegador libre; el margen deja acabar la animación de entrada
+  // Después de pintar y con el navegador libre; el margen deja acabar la animación de entrada.
+  // Con la pantalla de carga delante, en cambio, se carga ya: es justo lo que se está esperando.
   function schedule() {
     setTimeout(function () {
       if (window.requestIdleCallback) window.requestIdleCallback(load, { timeout: 2000 });
@@ -80,6 +88,7 @@
     }, 1800);
   }
 
-  if (document.readyState === "complete") schedule();
+  if (root.dataset.boot === "running") load();
+  else if (document.readyState === "complete") schedule();
   else window.addEventListener("load", schedule);
 })();

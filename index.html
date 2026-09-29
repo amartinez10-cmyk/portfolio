@@ -12,6 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Mulish:wght@300;400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
   <link rel="stylesheet" href="css/theme3d.css">
+  <link rel="stylesheet" href="css/boot.css">
   <!-- Three.js desde CDN (sin instalar nada). El 3D se carga más tarde, desde js/boot3d.js:
        si el CDN o WebGL fallan, la página funciona igual sin él. -->
   <script type="importmap">
@@ -26,11 +27,40 @@
     // Oculta la página hasta que main.js lanza la animación de entrada, para que no se
     // vea el contenido un instante y luego desaparezca. Si main.js no llegara a
     // ejecutarse, todo se muestra igualmente a los 1,5 s.
-    document.documentElement.classList.add("intro-pending");
-    setTimeout(function () { document.documentElement.classList.remove("intro-pending"); }, 1500);
+    // Además, en cada carga se muestra la pantalla de carga "hacker" (js/boot-screen.js) y la
+    // entrada se lanza cuando esta termina. No se muestra con "reducir movimiento" ni con
+    // ?boot=off; si su script fallara, se retira sola a los 14 s.
+    (function () {
+      var root = document.documentElement;
+      var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      var boot = !reduce && new URLSearchParams(location.search).get("boot") !== "off";
+      root.classList.add("intro-pending");
+      if (boot) root.classList.add("booting");
+      setTimeout(function () {
+        root.classList.remove("intro-pending");
+        root.classList.remove("booting");
+      }, boot ? 14000 : 1500);
+    })();
   </script>
 </head>
 <body>
+  <!-- Pantalla de carga: solo se muestra con <html class="booting"> (ver css/boot.css) -->
+  <div class="boot" id="boot" role="status">
+    <p class="sr-only" data-i18n="boot.status">Cargando el portfolio…</p>
+    <canvas class="boot__rain" aria-hidden="true"></canvas>
+    <div class="boot__crt" aria-hidden="true"></div>
+    <div class="boot__hud" aria-hidden="true"><span>CPU <b class="boot__cpu">00</b>%</span><span>MEM <b class="boot__mem">0.0</b>GB</span><span>NET <b class="boot__net">000</b>KB/S</span></div>
+    <div class="boot__hex" aria-hidden="true"></div>
+    <div class="boot__panel" aria-hidden="true">
+      <div class="boot__titlebar"><i></i><i></i><i></i><span>alex@portfolio:~</span></div>
+      <pre class="boot__log"></pre>
+      <div class="boot__progress"><span class="boot__blocks"></span><span class="boot__pct">0%</span></div>
+    </div>
+    <div class="boot__granted" aria-hidden="true"><span data-text="ACCESO CONCEDIDO">ACCESO CONCEDIDO</span></div>
+    <div class="boot__line" aria-hidden="true"></div>
+    <button type="button" class="boot__skip" data-i18n="boot.skip">Saltar</button>
+  </div>
+
   <!-- Vídeo de fondo -->
   <div class="backdrop" aria-hidden="true">
     <video class="backdrop__video" src="video/fondo.mp4" poster="video/fondo-poster.jpg"
@@ -158,6 +188,7 @@
   </main>
 
   <script src="js/translations.js"></script>
+  <script src="js/boot-screen.js"></script>
   <script src="js/main.js"></script>
   <script src="js/fx.js"></script>
   <script src="js/boot3d.js"></script>
