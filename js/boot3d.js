@@ -2,12 +2,10 @@
  * Arranque perezoso de la capa 3D (js/scene3d.js + Three.js desde el CDN).
  *
  * Se espera a que la página esté pintada y el navegador libre, y solo se sigue
- * si el dispositivo puede con ello. Si algo falla (sin WebGL, sin conexión al CDN,
- * dispositivo flojo, ahorro de datos) la página se queda como está, sin 3D.
+ * si hay WebGL. Si algo falla (sin WebGL, sin conexión al CDN, ahorro de datos) la página se queda como está, sin 3D.
  *
  * Estado en <html data-scene="…">:  loading · full · lite · off
- * Para probar:  ?3d=off (sin 3D) · ?3d=lite (ligero) · ?3d=full (completo) · ?3d=force
- *               (completo aunque el navegador diga que el WebGL es lento)
+ * Para probar:  ?3d=off (sin 3D) · ?3d=lite (ligero) · ?3d=full (completo)
  */
 (function () {
   "use strict";
@@ -44,7 +42,9 @@
     }
   }
 
-  // "full", "lite" o null (sin 3D)
+  // "full", "lite" o null (sin 3D). Solo se renuncia al 3D si no hay WebGL o el usuario ahorra datos;
+  // en equipos flojos se sigue mostrando (se baja la resolución, ver scene3d.js) y en móviles se
+  // usa la versión ligera.
   function pickLevel() {
     if (flag === "off") return null;
     if (!webglAvailable()) return null;
@@ -52,12 +52,9 @@
 
     var conn = navigator.connection || {};
     if (conn.saveData) return null;
-    if (navigator.deviceMemory && navigator.deviceMemory <= 2) return null;
-    if (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 2) return null;
 
-    var small = window.matchMedia("(max-width: 899px)").matches || window.matchMedia("(pointer: coarse)").matches;
-    if (small || (navigator.deviceMemory && navigator.deviceMemory <= 4)) return "lite";
-    return "full";
+    var small = window.matchMedia("(max-width: 699px)").matches || window.matchMedia("(pointer: coarse)").matches;
+    return small ? "lite" : "full";
   }
 
   function load() {

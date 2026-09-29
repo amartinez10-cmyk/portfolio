@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Portfolio de Alex</title>
   <meta name="description" content="Portfolio de Alex, Técnico en Sistemas Microinformáticos y Redes.">
-  <meta name="theme-color" content="#03040a">
+  <meta name="theme-color" content="#0e0a26">
   <meta name="color-scheme" content="dark">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Mulish:wght@300;400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Mulish:wght@300;400;600&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
   <link rel="stylesheet" href="css/theme3d.css">
   <link rel="stylesheet" href="css/boot.css">
@@ -61,14 +61,25 @@
     <button type="button" class="boot__skip" data-i18n="boot.skip">Saltar</button>
   </div>
 
-  <!-- Vídeo de fondo -->
-  <div class="backdrop" aria-hidden="true">
-    <video class="backdrop__video" src="video/fondo.mp4" poster="video/fondo-poster.jpg"
-           muted loop playsinline preload="none" disablepictureinpicture></video>
-  </div>
-
-  <!-- Escena 3D: transparente, entre el vídeo (debajo) y el contenido (encima) -->
+  <!-- Escena 3D: transparente, sobre el fondo (CSS) y debajo del contenido -->
   <canvas id="scene" class="scene3d" aria-hidden="true"></canvas>
+
+  <!-- Capa que recoge el arrastre y el cursor sobre la escena 3D (js/stage-input.js). Cubre toda la
+       pantalla por detrás del contenido; solo existe si el 3D está activo. -->
+  <div class="stage" id="stage" tabindex="0" role="group"
+       data-i18n-aria-label="stage.label" aria-label="Escenario 3D interactivo"
+       aria-describedby="stage-hint" aria-keyshortcuts="ArrowLeft ArrowRight ArrowUp ArrowDown Home Enter Escape">
+    <p class="stage__hint" id="stage-hint">
+      <span class="hint-mouse" data-i18n="stage.hint">Arrastra para girar la sala</span>
+      <span class="hint-touch" data-i18n="stage.hintTouch">Arrastra para girar la sala</span>
+    </p>
+    <button type="button" class="stage__focus" aria-pressed="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+      <span class="when-off" data-i18n="stage.explore">Explorar el PC</span>
+      <span class="when-on" data-i18n="stage.exit">Volver a la sala</span>
+    </button>
+    <div class="node-label" aria-hidden="true"></div>
+  </div>
 
   <header class="site-header">
     <nav class="main-nav" data-i18n-aria-label="nav.label" aria-label="Secciones">
@@ -88,31 +99,29 @@
         <button type="button" data-lang="en" lang="en" aria-label="English" title="English"><span class="lang-switch__label">EN</span></button>
         <button type="button" data-lang="es" lang="es" aria-label="Español" title="Español" aria-pressed="true"><span class="lang-switch__label">ES</span></button>
       </div>
-
-      <button type="button" class="bg-toggle" data-state="paused" aria-label="Reproducir fondo" title="Reproducir fondo">
-        <svg class="bg-toggle__pause" viewBox="0 0 16 16" aria-hidden="true"><rect x="3.5" y="2.5" width="3" height="11"/><rect x="9.5" y="2.5" width="3" height="11"/></svg>
-        <svg class="bg-toggle__play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 2.5v11l9-5.5z"/></svg>
-      </button>
     </div>
   </header>
 
   <main id="content">
     <!-- SOBRE MÍ -->
     <section id="about" class="page about" aria-labelledby="about-title">
-      <div class="about__intro" data-depth="10" data-scroll="0.14">
-        <figure class="about__photo">
-          <img src="img/alex.jpg" width="960" height="1280"
-               data-i18n-alt="about.photoAlt" alt="Retrato de Alex">
-        </figure>
-        <div>
-          <h1 id="about-title" tabindex="-1" data-i18n="about.greeting">Hola, soy Alex.</h1>
-          <p class="about__role" data-i18n="about.role">Técnico en Sistemas Microinformáticos y Redes</p>
+      <div class="about__panel" data-tilt data-depth="10">
+        <p class="level-tag" aria-hidden="true"><span data-i18n="level.name">Nivel</span> <b>01</b></p>
+        <div class="about__intro">
+          <figure class="about__photo">
+            <img src="img/alex.jpg" width="960" height="1280"
+                 data-i18n-alt="about.photoAlt" alt="Retrato de Alex">
+          </figure>
+          <div>
+            <h1 id="about-title" tabindex="-1" data-i18n="about.greeting">Hola, soy Alex.</h1>
+            <p class="about__role" data-i18n="about.role">Técnico en Sistemas Microinformáticos y Redes</p>
+          </div>
         </div>
-      </div>
 
-      <div class="about__body" data-tilt data-depth="16" data-scroll="0.1">
-        <p data-i18n="about.p1">Actualmente estudio SMX en Sa Palomera, y en este portfolio voy recogiendo lo que aprendo por el camino.</p>
-        <p data-i18n="about.p2">Me interesa sobre todo la Inteligencia Artificial, y disfruto del trabajo que me deja resolver problemas reales y ver el resultado. Fuera de clase dedico mi tiempo a entrenar y aprender habilidades de alto valor.</p>
+        <div class="about__body">
+          <p data-i18n="about.p1">Actualmente estudio SMX en Sa Palomera, y en este portfolio voy recogiendo lo que aprendo por el camino.</p>
+          <p data-i18n="about.p2">Me interesa sobre todo la Inteligencia Artificial, y disfruto del trabajo que me deja resolver problemas reales y ver el resultado. Fuera de clase dedico mi tiempo a entrenar y aprender habilidades de alto valor.</p>
+        </div>
       </div>
 
       <!-- Habilidades: las listas se rellenan desde js/translations.js (skills.hard y skills.soft)
@@ -144,55 +153,62 @@
           </ul>
         </div>
       </div>
-
-      <!-- Escenario 3D: hueco donde js/hero-stage.js dibuja el modelo y la red de habilidades.
-           Solo se muestra si el 3D está activo; las habilidades siguen en las listas de abajo. -->
-      <div class="about__stage" id="stage" tabindex="0" role="group" data-scroll="0.08"
-           data-i18n-aria-label="stage.label" aria-label="Modelo 3D interactivo"
-           aria-describedby="stage-hint" aria-keyshortcuts="ArrowLeft ArrowRight ArrowUp ArrowDown Home">
-        <p class="about__stage-hint" id="stage-hint">
-          <span class="hint-mouse" data-i18n="stage.hint">Arrastra para girar · Pasa el cursor por los nodos</span>
-          <span class="hint-touch" data-i18n="stage.hintTouch">Arrastra para girar · Toca los nodos</span>
-        </p>
-        <div class="node-label" aria-hidden="true"></div>
-      </div>
     </section>
 
     <!-- CURRÍCULUM -->
     <section id="resume" class="page" aria-labelledby="resume-title" data-tilt data-depth="12" hidden>
+      <p class="level-tag" aria-hidden="true"><span data-i18n="level.name">Nivel</span> <b>02</b></p>
       <h1 id="resume-title" tabindex="-1" data-i18n="nav.resume">Currículum</h1>
       <p data-i18n="resume.body">Pronto encontrarás aquí mi currículum.</p>
     </section>
 
     <!-- CERTIFICADOS -->
     <section id="certificates" class="page" aria-labelledby="certificates-title" data-tilt data-depth="12" hidden>
+      <p class="level-tag" aria-hidden="true"><span data-i18n="level.name">Nivel</span> <b>03</b></p>
       <h1 id="certificates-title" tabindex="-1" data-i18n="nav.certificates">Certificados</h1>
       <p data-i18n="certificates.body">Aquí iré añadiendo los certificados que obtenga.</p>
     </section>
 
     <!-- PROYECTOS -->
     <section id="projects" class="page" aria-labelledby="projects-title" data-tilt data-depth="12" hidden>
+      <p class="level-tag" aria-hidden="true"><span data-i18n="level.name">Nivel</span> <b>04</b></p>
       <h1 id="projects-title" tabindex="-1" data-i18n="nav.projects">Proyectos</h1>
       <p data-i18n="projects.body">Aquí iré publicando los proyectos que haga en clase y por mi cuenta.</p>
     </section>
 
     <!-- 7 HHEP -->
     <section id="hhep" class="page" aria-labelledby="hhep-title" data-tilt data-depth="12" hidden>
+      <p class="level-tag" aria-hidden="true"><span data-i18n="level.name">Nivel</span> <b>05</b></p>
       <h1 id="hhep-title" tabindex="-1" data-i18n="nav.hhep">7 HHEP</h1>
       <p data-i18n="hhep.body">Contenido en preparación.</p>
     </section>
 
     <!-- CONTACTO -->
     <section id="contact" class="page" aria-labelledby="contact-title" data-tilt data-depth="12" hidden>
+      <p class="level-tag" aria-hidden="true"><span data-i18n="level.name">Nivel</span> <b>06</b></p>
       <h1 id="contact-title" tabindex="-1" data-i18n="nav.contact">Contacto</h1>
       <p data-i18n="contact.body">Pronto añadiré aquí mis datos de contacto.</p>
     </section>
   </main>
 
+  <!-- Selector de nivel: las mismas seis secciones del menú, como los niveles de un juego -->
+  <nav class="level-nav" data-i18n-aria-label="level.label" aria-label="Niveles">
+    <button type="button" class="level-nav__btn" data-step="-1" data-i18n-aria-label="level.prev" aria-label="Nivel anterior">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>
+    </button>
+    <p class="level-nav__label" aria-live="polite">
+      <span data-i18n="level.name">Nivel</span> <b class="level-nav__num">01</b><i class="level-nav__total">/06</i>
+    </p>
+    <button type="button" class="level-nav__btn" data-step="1" data-i18n-aria-label="level.next" aria-label="Nivel siguiente">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+    </button>
+  </nav>
+
   <script src="js/translations.js"></script>
   <script src="js/boot-screen.js"></script>
   <script src="js/skill-icons.js"></script>
   <script src="js/main.js"></script>
+  <script src="js/level-nav.js"></script>
   <script src="js/fx.js"></script>
   <script src="js/boot3d.js"></script>
 </body>

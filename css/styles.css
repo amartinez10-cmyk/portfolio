@@ -1,13 +1,40 @@
+/* Propiedades animables: el color del nivel cambia poco a poco (fondo, etiquetas, bordes) y el
+   borde de las tarjetas tiene un destello que le da la vuelta */
+@property --level-accent {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #8b6cff;
+}
+
+@property --spin {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
 :root {
-  --paper: #ffffff;   /* el mismo blanco que el fondo del vídeo */
-  --ink: #000000;
-  --muted: #5e6168;
-  --accent: #5066ce;  /* el azul de las ondas del vídeo */
-  --photo: #e7e8ea;   /* el gris de la pared de la foto */
+  color-scheme: dark;
+  transition: --level-accent 0.9s ease;
+
+  --paper: #0e0a26;
+  --ink: #f4f0ff;
+  --muted: #b5acdc;
+  --photo: #1c1548;
+
+  /* Colores de la web (el 3D los lee de aquí): violeta, ámbar y rosa */
+  --accent: #9b7bff;
+  --accent-2: #ffc247;
+  --accent-3: #ff7eb6;
+  --level-accent: #8b6cff;   /* lo cambia js/level-nav.js según el nivel */
+
+  --glass: rgba(30, 20, 84, 0.55);
+  --glass-strong: rgba(22, 14, 62, 0.8);
+  --glass-edge: rgba(196, 178, 255, 0.24);
 
   --font: "Avenir Next", "Avenir", "Mulish", "Segoe UI", system-ui, sans-serif;
-  --gutter: clamp(1rem, 5vw, 4.375rem);
-  --max: 76rem;
+  --display: "Outfit", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --gutter: clamp(1rem, 4.5vw, 4.5rem);
+  --max: 96rem;
 
   /* Curvas de las animaciones (las leen también las de main.js) */
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);       /* entradas y salidas */
@@ -20,8 +47,17 @@
   box-sizing: border-box;
 }
 
+/* Fondo minimalista: un degradado índigo con unos halos de color muy suaves.
+   Va en <html> (y no en <body>) para que el canvas 3D, con z-index negativo, quede por encima. */
 html {
   -webkit-text-size-adjust: 100%;
+  background:
+    radial-gradient(70vmax 55vmax at 26% 44%, color-mix(in srgb, var(--level-accent) 34%, transparent), transparent 62%),
+    radial-gradient(52vmax 42vmax at 92% 6%, rgba(255, 112, 182, 0.17), transparent 62%),
+    radial-gradient(48vmax 46vmax at 66% 104%, rgba(64, 160, 255, 0.14), transparent 62%),
+    linear-gradient(180deg, #0c0826 0%, #140e38 52%, #1a1148 100%);
+  background-color: var(--paper);
+  background-attachment: fixed;
 }
 
 [hidden] {
@@ -34,7 +70,6 @@ body {
   min-height: 100vh;
   min-height: 100svh;
   margin: 0;
-  background: var(--paper);
   color: var(--ink);
   font-family: var(--font);
   font-weight: 400;
@@ -57,7 +92,7 @@ button {
 }
 
 :focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--accent-2);
   outline-offset: 4px;
 }
 
@@ -65,31 +100,19 @@ h1:focus {
   outline: none;
 }
 
-/* ---------- Vídeo de fondo ----------
-   Las ondas del vídeo ocupan la franja entre el 40 % y el 80 % de la altura,
-   así que todo el contenido vive en el tercio de arriba y deja la franja libre. */
-
-.backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: -1;
-  width: 100%;
-  height: 100vh;
-  height: 100lvh;
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
   overflow: hidden;
-  background: var(--paper);
-  pointer-events: none;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
 }
 
-.backdrop__video {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-/* ---------- Cabecera: menú, idiomas y pausa ---------- */
+/* ---------- Cabecera: menú e idiomas ---------- */
 
 .site-header,
 main {
@@ -99,12 +122,14 @@ main {
 }
 
 .site-header {
+  position: relative;
+  z-index: 5;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem 2rem;
-  padding: clamp(1.25rem, 5.5vh, 3rem) var(--gutter) 0;
+  padding: clamp(1.1rem, 4.5vh, 2.5rem) var(--gutter) 0;
 }
 
 .main-nav ul {
@@ -121,14 +146,24 @@ main {
   padding: 0.25rem 0;
   text-decoration: none;
   text-transform: uppercase;
-  font-size: 1.0625rem;
-  letter-spacing: 0.025em; /* las mayúsculas pequeñas necesitan algo más de aire */
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: 0.9375rem;
+  letter-spacing: 0.09em;
+  color: rgba(244, 240, 255, 0.82);
+  text-shadow: 0 1px 14px rgba(10, 5, 40, 0.7);
   transition: color 0.15s ease, transform 0.1s ease-out;
 }
 
 .main-nav a:hover,
 .main-nav a[aria-current="page"] {
-  color: var(--accent);
+  color: #fff;
+}
+
+.main-nav a[aria-current="page"]::after {
+  transform: scaleX(1);
+  background: var(--level-accent);
+  height: 2px;
 }
 
 .site-controls {
@@ -143,8 +178,7 @@ main {
   gap: 0.25rem;
 }
 
-.lang-switch button,
-.bg-toggle {
+.lang-switch button {
   min-width: 2.75rem;
   min-height: 2.75rem;
   padding: 0 0.5rem;
@@ -160,46 +194,32 @@ main {
   transform: scale(0.97);
 }
 
-.lang-switch button:active,
-.bg-toggle:active {
+.lang-switch button:active {
   color: var(--ink);
   transform: scale(0.92);
 }
 
 .lang-switch button {
+  font-family: var(--display);
   font-size: 0.9375rem;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
 }
 
-.lang-switch button:hover,
-.bg-toggle:hover {
+.lang-switch button:hover {
   color: var(--ink);
 }
 
 .lang-switch button[aria-pressed="true"] {
   color: var(--ink);
-  font-weight: 600;
-}
-
-.bg-toggle {
-  display: inline-grid;
-  place-items: center;
-}
-
-.bg-toggle svg {
-  width: 0.8125rem;
-  height: 0.8125rem;
-  fill: currentColor;
-}
-
-.bg-toggle[data-state="playing"] .bg-toggle__play,
-.bg-toggle[data-state="paused"] .bg-toggle__pause {
-  display: none;
+  font-weight: 700;
 }
 
 /* ---------- Contenido ---------- */
 
 main {
+  position: relative;
+  z-index: 2;
+  overflow-x: clip;        /* las tarjetas de habilidades entran en 3D y su proyección no debe crear scroll lateral */
   display: flex;
   flex-direction: column;
   flex: 1;
@@ -207,18 +227,49 @@ main {
 }
 
 .page h1 {
-  margin: 0 0 0.5rem;
-  font-size: clamp(2rem, 1.5rem + 1.4vw, 2.75rem);
-  font-weight: 300;
-  line-height: 1.05;
-  letter-spacing: -0.02em; /* los tamaños grandes se aprietan un poco */
+  margin: 0 0 0.6rem;
+  font-family: var(--display);
+  font-size: clamp(2.3rem, 1.5rem + 2.4vw, 3.6rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.035em; /* los tamaños grandes se aprietan un poco */
 }
 
 .page p {
   max-width: 34rem;
   margin: 0 0 0.9em;
   font-size: 0.9375rem;
-  line-height: 1.6;
+  line-height: 1.65;
+}
+
+/* Etiqueta "NIVEL 02" de cada tarjeta */
+.page .level-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: none;
+  margin: 0 0 1.1rem;
+  padding: 0.35rem 0.85rem 0.35rem 0.7rem;
+  border: 1px solid color-mix(in srgb, var(--level-accent) 60%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--level-accent) 22%, transparent);
+  font: 600 0.7rem/1 var(--display);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+.level-tag::before {
+  content: "";
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--level-accent);
+  box-shadow: 0 0 0.8rem var(--level-accent);
+}
+
+.level-tag b {
+  font-weight: 800;
 }
 
 /* ---------- Sobre mí ---------- */
@@ -226,25 +277,24 @@ main {
 .about {
   flex: 1;
   display: grid;
-  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
-  grid-template-rows: auto minmax(0, 1fr) auto;   /* presentación · escenario 3D · habilidades */
-  gap: 1.75rem clamp(2rem, 5vw, 4.5rem);
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2rem;
   align-items: start;
 }
 
 .about__intro {
-  grid-column: 1;
-  grid-row: 1;
   display: flex;
-  align-items: flex-start;
-  gap: 1.5rem;
+  align-items: center;
+  gap: 1.25rem;
+  margin-bottom: 1.25rem;
 }
 
 .about__photo {
   flex: none;
-  width: clamp(5rem, 14vh, 6.75rem);
+  width: clamp(4.75rem, 12vh, 6rem);
   margin: 0;
   overflow: hidden;
+  border-radius: 1.1rem;
   background: var(--photo);
 }
 
@@ -259,37 +309,28 @@ main {
   max-width: 21rem;
   margin: 0;
   color: var(--muted);
-  line-height: 1.45;
+  line-height: 1.4;
 }
 
-.about__body {
-  grid-column: 2;
-  grid-row: 1;
-  columns: 2 14rem;
-  column-gap: 2rem;
-}
-
-.about__body p {
-  max-width: none;
-  break-inside: avoid;
+.about__body p:last-child {
+  margin-bottom: 0;
 }
 
 /* Habilidades: un escaparate de tarjetas debajo de la presentación (el aspecto de cada
    tarjeta, sus iconos y su entrada con el scroll están en theme3d.css y js/fx.js) */
 .about__skills {
-  grid-column: 1 / -1;
-  grid-row: 3;
   display: grid;
   gap: clamp(2rem, 5vw, 3.5rem);
-  margin-top: clamp(1.5rem, 5vh, 3rem);
+  margin-top: clamp(1rem, 4vh, 2.5rem);
 }
 
 .skills h2 {
   margin: 0 0 1rem;
-  font-size: 1.25rem;
-  font-weight: 600;
+  font-family: var(--display);
+  font-size: 1.4rem;
+  font-weight: 700;
   line-height: 1.3;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.015em;
 }
 
 .skills__list {
@@ -303,27 +344,8 @@ main {
   line-height: 1.4;
 }
 
-/* Tablet y portátil pequeño: la presentación arriba, las ondas en medio
-   y el texto en la franja libre de abajo. Las habilidades van después. */
-@media (max-width: 1199px) {
-  .about {
-    position: relative;
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .about__body {
-    grid-column: 1;
-    grid-row: 3;
-    align-self: end;
-  }
-
-  .about__skills {
-    grid-row: 4;
-  }
-}
-
 /* Cuando el menú y los botones no caben en una fila:
-   idiomas y pausa arriba a la derecha, el menú debajo */
+   idiomas arriba a la derecha, el menú debajo */
 @media (max-width: 1099px) {
   .site-header {
     flex-direction: column-reverse;
@@ -342,32 +364,22 @@ main {
   }
 
   .main-nav a {
-    font-size: 1rem;
+    font-size: 0.875rem;
   }
 }
 
-/* Móvil: la presentación arriba, las ondas en medio y el texto al hacer scroll */
 @media (max-width: 699px) {
   .main-nav ul {
-    gap: 0.25rem 1.25rem;
+    gap: 0.25rem 1.1rem;
   }
 
   .main-nav a {
-    font-size: 0.9375rem;
-  }
-
-  .about__photo {
-    width: clamp(4.25rem, 11vh, 5.25rem);
+    font-size: 0.8125rem;
+    letter-spacing: 0.06em;
   }
 
   .about__intro {
-    gap: 1.125rem;
-  }
-
-  .about__body {
-    columns: auto;
-    margin-top: 42vh;
-    margin-top: 42svh;
+    gap: 1rem;
   }
 
   .page p {
@@ -382,21 +394,12 @@ main {
 /* ---------- Animaciones ---------- */
 
 /* El <head> pone esta clase hasta que main.js lanza la entrada */
-.intro-pending .backdrop,
 .intro-pending .site-header,
-.intro-pending main {
+.intro-pending main,
+.intro-pending .level-nav,
+.intro-pending .stage__focus,
+.intro-pending .stage__hint {
   opacity: 0;
-}
-
-/* Cortina blanca con el borde difuminado que descubre las ondas al cargar.
-   La crea main.js y la quita al terminar. */
-.backdrop__curtain {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: -30%;
-  width: 130%;
-  background: linear-gradient(to right, transparent, var(--paper) 23%);
 }
 
 /* Palabras del saludo: cada una sube desde detrás de su propia máscara.
@@ -462,7 +465,7 @@ main {
 
 @media (prefers-contrast: more) {
   :root {
-    --muted: #3a3c41;
+    --muted: #dcd6f5;
   }
 }
 

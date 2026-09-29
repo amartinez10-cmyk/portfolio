@@ -1,42 +1,48 @@
 /*
- * Escena 3D de fondo. Un único canvas fijo entre el vídeo y el contenido, con dos pasadas:
- *   1. El MUNDO: campo de partículas + un emblema por sección. Su cámara viaja de un
- *      emblema a otro al cambiar de sección (cada una con un muelle distinto) y reacciona
- *      al ratón, al scroll y a la rueda.
- *   2. El ESCENARIO de "Sobre mí" (js/hero-stage.js): el modelo 3D y la red de habilidades,
- *      con una cámara fija anclada al hueco #stage del HTML.
+ * Escena 3D de la web. Un único canvas fijo entre el fondo y el contenido.
+ *
+ * Cada sección es un NIVEL: una sala flotante (js/levels.js) con su decorado. Los niveles están
+ * en fila y la cámara, isométrica, viaja de uno a otro al cambiar de sección (con muelles, así
+ * que arranca, se pasa un poco y se asienta). Además de la fila hay partículas, piezas de colores
+ * y nubes flotando (js/world-decor.js), que con el movimiento de la cámara dan el parallax.
+ *
+ * Reacciona al ratón (la cámara "respira"), al scroll (en "Sobre mí" gira y se acerca) y al
+ * arrastre (js/stage-input.js). En "Sobre mí", un clic en el PC acerca la cámara hasta él.
  *
  * Los colores se leen de css/theme3d.css (--accent, --accent-2, --accent-3).
- * Con "reducir movimiento" no hay bucle de animación: se dibujan fotogramas estáticos
- * solo cuando cambia algo (sección, tamaño, o al arrastrar el modelo).
- * El botón de fondo (play/pausa) también congela el movimiento ambiente del 3D.
+ * Con "reducir movimiento" no hay bucle de animación: se dibujan fotogramas estáticos solo
+ * cuando cambia algo (sección, tamaño, o al arrastrar).
  *
- * Depuración desde la consola: portfolio3d.stats() (fps, llamadas de dibujo, cámara…) y
- * portfolio3d.step(segundos), que avanza la simulación de golpe aunque la pestaña esté oculta.
+ * Depuración desde la consola: portfolio3d.stats() y portfolio3d.step(segundos), que avanza la
+ * simulación de golpe aunque la pestaña esté oculta.
  */
 import * as THREE from "three";
-import { createWorldProps } from "./world-props.js";
-import { createCrystals } from "./world-crystals.js";
+import { createLevels, LEVEL_STYLE } from "./levels.js";
+import { createDecor } from "./world-decor.js";
 import { createStudioEnv } from "./studio-env.js";
-import { createHeroStage } from "./hero-stage.js";
+import { createStageInput } from "./stage-input.js";
 
-const SPACING = 70; // separación entre emblemas en el eje X del mundo
+const GAP = 30;                                          // separación entre niveles
+const AXIS = new THREE.Vector3(1, 0, -1).normalize();    // la fila de niveles va hacia la derecha de la pantalla
+const DEPTH = new THREE.Vector3(1, 0, 1).normalize();    // hacia la cámara
+const BASE_YAW = Math.PI / 4;                            // vista isométrica
+const BASE_PITCH = 0.58;
+const FOV = 24;
+const SIL = { w: 19.2, h: 18.8 };                          // lo que ocupa una sala en pantalla (unidades)
+const CENTER_Y = 3.4;                                    // punto al que mira la cámara, sobre el suelo de la sala
 
-// Cámara de cada sección, relativa a su emblema.
-//   off: dónde está la cámara · ndcL/ndcP: en qué punto de la pantalla queda el emblema
-//   (apaisado / vertical) · k y c: rigidez y amortiguación del muelle (cada sección "se
-//   siente" distinta) · roll: giro de la cámara · fov: campo de visión
-const POSES = {
-  about:        { off: [0, 1.5, 48],  ndcL: [0.44, 0.02],  ndcP: [0, 0],        k: 34, c: 8.5, roll: 0,     fov: 46 },
-  resume:       { off: [-17, 2, 25],  ndcL: [0.5, -0.02],  ndcP: [0, -0.42],    k: 70, c: 15,  roll: 0,     fov: 50 },
-  certificates: { off: [13, -7, 23],  ndcL: [0.5, -0.02],  ndcP: [0, -0.42],    k: 30, c: 4.5, roll: 0.32,  fov: 54 },
-  projects:     { off: [0, 17, 21],   ndcL: [0.46, -0.08], ndcP: [0, -0.42],    k: 22, c: 10,  roll: -0.1,  fov: 48 },
-  hhep:         { off: [25, 1, 46],   ndcL: [0.5, -0.02],  ndcP: [0, -0.42],    k: 40, c: 6.5, roll: 0,     fov: 60 },
-  contact:      { off: [-7, 4, 25],   ndcL: [0.5, -0.02],  ndcP: [0, -0.42],    k: 55, c: 14,  roll: 0,     fov: 42 }
+// Cada nivel se mira desde un ángulo algo distinto
+const VARIANT = {
+  about:        { yaw: 0,     pitch: 0 },
+  resume:       { yaw: -0.09, pitch: 0.02 },
+  certificates: { yaw: 0.1,   pitch: -0.02 },
+  projects:     { yaw: -0.05, pitch: 0.04 },
+  hhep:         { yaw: 0.07,  pitch: 0 },
+  contact:      { yaw: -0.11, pitch: 0.02 }
 };
 
-const PARTICLES = { full: 4800, lite: 1200 };
-const BOX = new THREE.Vector3(84, 48, 84); // volumen de partículas que rodea a la cámara
+const PARTICLES = { full: 5200, lite: 1400 };
+const BOX = new THREE.Vector3(120, 70, 120);             // volumen de partículas que rodea a la cámara
 
 const VERTEX = /* glsl */ `
   attribute float aScale;
@@ -48,19 +54,19 @@ const VERTEX = /* glsl */ `
   varying float vAlpha;
   void main() {
     vec3 p = position;
-    p.z += uDrift;
-    p.y += sin(uTime * 0.3 + aSeed * 6.2831) * 0.4;
-    p.x += cos(uTime * 0.23 + aSeed * 12.566) * 0.3;
+    p += vec3(1.0, 0.0, -1.0) * uDrift * 0.7071;
+    p.y += sin(uTime * 0.3 + aSeed * 6.2831) * 0.5;
+    p.x += cos(uTime * 0.23 + aSeed * 12.566) * 0.4;
     // Se repite en todos los ejes alrededor de la cámara: el campo parece infinito
     vec3 rel = mod(p - uCenter + uBox * 0.5, uBox) - uBox * 0.5;
     vec4 mv = viewMatrix * vec4(uCenter + rel, 1.0);
     gl_Position = projectionMatrix * mv;
     float d = max(-mv.z, 0.5);
     float edge = 1.0 - smoothstep(0.72, 1.0, max(abs(rel.x) / (uBox.x * 0.5), max(abs(rel.y) / (uBox.y * 0.5), abs(rel.z) / (uBox.z * 0.5))));
-    float twinkle = 0.7 + 0.3 * sin(uTime * 1.6 + aSeed * 60.0);
-    vAlpha = edge * twinkle * smoothstep(1.5, 5.0, d) * (0.45 + 0.55 * aScale);
-    vColor = aMix < 0.62 ? uA : (aMix < 0.9 ? uB : uC);
-    gl_PointSize = clamp(uSize * aScale * uPx * (34.0 / d), uPx, 18.0 * uPx);
+    float twinkle = 0.65 + 0.35 * sin(uTime * 1.8 + aSeed * 60.0);
+    vAlpha = edge * twinkle * smoothstep(3.0, 10.0, d) * (0.5 + 0.5 * aScale);
+    vColor = aMix < 0.6 ? uA : (aMix < 0.85 ? uB : uC);
+    gl_PointSize = clamp(uSize * aScale * uPx * (60.0 / d), uPx * 1.2, 20.0 * uPx);
   }
 `;
 
@@ -68,9 +74,12 @@ const FRAGMENT = /* glsl */ `
   varying vec3 vColor;
   varying float vAlpha;
   void main() {
-    float r = length(gl_PointCoord - 0.5) * 2.0;
-    float a = pow(clamp(1.0 - r, 0.0, 1.0), 1.6) * vAlpha * 1.6;
-    vec3 col = mix(vColor, vec3(1.0), smoothstep(0.35, 0.0, r) * 0.55);
+    vec2 q = gl_PointCoord - 0.5;
+    float r = length(q) * 2.0;
+    // Destello con cuatro puntas suaves
+    float star = max(0.0, 1.0 - abs(q.x) * 14.0) * max(0.0, 1.0 - abs(q.y) * 2.4) + max(0.0, 1.0 - abs(q.y) * 14.0) * max(0.0, 1.0 - abs(q.x) * 2.4);
+    float a = (pow(clamp(1.0 - r, 0.0, 1.0), 1.8) * 1.4 + star * 0.5) * vAlpha;
+    vec3 col = mix(vColor, vec3(1.0), smoothstep(0.4, 0.0, r) * 0.6);
     gl_FragColor = vec4(col, a);
     #include <colorspace_fragment>
   }
@@ -80,9 +89,9 @@ function readPalette() {
   const css = getComputedStyle(document.documentElement);
   const color = (name, fallback) => new THREE.Color(css.getPropertyValue(name).trim() || fallback);
   return {
-    accent: color("--accent", "#6c86ff"),
-    accent2: color("--accent-2", "#33e1ff"),
-    accent3: color("--accent-3", "#b57cff")
+    accent: color("--accent", "#9b7bff"),
+    accent2: color("--accent-2", "#ffc247"),
+    accent3: color("--accent-3", "#ff7eb6")
   };
 }
 
@@ -96,7 +105,7 @@ function makeParticles(count, palette) {
     pos[i * 3] = Math.random() * BOX.x;
     pos[i * 3 + 1] = Math.random() * BOX.y;
     pos[i * 3 + 2] = Math.random() * BOX.z;
-    scale[i] = 0.6 + Math.pow(Math.random(), 3) * 1.6;
+    scale[i] = 0.6 + Math.pow(Math.random(), 3) * 1.8;
     seed[i] = Math.random();
     mix[i] = Math.random();
   }
@@ -114,13 +123,13 @@ function makeParticles(count, palette) {
     uniforms: {
       uTime: { value: 0 },
       uPx: { value: 1 },
-      uSize: { value: 2.2 },
+      uSize: { value: 2.4 },
       uDrift: { value: 0 },
       uCenter: { value: new THREE.Vector3() },
       uBox: { value: BOX },
-      uA: { value: palette.accent },
-      uB: { value: palette.accent2 },
-      uC: { value: palette.accent3 }
+      uA: { value: new THREE.Color(0xffffff) },
+      uB: { value: palette.accent.clone().lerp(new THREE.Color(0xffffff), 0.4) },
+      uC: { value: palette.accent2.clone() }
     }
   });
 
@@ -129,12 +138,23 @@ function makeParticles(count, palette) {
   return points;
 }
 
+// Muelle con rebote: se usa para la cámara y para la aparición de cada sala
+class Spring {
+  constructor(v = 0) { this.v = v; this.t = v; this.vel = 0; }
+  step(dt, k, c) {
+    this.vel += (k * (this.t - this.v) - c * this.vel) * dt;
+    this.v += this.vel * dt;
+  }
+  snap(v = this.t) { this.v = this.t = v; this.vel = 0; }
+  get busy() { return Math.abs(this.t - this.v) > 0.003 || Math.abs(this.vel) > 0.003; }
+}
+
 export function start({ level = "full", force = false } = {}) {
   const canvas = document.getElementById("scene");
+  const stageEl = document.getElementById("stage");
   const root = document.documentElement;
   const lite = level === "lite";
   const reduceMq = window.matchMedia("(prefers-reduced-motion: reduce)");
-  const bgToggle = document.querySelector(".bg-toggle");
   const order = Array.from(document.querySelectorAll(".main-nav a")).map((a) => a.getAttribute("href").slice(1));
   const palette = readPalette();
   const ac = new AbortController();
@@ -142,159 +162,234 @@ export function start({ level = "full", force = false } = {}) {
 
   let renderer;
   try {
-    renderer = new THREE.WebGLRenderer({
-      canvas,
-      alpha: true,
-      antialias: !lite,
-      powerPreference: "high-performance",
-      // Sin aceleración por hardware el 3D iría a saltos: mejor no activarlo
-      failIfMajorPerformanceCaveat: !force
-    });
+    renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: "high-performance" });
   } catch (err) {
     return Promise.reject(err);
   }
-  renderer.autoClear = false;
   renderer.setClearColor(0x000000, 0);
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.1;
+  renderer.toneMapping = THREE.NeutralToneMapping || THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
   let maxDpr = lite ? 1.5 : 2;
   const world = new THREE.Scene();
-  const cam = new THREE.PerspectiveCamera(46, 1, 0.1, 400);
+  const cam = new THREE.PerspectiveCamera(FOV, 1, 1, 500);
   const particles = makeParticles(lite ? PARTICLES.lite : PARTICLES.full, palette);
-  const props = createWorldProps({ palette, lite, order, spacing: SPACING });
-  world.add(particles, props.group);
+  world.add(particles);
 
-  // Estudio con luces de neón: da los reflejos a los cristales del mundo y al PC (hero-stage.js)
-  const envMap = createStudioEnv(renderer, palette);
+  /* ---------- Luces ---------- */
+
+  const envMap = createStudioEnv(renderer);
   world.environment = envMap.texture;
-  world.environmentIntensity = 0.9;
-  const crystals = createCrystals({ palette, lite });
-  world.add(crystals.group);
+  world.environmentIntensity = 0.75;
+  world.add(new THREE.HemisphereLight(0xffffff, 0x8f7bea, 0.55));
+  const fill = new THREE.DirectionalLight(0xb9a8ff, 0.7);
+  fill.position.set(-30, 12, 20);
+  world.add(fill);
+
+  // Dos luces con sombra: una sigue al nivel actual y la otra al siguiente (que asoma por la derecha)
+  function makeKey() {
+    const key = new THREE.DirectionalLight(0xfff2e2, 2.6);
+    key.castShadow = true;
+    key.shadow.mapSize.set(lite ? 1024 : 2048, lite ? 1024 : 2048);
+    const s = key.shadow.camera;
+    s.left = s.bottom = -19;
+    s.right = s.top = 19;
+    s.near = 1;
+    s.far = 90;
+    key.shadow.bias = -0.0004;
+    key.shadow.normalBias = 0.05;
+    world.add(key, key.target);
+    return key;
+  }
+  const keyA = makeKey();
+  const keyB = makeKey();
+  keyB.intensity = 2;
+
+  /* ---------- Niveles y decorado ---------- */
+
+  const levelPos = (i) => AXIS.clone().multiplyScalar(i * GAP);
+  const levels = createLevels({ palette, lite, order });
+  levels.items.forEach((lv) => {
+    lv.pos = levelPos(lv.index);
+    lv.holder.position.copy(lv.pos);
+    lv.pop = new Spring(0);
+    world.add(lv.holder);
+  });
+  const decor = createDecor({
+    levels: levels.items.map((lv) => ({ center: lv.pos, accent: lv.style.accent })),
+    axis: AXIS, depth: DEPTH, lite
+  });
+  world.add(decor.group);
 
   /* ---------- Estado ---------- */
 
   let W = 1;
   let H = 1;
   let animated = !reduceMq.matches;               // false con "reducir movimiento": fotogramas estáticos
-  let bgPlaying = bgToggle ? bgToggle.dataset.state === "playing" : true;
   let section = currentSection();
-  let ambient = animated && bgPlaying ? 1 : 0;    // 0 → 1: movimiento ambiente (sube y baja suave, como el vídeo)
+  let ambient = animated ? 1 : 0;
   let simTime = 0;
   let drift = 0;
   let wheelVel = 0;
   let scrollS = 0;
   const ptr = { x: 0, y: 0, tx: 0, ty: 0 };
-  const rig = {
-    pos: new THREE.Vector3(), posV: new THREE.Vector3(),
-    look: new THREE.Vector3(), lookV: new THREE.Vector3(),
-    roll: 0, rollV: 0, fov: 46, fovV: 0,
-    target: null
-  };
-  const scratch = new THREE.Vector3();
   const forward = new THREE.Vector3();
+  let fadedInline = false;
+
+  const rig = {
+    cx: new Spring(0), cy: new Spring(0), cz: new Spring(0),
+    dist: new Spring(60), yaw: new Spring(BASE_YAW), pitch: new Spring(BASE_PITCH),
+    fov: new Spring(FOV), roll: new Spring(0), ox: new Spring(0), oy: new Spring(0)
+  };
+  const rigList = Object.values(rig);
 
   function currentSection() {
     const page = document.querySelector(".page:not([hidden])");
-    return page && POSES[page.id] ? page.id : "about";
+    return page && order.includes(page.id) ? page.id : "about";
   }
 
-  /* ---------- Cámara: pose de cada sección ---------- */
+  const activeIndex = () => Math.max(0, order.indexOf(section));
 
-  function computePose(id) {
-    const spec = POSES[id] || POSES.about;
-    const slot = Math.max(0, order.indexOf(id));
-    const aspect = W / H;
-    // En pantallas estrechas la cámara se aleja para que el emblema quepa
-    const zoom = aspect >= 1.2 ? 1 : 1 + (1.2 - aspect) * 1.3;
-    const anchor = new THREE.Vector3(slot * SPACING, 0, -10);
-    const pos = anchor.clone().add(new THREE.Vector3(spec.off[0] * zoom, spec.off[1] * zoom, spec.off[2] * zoom));
-    const ndc = aspect > 0.9 ? spec.ndcL : spec.ndcP;
-    const halfH = pos.distanceTo(anchor) * Math.tan(THREE.MathUtils.degToRad(spec.fov / 2));
-    // Se mira un poco al lado para que el emblema quede en el punto de pantalla pedido
-    const look = anchor.clone().add(new THREE.Vector3(-ndc[0] * halfH * aspect, -ndc[1] * halfH, 0));
-    return { pos, look, roll: spec.roll, fov: spec.fov, k: spec.k, c: spec.c };
-  }
+  /* ---------- Interacción (arrastre, ratón, teclado) ---------- */
 
-  function snapRig() {
-    const t = rig.target;
-    rig.pos.copy(t.pos);
-    rig.look.copy(t.look);
-    rig.roll = t.roll;
-    rig.fov = t.fov;
-    rig.posV.set(0, 0, 0);
-    rig.lookV.set(0, 0, 0);
-    rig.rollV = rig.fovV = 0;
-  }
+  const input = createStageInput({
+    stage: stageEl, wake: () => wake(), camera: cam, size: () => ({ W, H }),
+    getAbout: () => (levels.about && levels.about.model ? levels.about : null),
+    getProps: () => levels.items[activeIndex()].hoverables,
+    onPropClick: (obj) => { bumpFor(obj).s.vel += 9; wake(); },   // clic en un objeto: salta
+    onFocus: () => { applyTarget(false); wake(); }      // entra o sale del modo "explorar el PC"
+  });
 
-  // Con la pantalla de carga delante (js/boot-screen.js) la entrada se retiene: la cámara espera
-  // lejos y el modelo fuera hasta que la pantalla termina (evento portfolio:boot-done)
-  let held = animated && root.dataset.boot === "running";
-  const FLIGHT = new THREE.Vector3(-8, -6, 42);   // de dónde llega la cámara en la entrada
-
-  function activePose(id) {
-    const pose = computePose(id);
-    if (held) {
-      pose.pos.add(FLIGHT);
-      pose.fov += 14;
+  // Los objetos de la sala dan un saltito al pasar el cursor por encima (o al hacer clic)
+  const bumps = new Map();
+  let lastHover = null;
+  function bumpFor(obj) {
+    let b = bumps.get(obj);
+    if (!b) {
+      b = { s: new Spring(0), y: obj.position.y, k: obj.scale.x };
+      bumps.set(obj, b);
     }
-    return pose;
+    return b;
+  }
+  input.setSection(section);
+  input.readLabels();
+
+  /* ---------- Cámara: pose de cada nivel ---------- */
+
+  // Con la pantalla de carga delante la entrada se retiene: la cámara espera lejos y las salas
+  // sin subir hasta que la pantalla termina (evento portfolio:boot-done)
+  let held = animated && root.dataset.boot === "running";
+
+  function computeTarget() {
+    const i = activeIndex();
+    const v = VARIANT[section] || VARIANT.about;
+    const aspect = W / H;
+    const landscape = aspect >= 1.05;
+    // Zona de la pantalla donde debe quedar la sala (el resto lo ocupa el texto)
+    const region = landscape ? { cx: -0.3, cy: 0.05, fw: 0.66, fh: 0.78 } : { cx: 0, cy: 0.4, fw: 0.98, fh: 0.5 };
+    let sw = SIL.w;
+    let sh = SIL.h;
+    const c = levelPos(i);
+    c.y = CENTER_Y;
+    let pitch = BASE_PITCH + v.pitch;
+    let yaw = BASE_YAW + v.yaw;
+    if (input.focus) {
+      // Se acerca al PC: su centro en la sala de "Sobre mí"
+      c.add(new THREE.Vector3(0.6, 0.2, 1.6));
+      sw = 13;
+      sh = 9.5;
+      pitch = 0.36;
+      yaw = BASE_YAW - 0.05;
+    }
+    const viewH = Math.max(sh / region.fh, sw / (aspect * region.fw));
+    let dist = viewH / (2 * Math.tan(THREE.MathUtils.degToRad(FOV / 2)));
+    let fov = FOV;
+    if (held) {
+      dist *= 2.4;
+      fov += 8;
+      c.x -= 8;
+      c.y -= 6;
+    }
+    return { c, dist, yaw, pitch, fov, ox: region.cx, oy: region.cy };
   }
 
-  rig.target = activePose(section);
-  snapRig();
+  function applyTarget(snap) {
+    const t = computeTarget();
+    rig.cx.t = t.c.x; rig.cy.t = t.c.y; rig.cz.t = t.c.z;
+    rig.dist.t = t.dist; rig.yaw.t = t.yaw; rig.pitch.t = t.pitch; rig.fov.t = t.fov;
+    rig.ox.t = t.ox; rig.oy.t = t.oy; rig.roll.t = 0;
+    if (snap) rigList.forEach((s) => s.snap());
+  }
+
+  function updatePops(snap) {
+    const a = activeIndex();
+    levels.items.forEach((lv) => {
+      const near = Math.abs(lv.index - a) <= 1;
+      lv.pop.t = held && lv.index === a ? 0 : near ? 1 : 0;
+      if (snap) lv.pop.snap();
+    });
+  }
+
+  applyTarget(true);
+  updatePops(true);
   if (animated && !held) {
-    // Entrada: la cámara llega desde lejos y un poco por debajo
-    rig.pos.add(FLIGHT);
-    rig.fov += 14;
+    // Entrada sin pantalla de carga: la cámara llega desde lejos
+    rig.dist.v *= 1.8;
+    rig.fov.v += 8;
   }
 
-  function spring1(p, v, t, k, c, dt) {
-    v += (k * (t - p) - c * v) * dt;
-    return [p + v * dt, v];
-  }
-
-  // Devuelve true si la cámara aún se está moviendo
-  function stepRig(dt) {
-    const t = rig.target;
+  function stepSprings(dt) {
     const steps = Math.max(1, Math.ceil(dt / 0.008));
     const h = dt / steps;
-    for (let i = 0; i < steps; i++) {
-      for (const axis of ["x", "y", "z"]) {
-        let r = spring1(rig.pos[axis], rig.posV[axis], t.pos[axis], t.k, t.c, h);
-        rig.pos[axis] = r[0]; rig.posV[axis] = r[1];
-        r = spring1(rig.look[axis], rig.lookV[axis], t.look[axis], t.k * 1.4, t.c * 1.2, h);
-        rig.look[axis] = r[0]; rig.lookV[axis] = r[1];
-      }
-      let r = spring1(rig.roll, rig.rollV, t.roll, t.k, t.c, h);
-      rig.roll = r[0]; rig.rollV = r[1];
-      r = spring1(rig.fov, rig.fovV, t.fov, t.k, t.c, h);
-      rig.fov = r[0]; rig.fovV = r[1];
+    let busy = false;
+    for (let s = 0; s < steps; s++) {
+      rig.cx.step(h, 38, 9); rig.cy.step(h, 38, 9); rig.cz.step(h, 38, 9);
+      rig.dist.step(h, 30, 8);
+      rig.yaw.step(h, 26, 7.5); rig.pitch.step(h, 26, 7.5);
+      rig.fov.step(h, 40, 7); rig.roll.step(h, 34, 5);
+      rig.ox.step(h, 40, 10); rig.oy.step(h, 40, 10);
+      levels.items.forEach((lv) => lv.pop.step(h, 58, 8.5));
     }
-    const err = rig.pos.distanceTo(t.pos) + rig.look.distanceTo(t.look) + Math.abs(rig.fov - t.fov);
-    const speed = rig.posV.length() + rig.lookV.length() + Math.abs(rig.rollV) + Math.abs(rig.fovV);
-    return err > 0.01 || speed > 0.01;
+    rigList.forEach((s) => { if (s.busy) busy = true; });
+    levels.items.forEach((lv) => { if (lv.pop.busy) busy = true; });
+    return busy;
+  }
+
+  // Al llegar a un nivel, sus objetos dan un saltito uno detrás de otro (una ola por la sala)
+  let rippleTimers = [];
+  function ripple(delay = 380) {
+    rippleTimers.forEach(clearTimeout);
+    rippleTimers = [];
+    if (!animated) return;
+    levels.items[activeIndex()].hoverables.forEach((obj, i) => {
+      rippleTimers.push(setTimeout(() => { bumpFor(obj).s.vel += 5.5; wake(); }, delay + i * 55));
+    });
   }
 
   function setSection(id, animate) {
-    if (!POSES[id]) return;
+    if (!order.includes(id)) return;
     const previous = section;
     section = id;
-    rig.target = activePose(id);
-    if (!animate || !animated) {
-      snapRig();
-    } else if (previous !== id) {
-      // Ráfaga de partículas: hacia delante si la sección está más a la derecha en el menú
+    input.setSection(id);
+    applyTarget(!animate || !animated);
+    updatePops(!animate || !animated);
+    if (animate && animated && previous !== id) {
       const span = order.indexOf(id) - order.indexOf(previous);
-      wheelVel = THREE.MathUtils.clamp(wheelVel + Math.sign(span) * (8 + Math.abs(span) * 3), -26, 26);
+      const dir = Math.sign(span) || 1;
+      // Ráfaga de partículas, un toque de alejamiento y una inclinación al arrancar
+      wheelVel = THREE.MathUtils.clamp(wheelVel + dir * (10 + Math.abs(span) * 3), -30, 30);
+      rig.fov.vel += 30;
+      rig.roll.vel += dir * 0.9;
+      rig.dist.vel += 40;
+      ripple();
     }
-    if (hero) hero.setSection(id, previous, animate && animated);
     wake();
   }
 
   /* ---------- Cuadro a cuadro ---------- */
 
-  let hero = null; // escenario de "Sobre mí" (se añade en js/hero-stage.js)
   let ready = false;
   let running = false;
   let raf = 0;
@@ -307,22 +402,21 @@ export function start({ level = "full", force = false } = {}) {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, maxDpr));
     renderer.setSize(W, H, false);
     cam.aspect = W / H;
-    cam.updateProjectionMatrix();
     particles.material.uniforms.uPx.value = renderer.getPixelRatio();
-    rig.target = activePose(section);
-    if (!animated) snapRig();
-    if (hero) hero.layout(W, H);
+    applyTarget(!animated);
     wake();
   }
 
+  const tmp = new THREE.Vector3();
+
   // Devuelve true si algo sigue cambiando (si no, el bucle se duerme hasta el próximo aviso)
   function update(dt) {
-    const ambientTarget = animated && bgPlaying ? 1 : 0;
+    const ambientTarget = animated ? 1 : 0;
     ambient += (ambientTarget - ambient) * (1 - Math.exp(-dt * 2.5));
     if (Math.abs(ambient - ambientTarget) < 0.004) ambient = ambientTarget;
     simTime += dt * ambient;
 
-    const kp = 1 - Math.exp(-dt * 5);
+    const kp = 1 - Math.exp(-dt * 4);
     const pdx = (animated ? ptr.tx : 0) - ptr.x;
     const pdy = (animated ? ptr.ty : 0) - ptr.y;
     ptr.x += pdx * kp;
@@ -334,52 +428,93 @@ export function start({ level = "full", force = false } = {}) {
 
     wheelVel *= Math.exp(-dt * 2.2);
     if (Math.abs(wheelVel) < 0.02) wheelVel = 0;
-    drift += (ambient * 0.6 + wheelVel) * dt;
+    drift += (ambient * 0.5 + wheelVel) * dt;
 
-    const moving = animated ? stepRig(dt) : false;
+    // Los niveles: aparecen subiendo con rebote, flotan y se balancean un poco
+    let moving = animated ? stepSprings(dt) : false;
+    const a = activeIndex();
+    levels.items.forEach((lv) => {
+      const pop = Math.max(0, lv.pop.v);
+      lv.holder.visible = pop > 0.004;
+      if (!lv.holder.visible) return;
+      lv.holder.scale.setScalar(Math.max(0.0001, pop));
+      lv.holder.position.set(lv.pos.x, lv.pos.y + (1 - pop) * -12 + Math.sin(simTime * 0.6 + lv.index * 1.7) * 0.32 * ambient, lv.pos.z);
+      lv.holder.rotation.y = Math.sin(simTime * 0.25 + lv.index) * 0.022 * ambient;
+      lv.update(simTime, dt * ambient);
+    });
 
-    cam.position.copy(rig.pos);
-    cam.position.x += ptr.x * 1.6 + Math.sin(simTime * 0.13) * 0.7 * ambient;
-    cam.position.y += ptr.y * 1 + Math.cos(simTime * 0.11) * 0.5 * ambient;
-    // En "Sobre mí", al hacer scroll la cámara avanza entre los cristales y atraviesa los aros
+    // Cámara
     const inAbout = section === "about";
-    cam.position.z -= scrollS * (inAbout ? 34 : 6);
-    if (inAbout) {
-      cam.position.x += Math.sin(scrollS * 3.2) * 4;
-      cam.position.y += scrollS * 2;
+    const sy = inAbout && !input.focus ? scrollS : 0;
+    // Al bajar hacia las habilidades la escena se atenúa un poco para que las tarjetas se lean
+    const fade = 1 - 0.5 * THREE.MathUtils.smoothstep(sy, 0.08, 0.5);
+    if (fade < 0.999) {
+      canvas.style.opacity = fade.toFixed(3);
+      fadedInline = true;
+    } else if (fadedInline) {
+      canvas.style.opacity = "";
+      fadedInline = false;
     }
-    scratch.copy(rig.look);
-    scratch.x += ptr.x * 1.1;
-    scratch.y += ptr.y * 0.7;
+    const yaw = rig.yaw.v + input.orbit.yaw + ptr.x * 0.055 + sy * 0.55;
+    const pitch = THREE.MathUtils.clamp(rig.pitch.v + input.orbit.pitch - ptr.y * 0.03 - sy * 0.06, 0.1, 1.25);
+    const dist = rig.dist.v * (1 - sy * 0.17);
+    const cy = rig.cy.v + Math.sin(simTime * 0.4) * 0.15 * ambient + sy * 2.5;
+    cam.position.set(
+      rig.cx.v + dist * Math.sin(yaw) * Math.cos(pitch),
+      cy + dist * Math.sin(pitch),
+      rig.cz.v + dist * Math.cos(yaw) * Math.cos(pitch)
+    );
     cam.up.set(0, 1, 0);
-    cam.lookAt(scratch);
-    cam.rotateZ(rig.roll + scrollS * (inAbout ? 0.18 : 0.06));
-    if (Math.abs(cam.fov - rig.fov) > 0.005) {
-      cam.fov = rig.fov;
-      cam.updateProjectionMatrix();
-    }
+    cam.lookAt(rig.cx.v, cy, rig.cz.v);
+    cam.rotateZ(rig.roll.v);
+    cam.fov = rig.fov.v;
+    cam.aspect = W / H;
+    // Desplaza la imagen para que la sala quede en la zona libre de la pantalla
+    cam.setViewOffset(W, H, -rig.ox.v * W * 0.5, rig.oy.v * H * 0.5, W, H);
+
+    // Las luces con sombra siguen al nivel actual y al siguiente
+    const lvA = levels.items[a];
+    const lvB = levels.items[Math.min(a + 1, levels.items.length - 1)];
+    [[keyA, lvA], [keyB, lvB]].forEach(([key, lv]) => {
+      key.position.copy(lv.pos).add(tmp.set(11, 24, 15));
+      key.target.position.copy(lv.pos);
+      key.target.position.y = 3;
+      key.target.updateMatrixWorld();
+    });
 
     const u = particles.material.uniforms;
     u.uTime.value = simTime;
     u.uDrift.value = drift;
     cam.getWorldDirection(forward);
     u.uCenter.value.copy(cam.position).addScaledVector(forward, BOX.z * 0.3);
-    props.update(simTime, cam.position.x);
-    crystals.update(simTime, dt * ambient, scrollS, cam.position.x);
+    decor.update(simTime, dt * ambient);
 
-    const heroActive = hero ? hero.update(dt, simTime, ambient, animated) : false;
+    const hp = input.hoverProp;
+    if (hp !== lastHover) {
+      if (lastHover) bumpFor(lastHover).s.t = 0;
+      if (hp) bumpFor(hp).s.t = 1;
+      lastHover = hp;
+    }
+    let bumping = false;
+    bumps.forEach((b, obj) => {
+      if (!b.s.busy) return;
+      const steps = Math.max(1, Math.ceil(dt / 0.008));
+      for (let i = 0; i < steps; i++) b.s.step(dt / steps, 160, 10);
+      obj.position.y = b.y + b.s.v * 0.5;
+      obj.scale.setScalar(b.k * (1 + b.s.v * 0.06));
+      bumping = bumping || b.s.busy;
+    });
 
-    return ambient > 0 || moving || heroActive || wheelVel !== 0 ||
+    const aboutLv = levels.items[order.indexOf("about")];
+    const aboutVisible = !!aboutLv && aboutLv.pop.v > 0.7;
+    const inputActive = input.update(dt, simTime, ambient, animated, aboutVisible);
+
+    return ambient > 0 || moving || inputActive || bumping || wheelVel !== 0 ||
       Math.abs(pdx) + Math.abs(pdy) > 0.0005 || Math.abs(sdx) > 0.0005;
   }
 
   function render() {
-    renderer.clear();
     renderer.render(world, cam);
-    if (hero && hero.visible) {
-      renderer.clearDepth();
-      renderer.render(hero.scene, hero.camera);
-    }
   }
 
   function frame(now) {
@@ -406,26 +541,23 @@ export function start({ level = "full", force = false } = {}) {
     raf = requestAnimationFrame(frame);
   }
 
-  /* ---------- Rendimiento adaptable ---------- */
+  /* ---------- Resolución adaptable ---------- */
 
-  // Si la media baja de ~29 fps: primero se baja la resolución, luego las partículas y,
-  // si aun así va a menos de 20 fps, se apaga el 3D (la página sigue igual sin él).
+  // Si la media baja de ~29 fps se baja la resolución (nunca se apaga el 3D)
   const perf = { avg: 1 / 60, samples: 0, quality: 0 };
 
   function watchPerformance(raw) {
-    if (!animated || ambient < 0.99 || document.hidden || raw > 0.25) return;
+    if (!animated || document.hidden || raw > 0.25) return;
     perf.avg += (raw - perf.avg) * 0.05;
     if (++perf.samples < 150 || perf.samples % 60) return;
     if (perf.quality === 0 && perf.avg > 0.034) {
       perf.quality = 1;
+      maxDpr = 1.25;
+      resize();
+    } else if (perf.quality === 1 && perf.avg > 0.04) {
+      perf.quality = 2;
       maxDpr = 1;
       resize();
-    } else if (perf.quality === 1 && perf.avg > 0.034) {
-      perf.quality = 2;
-      particles.geometry.setDrawRange(0, Math.floor(particles.geometry.getAttribute("position").count / 2));
-    } else if (perf.quality === 2 && perf.avg > 0.05) {
-      dispose();
-      return;
     } else {
       return;
     }
@@ -444,21 +576,28 @@ export function start({ level = "full", force = false } = {}) {
   on(window, "scroll", () => { if (animated) wake(); }, { passive: true });
   on(window, "wheel", (e) => {
     if (!animated) return;
-    wheelVel = THREE.MathUtils.clamp(wheelVel + THREE.MathUtils.clamp(e.deltaY, -120, 120) * 0.05, -26, 26);
+    wheelVel = THREE.MathUtils.clamp(wheelVel + THREE.MathUtils.clamp(e.deltaY, -120, 120) * 0.05, -30, 30);
     wake();
   }, { passive: true });
 
+  function refreshTitles() {
+    const all = window.TRANSLATIONS || {};
+    const dict = all[document.documentElement.lang] || all.es || {};
+    levels.setTitles(dict);
+  }
+
   on(document, "portfolio:section", (e) => setSection(e.detail.id, e.detail.animate));
-  on(document, "portfolio:bg", (e) => { bgPlaying = e.detail.playing; wake(); });
-  on(document, "portfolio:lang", () => { if (hero) hero.refreshLabels(); wake(); });
-  // Termina la pantalla de carga: la cámara vuela hasta su sitio, con una ráfaga de partículas,
-  // y el modelo entra girando
+  on(document, "portfolio:lang", () => { refreshTitles(); input.refreshLabels(); wake(); });
+  // Termina la pantalla de carga: la cámara vuela hasta su sitio con una ráfaga de partículas
+  // y la sala actual sube con rebote
   on(document, "portfolio:boot-done", () => {
     if (!held) return;
     held = false;
-    rig.target = computePose(section);
-    wheelVel = THREE.MathUtils.clamp(wheelVel + 20, -26, 26);
-    if (hero) hero.setHold(false);
+    applyTarget(false);
+    updatePops(false);
+    wheelVel = THREE.MathUtils.clamp(wheelVel + 24, -30, 30);
+    rig.roll.vel += 0.6;
+    ripple(900);
     wake();
   });
   on(document, "visibilitychange", () => wake());
@@ -466,7 +605,7 @@ export function start({ level = "full", force = false } = {}) {
 
   const onMotionChange = () => {
     animated = !reduceMq.matches;
-    if (!animated) snapRig();
+    if (!animated) { applyTarget(true); updatePops(true); }
     wake();
   };
   if (reduceMq.addEventListener) on(reduceMq, "change", onMotionChange);
@@ -480,8 +619,9 @@ export function start({ level = "full", force = false } = {}) {
     running = false;
     ready = false;
     cancelAnimationFrame(raf);
-    if (hero) hero.dispose();
-    crystals.dispose();
+    input.dispose();
+    levels.dispose();
+    decor.dispose();
     world.traverse((o) => {
       if (o.geometry) o.geometry.dispose();
       if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach((m) => m.dispose());
@@ -501,29 +641,38 @@ export function start({ level = "full", force = false } = {}) {
       fps: Math.round(1 / perf.avg), dpr: renderer.getPixelRatio(),
       calls: renderer.info.render.calls, triangles: renderer.info.render.triangles,
       cam: { pos: cam.position.toArray().map((n) => +n.toFixed(2)), fov: +cam.fov.toFixed(2), aspect: +cam.aspect.toFixed(3) },
-      hero: hero ? hero.state() : null,
-      target: { pos: rig.target.pos.toArray(), look: rig.target.look.toArray(), fov: rig.target.fov },
-      anchorNdc: new THREE.Vector3(order.indexOf(section) * SPACING, 0, -10).project(cam).toArray().slice(0, 2).map((n) => +n.toFixed(2))
+      input: input.state(),
+      pops: levels.items.map((lv) => +lv.pop.v.toFixed(2))
     }),
     // Avanza la simulación de golpe (para pruebas y capturas con la pestaña en segundo plano)
     step: (seconds = 1) => {
       for (let t = 0; t < seconds; t += 1 / 60) update(1 / 60);
       render();
     },
-    nodeScreen: (i) => hero && hero.nodeScreen(i),
-    partScreen: (id) => hero && hero.partScreen(id),
-    pose: (yaw, pitch) => hero && hero.debugPose(yaw, pitch),
+    focus: (v) => input.setFocus(v),
+    // Posición en pantalla (px) de una pieza del PC o de un icono de habilidad: para pruebas
+    partScreen: (id) => {
+      const v = new THREE.Vector3();
+      levels.about.pc.updateWorldMatrix(true, true);
+      levels.about.model.partAnchor(id, v).project(cam);
+      return [Math.round((v.x * 0.5 + 0.5) * W), Math.round((-v.y * 0.5 + 0.5) * H)];
+    },
+    nodeScreen: (i) => {
+      const v = new THREE.Vector3();
+      levels.about.graph.worldPosition(i, v).project(cam);
+      return [Math.round((v.x * 0.5 + 0.5) * W), Math.round((-v.y * 0.5 + 0.5) * H)];
+    },
+    orbit: (yaw, pitch) => { input.orbit.yaw = yaw; input.orbit.pitch = pitch || 0; input.orbit.idle = 0; wake(); },
+    levels, input, THREE, rig,
     dispose
   };
 
-  const stageEl = document.getElementById("stage");
-  if (stageEl) {
-    hero = createHeroStage({ renderer, palette, lite, stage: stageEl, wake, envMap });
-    hero.setSection(section, section, false);
-    if (held) hero.setHold(true);
-  }
-
   resize();
+  refreshTitles();
+  // Los títulos de las paredes se dibujan con la tipografía de la web: se repintan cuando llega
+  if (document.fonts && document.fonts.load) {
+    Promise.all([document.fonts.load('800 100px "Outfit"'), document.fonts.ready]).then(() => { refreshTitles(); wake(); }, () => {});
+  }
   update(1 / 60);
   render();
   ready = true;

@@ -1,40 +1,35 @@
 /*
- * Tema oscuro y neón + capa 3D.
- * Se carga después de styles.css y solo cambia los tokens de color y añade capas:
- * para cambiar los colores de toda la web (y del 3D, que los lee de aquí) edita
- * --accent, --accent-2 y --accent-3.
+ * Capa 3D y aspecto de las tarjetas. Se carga después de styles.css.
+ * Los colores (--accent, --accent-2, --accent-3) están en styles.css y el 3D los lee de allí.
  */
 
-:root {
-  color-scheme: dark;
+/* ---------- Fondo: puntos muy sutiles y viñeta (el degradado está en styles.css) ---------- */
 
-  --paper: #03040a;        /* negro azulado: el fondo del vídeo, invertido */
-  --ink: #eef1ff;
-  --muted: #a9b0cc;
-  --photo: #10121c;
-
-  --accent: #6c86ff;       /* el azul de las ondas del vídeo, en versión neón */
-  --accent-2: #33e1ff;     /* cian */
-  --accent-3: #b57cff;     /* violeta (se usa poco) */
-
-  --glass: rgba(11, 14, 30, 0.5);
-  --glass-strong: rgba(9, 11, 24, 0.72);
-  --glass-edge: rgba(150, 170, 255, 0.2);
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
 }
 
-/* ---------- Capas: vídeo (abajo) → escena 3D → contenido ----------
-   No poner background en <html>: el del <body> (styles.css) tiene que llegar al lienzo
-   para que el vídeo y el canvas, con z-index negativo, se vean por encima. */
-
-.backdrop {
+body::before {
   z-index: -2;
+  background-image: radial-gradient(rgba(200, 184, 255, 0.28) 1px, transparent 1.6px);
+  background-size: 38px 38px;
+  -webkit-mask-image: radial-gradient(ellipse 70% 65% at 32% 46%, #000 0%, rgba(0, 0, 0, 0.4) 55%, transparent 100%);
+  mask-image: radial-gradient(ellipse 70% 65% at 32% 46%, #000 0%, rgba(0, 0, 0, 0.4) 55%, transparent 100%);
 }
 
-/* El vídeo original es blanco con ondas azules: se invierte para que quede
-   negro con ondas azules (y el matiz vuelve al azul con hue-rotate) */
-.backdrop__video {
-  filter: invert(1) hue-rotate(180deg) brightness(1.35) saturate(1.5);
+/* La viñeta oscurece los bordes: da profundidad a la escena y ayuda a leer el texto */
+body::after {
+  z-index: 0;
+  background:
+    linear-gradient(180deg, rgba(8, 4, 30, 0.55), transparent 14%),
+    radial-gradient(ellipse 120% 100% at 34% 46%, transparent 55%, rgba(6, 3, 24, 0.55) 100%);
 }
+
+/* ---------- Escena 3D ---------- */
 
 .scene3d {
   position: fixed;
@@ -53,7 +48,9 @@
   opacity: 1;
 }
 
-.no-3d .scene3d {
+.no-3d .scene3d,
+.no-3d .stage,
+.no-3d .level-nav {
   display: none;
 }
 
@@ -63,36 +60,276 @@
   }
 }
 
-/* ---------- Paneles de cristal (glassmorphism): el texto se lee siempre sobre el 3D ---------- */
+/* Capa que recoge el arrastre y el cursor sobre la escena: cubre la pantalla por detrás del
+   contenido. Las tarjetas y el menú reciben sus propios eventos porque van por encima. */
+.stage {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  cursor: grab;
+  touch-action: pan-y;                 /* el scroll vertical sigue funcionando en el móvil */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
 
-.about__body,
+.has-3d .stage {
+  display: block;
+}
+
+.stage.is-dragging {
+  cursor: grabbing;
+}
+
+.stage.is-pointing {
+  cursor: pointer;
+}
+
+.stage:focus-visible {
+  outline: 3px solid var(--accent-2);
+  outline-offset: -6px;
+  border-radius: 1.5rem;
+}
+
+.stage__hint {
+  position: absolute;
+  left: var(--gutter);
+  bottom: 1.6rem;
+  max-width: 45vw;
+  margin: 0;
+  font-size: 0.8125rem;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.hint-touch {
+  display: none;
+}
+
+@media (hover: none) {
+  .hint-mouse {
+    display: none;
+  }
+
+  .hint-touch {
+    display: inline;
+  }
+}
+
+/* Botón para acercarse al PC (solo en "Sobre mí") */
+.stage__focus {
+  position: absolute;
+  left: var(--gutter);
+  bottom: 3.6rem;
+  display: none;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.7rem 1.2rem 0.7rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 1rem 2rem -1rem rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font: 600 0.875rem/1 var(--display);
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: background-color 180ms ease, color 180ms ease, transform 180ms var(--ease-out);
+}
+
+.has-3d[data-section="about"] .stage__focus {
+  display: inline-flex;
+}
+
+.stage__focus svg {
+  width: 1.1rem;
+  height: 1.1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.stage__focus:hover,
+.stage__focus[aria-pressed="true"] {
+  background: var(--accent-2);
+  color: #1b1642;
+}
+
+.stage__focus:active {
+  transform: scale(0.96);
+}
+
+.stage .when-on,
+.stage.is-focus .when-off {
+  display: none;
+}
+
+.stage.is-focus .when-on {
+  display: inline;
+}
+
+/* Etiqueta con el nombre de la pieza o de la habilidad señalada */
+.node-label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2;
+  max-width: min(90%, 24rem);
+  padding: 0.45rem 1rem;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 0.8rem 1.8rem -0.6rem rgba(0, 0, 0, 0.55);
+  font: 700 0.8125rem/1.4 var(--display);
+  white-space: nowrap;
+  color: #1b1642;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 160ms ease;
+}
+
+.node-label::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -0.3rem;
+  width: 0.7rem;
+  height: 0.7rem;
+  background: #fff;
+  transform: translateX(-50%) rotate(45deg);
+  border-radius: 0.1rem;
+}
+
+.node-label.is-visible {
+  opacity: 1;
+}
+
+/* ---------- Selector de nivel (abajo, en el centro) ---------- */
+
+.level-nav {
+  position: fixed;
+  left: 50%;
+  bottom: max(1.25rem, env(safe-area-inset-bottom));
+  z-index: 30;
+  translate: -50% 0;
+  display: none;
+  align-items: center;
+  border-radius: 999px;
+  background: #fff;
+  color: #1b1642;
+  box-shadow: 0 1.25rem 2.5rem -0.75rem rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.5);
+  overflow: hidden;
+}
+
+.has-3d .level-nav {
+  display: flex;
+}
+
+.level-nav__btn {
+  display: grid;
+  place-items: center;
+  width: 3.4rem;
+  height: 3.1rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--level-accent);
+  cursor: pointer;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.level-nav__btn svg {
+  width: 1.3rem;
+  height: 1.3rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.level-nav__btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--level-accent) 14%, white);
+}
+
+.level-nav__btn:disabled {
+  opacity: 0.28;
+  cursor: default;
+}
+
+.level-nav__label {
+  margin: 0;
+  padding: 0 1.3rem;
+  min-width: 8.5rem;
+  text-align: center;
+  font: 600 1.05rem/1 var(--display);
+  border-inline: 1px solid rgba(27, 22, 66, 0.1);
+  white-space: nowrap;
+}
+
+.level-nav__label b {
+  font-weight: 800;
+}
+
+.level-nav__label i {
+  font-style: normal;
+  opacity: 0.4;
+}
+
+/* ---------- Tarjetas de cristal: el texto se lee siempre sobre el 3D ---------- */
+
+.about__panel,
 .page:not(.about) {
+  position: relative;
   isolation: isolate;
-  padding: 1.125rem 1.5rem;
+  padding: clamp(1.4rem, 2.4vw, 2.1rem);
   border: 1px solid var(--glass-edge);
-  border-radius: 1.25rem;
-  background: var(--glass);
-  -webkit-backdrop-filter: blur(14px) saturate(1.3);
-  backdrop-filter: blur(14px) saturate(1.3);
-  box-shadow: 0 1.5rem 3rem -1.5rem rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  border-radius: 1.75rem;
+  background: linear-gradient(155deg, rgba(52, 36, 132, 0.6), rgba(22, 14, 62, 0.66));
+  -webkit-backdrop-filter: blur(20px) saturate(1.5);
+  backdrop-filter: blur(20px) saturate(1.5);
+  box-shadow: 0 2.5rem 5rem -2rem rgba(4, 2, 20, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.13);
   transition: border-color 250ms ease;
 }
 
-.about__body,
-.page:not(.about) {
-  position: relative;
+/* Borde con un destello del color del nivel que le da la vuelta a la tarjeta */
+.about__panel::after,
+.page:not(.about)::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  padding: 2px;
+  border-radius: inherit;
+  background: conic-gradient(from var(--spin), transparent 0 52%, var(--level-accent) 72%, var(--accent-2) 90%, transparent 100%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  animation: spin-border 7s linear infinite;
+  pointer-events: none;
 }
 
-.about__body p:last-child,
-.page:not(.about) p:last-child {
-  margin-bottom: 0;
+@keyframes spin-border {
+  to { --spin: 360deg; }
 }
 
-/* Las secciones que aún no tienen contenido: una tarjeta con el mismo texto de siempre */
+@media (prefers-reduced-motion: reduce) {
+  .about__panel::after,
+  .page:not(.about)::after {
+    animation: none;
+  }
+}
+
 .page:not(.about) {
   align-self: flex-start;
-  width: min(100%, 40rem);
-  padding: clamp(1.25rem, 3vw, 2rem) clamp(1.25rem, 3vw, 2.25rem);
+  width: min(100%, 34rem);
+}
+
+.page:not(.about) p:last-child {
+  margin-bottom: 0;
 }
 
 /* Perspectiva para el tilt de las tarjetas y las transiciones entre secciones */
@@ -102,7 +339,7 @@ main,
 }
 
 /* Brillo que sigue al cursor (js/fx.js pone --mx, --my y --glare); va detrás del texto */
-.about__body::before,
+.about__panel::before,
 .skills__list li::before,
 .page:not(.about)::before {
   content: "";
@@ -111,14 +348,13 @@ main,
   z-index: -1;
   border-radius: inherit;
   pointer-events: none;
-  background: radial-gradient(26rem circle at var(--mx, 50%) var(--my, 0%), rgba(140, 165, 255, 0.17), transparent 60%);
+  background: radial-gradient(26rem circle at var(--mx, 50%) var(--my, 0%), rgba(190, 170, 255, 0.2), transparent 60%);
   opacity: var(--glare, 0);
   transition: opacity 300ms ease;
 }
 
 .about__photo {
-  border-radius: 0.875rem;
-  box-shadow: 0 0 0 1px var(--glass-edge), 0 0 2rem rgba(108, 134, 255, 0.25);
+  box-shadow: 0 0 0 3px var(--level-accent), 0 0.75rem 1.5rem -0.5rem rgba(0, 0, 0, 0.6);
 }
 
 /* ---------- Parallax por capas ----------
@@ -135,16 +371,86 @@ main,
   }
 }
 
+/* ---------- Distribución con el 3D activo ----------
+   El 3D ocupa la pantalla y el texto va en una tarjeta a la derecha (como en el móvil, debajo). */
+
+.has-3d main,
+.has-3d .about {
+  pointer-events: none;
+}
+
+.has-3d .about > *,
+.has-3d .page:not(.about) {
+  pointer-events: auto;
+}
+
+.has-3d .about__panel,
+.has-3d .page:not(.about) {
+  margin-top: 44vh;
+  margin-top: 44svh;
+}
+
+.has-3d .about {
+  gap: 1.5rem;
+}
+
+@media (min-width: 1000px) {
+  .has-3d .site-header,
+  .has-3d main {
+    max-width: none;
+  }
+
+  .has-3d .about {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 29rem);
+    grid-template-rows: minmax(calc(100svh - 5.5rem), auto) auto;
+  }
+
+  .has-3d .about__panel {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: start;
+    margin-top: 0;
+  }
+
+  .has-3d .about__skills {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .has-3d .page:not(.about) {
+    align-self: flex-end;
+    width: min(100%, 29rem);
+    margin-top: 0;
+  }
+
+  .has-3d .stage__hint {
+    bottom: 1.85rem;
+  }
+}
+
+/* Al explorar el PC, las tarjetas se apartan para dejarle sitio */
+.about__panel,
+.about__skills {
+  transition: opacity 400ms ease, border-color 250ms ease;
+}
+
+.pc-focus .about__panel,
+.pc-focus .about__skills {
+  opacity: 0.06;
+  pointer-events: none !important;
+}
+
 /* ---------- Habilidades: escaparate de tarjetas con iconos ---------- */
 
 .skills h2::after {
   content: "";
   display: block;
   width: 3.5rem;
-  height: 2px;
-  margin-top: 0.5rem;
-  background: linear-gradient(90deg, var(--accent), var(--accent-2));
-  box-shadow: 0 0 0.75rem var(--accent-2);
+  height: 4px;
+  margin-top: 0.6rem;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--level-accent), var(--accent-2));
+  box-shadow: 0 0 1rem var(--level-accent);
 }
 
 /* La perspectiva la pone la lista: así se aplica tanto a la entrada como al tilt de cada tarjeta */
@@ -168,11 +474,11 @@ main,
   min-height: 5.25rem;
   padding: 0.9rem 1.1rem;
   border: 1px solid var(--glass-edge);
-  border-radius: 1.1rem;
-  background: var(--glass);
-  -webkit-backdrop-filter: blur(12px) saturate(1.3);
-  backdrop-filter: blur(12px) saturate(1.3);
-  box-shadow: 0 1.25rem 2.5rem -1.5rem rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  border-radius: 1.25rem;
+  background: linear-gradient(155deg, rgba(52, 36, 132, 0.58), rgba(22, 14, 62, 0.64));
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+  backdrop-filter: blur(14px) saturate(1.4);
+  box-shadow: 0 1.25rem 2.5rem -1.5rem rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.1);
   opacity: calc(0.08 + var(--p) * 0.92);
   transform:
     translate3d(0, calc((1 - var(--p)) * 80px), calc((1 - var(--p)) * -240px))
@@ -192,9 +498,9 @@ main,
   height: 2.9rem;
   padding: 0.6rem;
   overflow: visible;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 0.9rem;
-  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 0.95rem;
+  background: rgba(255, 255, 255, 0.07);
   filter: drop-shadow(0 0 0.45rem color-mix(in srgb, currentColor 50%, transparent));
   transition: scale 250ms var(--ease-out), rotate 250ms var(--ease-out), filter 250ms ease;
   animation: skill-float 3.8s ease-in-out infinite;
@@ -246,11 +552,11 @@ main,
   text-transform: uppercase;
 }
 
-/* Al señalar una habilidad (o su nodo en el 3D) la tarjeta se ilumina y el icono se agranda */
+/* Al señalar una habilidad (o su icono en el 3D) la tarjeta se ilumina y el icono se agranda */
 .skills__list li:hover,
 .skills__list li.is-lit {
-  border-color: rgba(51, 225, 255, 0.55);
-  box-shadow: 0 0 1.75rem rgba(51, 225, 255, 0.22), 0 1.25rem 2.5rem -1.5rem rgba(0, 0, 0, 0.7);
+  border-color: rgba(255, 194, 71, 0.75);
+  box-shadow: 0 0 1.75rem rgba(255, 194, 71, 0.24), 0 1.25rem 2.5rem -1.5rem rgba(0, 0, 0, 0.7);
 }
 
 .skills__list li:hover .skill__name,
@@ -308,15 +614,15 @@ main,
   left: -16px;
   width: 32px;
   height: 32px;
-  border: 1px solid var(--accent);
-  box-shadow: 0 0 0.75rem rgba(108, 134, 255, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 0 0.75rem rgba(155, 123, 255, 0.5);
   transition: scale 200ms var(--ease-out), background-color 200ms ease, border-color 200ms ease;
 }
 
 .cursor.is-link .cursor__ring {
   scale: 1.6;
   border-color: var(--accent-2);
-  background-color: rgba(51, 225, 255, 0.1);
+  background-color: rgba(255, 194, 71, 0.12);
 }
 
 .cursor.is-down .cursor__ring {
@@ -329,140 +635,8 @@ main,
   }
 }
 
-/* ---------- Escenario del modelo 3D (Sobre mí) ---------- */
-
-.about__stage {
-  display: none;                       /* solo con el 3D activo */
-  position: relative;
-  grid-column: 1 / -1;
-  grid-row: 2;
-  min-height: clamp(20rem, 46vh, 36rem);
-  cursor: grab;
-  touch-action: pan-y;                 /* el scroll vertical sigue funcionando en el móvil */
-  user-select: none;
-  -webkit-user-select: none;
-  -webkit-tap-highlight-color: transparent;
-  border-radius: 1.5rem;
-}
-
-.has-3d .about__stage {
-  display: block;
-}
-
-.about__stage.is-dragging {
-  cursor: grabbing;
-}
-
-.about__stage.is-pointing {
-  cursor: pointer;
-}
-
-.about__stage:focus-visible {
-  outline-offset: -2px;
-}
-
-.about .about__stage-hint {
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  max-width: none;
-  margin: 0;
-  font-size: 0.8125rem;
-  letter-spacing: 0.02em;
-  color: var(--muted);
-  pointer-events: none;
-}
-
-/* Etiqueta con el nombre de la habilidad, pegada al nodo señalado */
-.node-label {
-  position: absolute;
-  top: 0;
-  left: 0;
-  z-index: 2;
-  max-width: min(90%, 24rem);
-  padding: 0.375rem 0.875rem;
-  border: 1px solid var(--glass-edge);
-  border-radius: 999px;
-  background: var(--glass-strong);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-  box-shadow: 0 0 1.25rem rgba(108, 134, 255, 0.35);
-  font-size: 0.8125rem;
-  line-height: 1.4;
-  white-space: nowrap;
-  color: var(--ink);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 160ms ease;
-}
-
-.node-label.is-visible {
-  opacity: 1;
-}
-
-.hint-touch {
-  display: none;
-}
-
-@media (hover: none) {
-  .hint-mouse {
-    display: none;
-  }
-
-  .hint-touch {
-    display: inline;
-  }
-}
-
-/* En el móvil el escenario ocupa el hueco que antes dejaba el margen del texto */
-@media (max-width: 699px) {
-  .about__stage {
-    min-height: 44svh;
-  }
-
-  .has-3d .about__body {
-    margin-top: 0;
-  }
-}
-
-/* Escritorio: el texto a la izquierda y el PC grande a la derecha (la primera pantalla). Las
-   habilidades van debajo, a todo el ancho, y aparecen con el scroll. */
-@media (min-width: 1200px) {
-  .has-3d .about {
-    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
-    grid-template-rows: auto 1fr auto;    /* el hueco sobrante lo absorbe la fila del texto, no la del saludo */
-    align-content: start;
-  }
-
-  .has-3d .about__intro {
-    grid-column: 1;
-    grid-row: 1;
-  }
-
-  .has-3d .about__body {
-    grid-column: 1;
-    grid-row: 2;
-    align-self: start;
-    columns: auto;
-  }
-
-  .has-3d .about__stage {
-    grid-column: 2;
-    grid-row: 1 / span 2;
-    align-self: start;
-    height: min(calc(100svh - 8.5rem), 44rem);
-    min-height: 28rem;
-  }
-
-  .has-3d .about__skills {
-    grid-column: 1 / -1;
-    grid-row: 3;
-  }
-}
-
 @media (prefers-contrast: more) {
   :root {
-    --muted: #d3d8ec;
     --glass: rgba(0, 0, 0, 0.88);
     --glass-strong: rgba(0, 0, 0, 0.95);
     --glass-edge: rgba(255, 255, 255, 0.55);
@@ -472,18 +646,20 @@ main,
 @media (forced-colors: active) {
   .scene3d,
   .cursor,
-  .about__stage {
+  .stage,
+  .level-nav {
     display: none;
   }
 }
 
 @media print {
-  .about__stage,
-  .cursor {
+  .stage,
+  .cursor,
+  .level-nav {
     display: none;
   }
 
-  .about__body,
+  .about__panel,
   .about__skills,
   .page:not(.about) {
     border-color: #bbbbbb;
@@ -493,14 +669,23 @@ main,
     backdrop-filter: none;
   }
 
+  html {
+    background: #ffffff;
+  }
+
   :root {
     --paper: #ffffff;
     --ink: #000000;
     --muted: #444444;
   }
 
-  .backdrop,
-  .scene3d {
+  body {
+    color: #000000;
+  }
+
+  .scene3d,
+  body::before,
+  body::after {
     display: none;
   }
 }

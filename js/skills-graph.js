@@ -3,13 +3,13 @@
  * símbolo, ver js/skill-icons.js), colocados en hélice alrededor del modelo y unidos por líneas
  * con pulsos de datos. El icono señalado se agranda y se ilumina junto a sus conexiones.
  *
- * Solo dibuja: los nombres y la interacción los pone js/hero-stage.js, a partir de la lista
+ * Solo dibuja: los nombres y la interacción los pone js/stage-input.js, a partir de la lista
  * HTML real (que sigue existiendo, accesible y traducida, debajo).
  */
 import * as THREE from "three";
 
 const GOLDEN_ANGLE = 2.399963;
-const NODE_SIZE = 0.46;     // tamaño del icono (unidades de escena)
+const NODE_SIZE = 0.5;      // tamaño del icono (unidades de escena)
 
 function glowTexture() {
   const c = document.createElement("canvas");
@@ -33,10 +33,10 @@ function iconTexture(ids, palette) {
   const h = size / 2;
   g.beginPath();
   g.arc(h, h, h - 8, 0, Math.PI * 2);
-  g.fillStyle = "rgba(6, 10, 26, 0.9)";
+  g.fillStyle = "rgba(36, 26, 96, 0.97)";
   g.fill();
-  g.lineWidth = 5;
-  g.strokeStyle = "#" + palette.accent.getHexString();
+  g.lineWidth = 7;
+  g.strokeStyle = "#ffffff";
   g.stroke();
   const icons = window.SkillIcons;
   if (icons && ids && ids.length) icons.draw(g, ids, h, h, ids.length === 1 ? 92 : 112, palette);
@@ -91,7 +91,7 @@ export function createSkillsGraph({ palette, lite, touch, listKey = "skills.hard
       mesh.scale.setScalar(NODE_SIZE);
       mesh.renderOrder = 6;
       const halo = new THREE.Sprite(new THREE.SpriteMaterial({
-        map: glow, color: palette.accent.clone(), transparent: true, opacity: 0.35,
+        map: glow, color: palette.accent3.clone(), transparent: true, opacity: 0.4,
         blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false
       }));
       halo.scale.setScalar(NODE_SIZE * 2.1);
@@ -115,7 +115,7 @@ export function createSkillsGraph({ palette, lite, touch, listKey = "skills.hard
     lineGeo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(edges.length * 6), 3));
     lineGeo.setAttribute("color", new THREE.BufferAttribute(new Float32Array(edges.length * 6), 3));
     edgeLines = new THREE.LineSegments(lineGeo, new THREE.LineBasicMaterial({
-      vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false
+      vertexColors: true, transparent: true, opacity: 0.6, depthWrite: false, toneMapped: false
     }));
     edgeLines.frustumCulled = false;
     group.add(edgeLines);
@@ -123,7 +123,7 @@ export function createSkillsGraph({ palette, lite, touch, listKey = "skills.hard
     // Pulsos de datos que recorren las conexiones
     for (let i = 0; i < (lite ? 5 : 12) && edges.length; i++) {
       const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
-        map: glow, color: palette.accent2, transparent: true, opacity: 0.9,
+        map: glow, color: 0xffffff, transparent: true, opacity: 0.9,
         blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false
       }));
       sprite.scale.setScalar(0.22);
@@ -165,7 +165,7 @@ export function createSkillsGraph({ palette, lite, touch, listKey = "skills.hard
       n.hit.position.copy(n.mesh.position);
       n.mesh.scale.setScalar(NODE_SIZE * (1 + n.level * 0.55));
       n.mesh.material.color.setScalar(0.82 + 0.18 * n.level);
-      n.halo.material.color.copy(palette.accent).lerp(palette.accent2, n.level);
+      n.halo.material.color.copy(palette.accent3).lerp(palette.accent2, n.level);
       n.halo.material.opacity = 0.32 + n.level * 0.6;
       n.halo.scale.setScalar(NODE_SIZE * (2.1 + n.level * 1.4));
     });
@@ -176,7 +176,7 @@ export function createSkillsGraph({ palette, lite, touch, listKey = "skills.hard
       const A = nodes[a].mesh.position;
       const B = nodes[b].mesh.position;
       const lit = Math.max(nodes[a].level, nodes[b].level);
-      tmp.copy(palette.accent).lerp(palette.accent2, lit).multiplyScalar(0.2 + lit * 0.8);
+      tmp.set(0xffffff).lerp(palette.accent2, lit);
       pos.setXYZ(e * 2, A.x, A.y, A.z);
       pos.setXYZ(e * 2 + 1, B.x, B.y, B.z);
       col.setXYZ(e * 2, tmp.r, tmp.g, tmp.b);

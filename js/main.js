@@ -4,7 +4,6 @@
   var LANGS = ["ca", "en", "es"];
   var DEFAULT_LANG = "es";
   var LANG_KEY = "portfolio-lang";
-  var BG_KEY = "portfolio-bg-paused";
   var DEFAULT_PAGE = "about";
 
   var T = window.TRANSLATIONS;
@@ -12,8 +11,6 @@
   var langButtons = document.querySelectorAll(".lang-switch button");
   var navLinks = document.querySelectorAll(".main-nav a");
   var pages = document.querySelectorAll(".page");
-  var video = document.querySelector(".backdrop__video");
-  var bgToggle = document.querySelector(".bg-toggle");
   var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
   /* ---------- Preferencias guardadas en el navegador ---------- */
@@ -70,7 +67,7 @@
     return "perspective(1100px) translate3d(" + dx + "px, " + dy + "px, " + dz + "px) rotateY(" + ry + "deg) rotateX(" + rx + "deg)";
   }
 
-  // Avisa a la capa 3D (js/scene3d.js) de los cambios de sección, idioma y fondo
+  // Avisa a la capa 3D (js/scene3d.js) de los cambios de sección e idioma
   function emit(name, detail) {
     document.dispatchEvent(new CustomEvent("portfolio:" + name, { detail: detail }));
   }
@@ -118,7 +115,6 @@
     langButtons.forEach(function (btn) {
       btn.setAttribute("aria-pressed", String(btn.dataset.lang === lang));
     });
-    updateBgToggle();
     emit("lang", { lang: lang });
   }
 
@@ -134,119 +130,6 @@
   langButtons.forEach(function (btn) {
     btn.addEventListener("click", function () { switchLang(btn.dataset.lang); });
   });
-
-  /* ---------- Vídeo de fondo ---------- */
-
-  function updateBgToggle() {
-    var playing = bgToggle.dataset.state === "playing";
-    var label = T[document.documentElement.lang][playing ? "bg.pause" : "bg.play"];
-    bgToggle.setAttribute("aria-label", label);
-    bgToggle.title = label;
-  }
-
-  function setBgState(state) {
-    bgToggle.dataset.state = state;
-    updateBgToggle();
-    emit("bg", { playing: state === "playing" });
-  }
-
-  // Al pausar o reanudar con el botón, el vídeo frena o arranca poco a poco
-  // en vez de congelarse de golpe. La rampa siempre parte de la velocidad
-  // actual, así que si se pulsa otra vez a mitad, invierte sin saltos.
-  var MIN_RATE = 0.1;
-  var rateFrame = 0;
-  var rateTimer = 0;
-
-  function stopRamp() {
-    cancelAnimationFrame(rateFrame);
-    clearTimeout(rateTimer);
-  }
-
-  function rampRate(target, onDone) {
-    stopRamp();
-    var last = performance.now();
-    function finish() {
-      stopRamp();
-      video.playbackRate = target;
-      if (onDone) onDone();
-    }
-    function step(now) {
-      var dt = Math.min((now - last) / 1000, 0.05);
-      last = now;
-      var rate = target + (video.playbackRate - target) * Math.exp(-dt / 0.14);
-      if (Math.abs(rate - target) < 0.02) return finish();
-      video.playbackRate = rate;
-      rateFrame = requestAnimationFrame(step);
-    }
-    rateFrame = requestAnimationFrame(step);
-    // Si el navegador no está pintando (ventana tapada), se termina igualmente.
-    rateTimer = setTimeout(finish, 900);
-  }
-
-  function playBg(onBlocked, smooth) {
-    stopRamp();
-    var ramp = smooth && !reduceMotion.matches;
-    video.muted = true;
-    video.preload = "auto";
-    if (!ramp) video.playbackRate = 1;
-    else if (video.paused) video.playbackRate = MIN_RATE;
-    setBgState("playing");
-    var attempt = video.play();
-    if (ramp) rampRate(1);
-    if (attempt && attempt.catch) {
-      attempt.catch(function () {
-        stopRamp();
-        setBgState("paused");
-        if (onBlocked) onBlocked();
-      });
-    }
-  }
-
-  // El navegador puede bloquear la reproducción automática (por ejemplo, si la
-  // página se abre en una pestaña en segundo plano). En ese caso se vuelve a
-  // intentar cuando la pestaña se ve o con la primera interacción.
-  function resumeWhenPossible() {
-    function retry(e) {
-      if (document.visibilityState !== "visible") return;
-      if (e && e.target && e.target.closest && e.target.closest(".bg-toggle")) return;
-      stop();
-      if (bgToggle.dataset.state === "paused" && readStore(BG_KEY) !== "1" && !reduceMotion.matches) {
-        playBg(resumeWhenPossible);
-      }
-    }
-    function stop() {
-      document.removeEventListener("visibilitychange", retry);
-      window.removeEventListener("pointerdown", retry, true);
-      window.removeEventListener("keydown", retry, true);
-    }
-    document.addEventListener("visibilitychange", retry);
-    window.addEventListener("pointerdown", retry, true);
-    window.addEventListener("keydown", retry, true);
-  }
-
-  function pauseBg(smooth) {
-    setBgState("paused");
-    if (smooth && !reduceMotion.matches && !video.paused) {
-      rampRate(MIN_RATE, function () { video.pause(); });
-    } else {
-      stopRamp();
-      video.pause();
-    }
-  }
-
-  bgToggle.addEventListener("click", function () {
-    if (bgToggle.dataset.state === "playing") {
-      pauseBg(true);
-      writeStore(BG_KEY, "1");
-    } else {
-      playBg(null, true);
-      writeStore(BG_KEY, "0");
-    }
-  });
-
-  if (reduceMotion.addEventListener) {
-    reduceMotion.addEventListener("change", function (e) { if (e.matches) pauseBg(); });
-  }
 
   /* ---------- Secciones (una por apartado del menú) ---------- */
 
@@ -401,8 +284,7 @@
 
   /* ---------- Entrada al cargar la página ---------- */
 
-  // La primera vez en la visita: una cortina blanca descubre las ondas de izquierda
-  // a derecha mientras el menú baja a su sitio, la foto se destapa, el saludo sube
+  // La primera vez en la visita: el menú baja a su sitio, la foto se destapa, el saludo sube
   // palabra a palabra y después llega el texto. Si se recarga la página, o con
   // "reducir movimiento", todo aparece con un fundido corto.
   var INTRO_KEY = "portfolio-intro-seen";
@@ -484,7 +366,7 @@
     }
 
     if (reduceMotion.matches || (!fromBoot && readSession(INTRO_KEY) === "1")) {
-      [document.querySelector(".backdrop"), document.querySelector(".site-header"), main].forEach(function (el) {
+      [document.querySelector(".site-header"), main].forEach(function (el) {
         settle(el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 300, easing: curve("ease-out") }));
       });
       root.classList.remove("intro-pending");
@@ -492,23 +374,11 @@
     }
     writeSession(INTRO_KEY, "1");
 
-    // 1. La cortina: el fondo del vídeo es blanco como la página, así que al
-    //    retirarse parece que las ondas se dibujan de izquierda a derecha
-    var backdrop = document.querySelector(".backdrop");
-    if (fromBoot) {
-      // La pantalla de carga ya ha hecho de cortina: el fondo solo se enciende
-      settle(backdrop.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 700, easing: curve("ease-out") }));
-    } else {
-      var curtain = document.createElement("div");
-      curtain.className = "backdrop__curtain";
-      backdrop.appendChild(curtain);
-      var sweep = settle(curtain.animate(
-        [{ transform: "translateX(0)" }, { transform: "translateX(100%)" }],
-        { duration: 1600, easing: curve("ease-in-out"), fill: "forwards" }
-      ));
-      var removeCurtain = function () { curtain.remove(); };
-      sweep.finished.then(removeCurtain, removeCurtain);
-    }
+    // 1. Los controles flotantes del 3D (nivel y ayuda) aparecen con un fundido
+    document.querySelectorAll(".level-nav, .stage__focus, .stage__hint").forEach(function (el) {
+      settle(el.animate([{ opacity: 0, transform: "translateY(14px)" }, { opacity: 1, transform: "none" }],
+        { duration: 800, delay: 500, easing: curve("ease-out"), fill: "backwards" }));
+    });
 
     // 2. El menú y los botones bajan a su sitio, uno detrás de otro
     var header = Array.prototype.slice.call(document.querySelectorAll(".main-nav li"));
@@ -533,6 +403,11 @@
 
   /* ---------- Inicio ---------- */
 
+  // Cada sección es una "página", no un ancla: al abrir con #sección no hay que bajar hasta ella
+  if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+  window.scrollTo(0, 0);
+  window.addEventListener("load", function () { if (window.scrollY < 400) window.scrollTo(0, 0); }, { once: true });
+
   applyLang(initialLang());
   showPage(false);
   // Con la pantalla de carga delante, la entrada espera a que termine
@@ -542,6 +417,4 @@
     playIntro(false);
   }
 
-  if (reduceMotion.matches || readStore(BG_KEY) === "1") setBgState("paused");
-  else playBg(resumeWhenPossible);
 })();

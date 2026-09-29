@@ -119,8 +119,8 @@ export function buildInside(kit) {
 
   /* ---------- Luz interior: da volumen al metal y a la placa ---------- */
 
-  const l1 = new THREE.PointLight(palette.accent, 2.2, 3.4, 2);
-  const l2 = new THREE.PointLight(palette.accent2, 1.8, 3.4, 2);
+  const l1 = new THREE.PointLight(palette.accent, 9, 9, 2);
+  const l2 = new THREE.PointLight(palette.accent3, 7, 9, 2);
   l1.position.set(0.3, 0.6, 0.4);
   l2.position.set(-0.9, -0.15, 0.45);
   kit.root.add(l1, l2);

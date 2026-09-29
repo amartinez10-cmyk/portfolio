@@ -90,12 +90,14 @@ export function createHeroModel({ palette, lite }) {
 
   function buildProcedural() {
     kit = createKit({ palette, lite });
-    edge = buildCase(kit).edge;
-    buildPedestal(kit);
-    buildInside(kit);
-    pickables = kit.finalize();
     group.add(kit.root, highlight.group);
     group.position.y = 0.12;   // centra el conjunto (PC + plataforma) en el hueco
+    // Cada bloque va por separado: si uno fallara en algún equipo, el resto del PC se sigue viendo
+    const step = (name, fn) => { try { return fn(); } catch (err) { console.error("[3D] PC: falló " + name, err); } };
+    step("carcasa", () => { edge = buildCase(kit).edge; });
+    step("plataforma", () => buildPedestal(kit));
+    step("interior", () => buildInside(kit));
+    pickables = kit.finalize();
   }
 
   // .glb propio (Draco opcional). Se centra y se escala a la altura del PC.
@@ -156,7 +158,7 @@ export function createHeroModel({ palette, lite }) {
     update(t) {
       if (!kit) return;
       kit.update(t);
-      edge.color.copy(palette.accent).lerp(palette.accent2, 0.5 + 0.5 * Math.sin(t * 0.5));
+      if (edge) edge.color.copy(palette.accent).lerp(palette.accent2, 0.5 + 0.5 * Math.sin(t * 0.5));
       if (active) highlight.pulse(t);
     },
     dispose() {

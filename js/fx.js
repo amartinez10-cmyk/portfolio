@@ -244,7 +244,7 @@
         cursor.classList.add("is-visible");
       }
       var target = e.target;
-      var interactive = !!(target && target.closest && target.closest("a, button, [role=\"group\"], [data-tilt]"));
+      var interactive = !!(target && target.closest && target.closest("a, button, [data-tilt], .stage.is-pointing"));
       cursor.classList.toggle("is-link", interactive);
     }
     wake();

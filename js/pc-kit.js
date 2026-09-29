@@ -30,20 +30,21 @@ export function createKit({ palette, lite }) {
   const braid = braidMap();
   disposables.push(fins, braid);
 
+  // Materiales en tonos pastel (como el resto de las maquetas): chapa blanca-lila, piezas navy
   const mats = {
-    steel: new THREE.MeshStandardMaterial({ color: 0x191c25, metalness: 0.9, roughness: 0.48, roughnessMap: brushed, bumpMap: brushed, bumpScale: 0.35 }),
-    matte: new THREE.MeshStandardMaterial({ color: 0x0b0c12, metalness: 0.3, roughness: 0.68 }),
-    alu: new THREE.MeshStandardMaterial({ color: 0x5b6480, metalness: 1, roughness: 0.34, roughnessMap: brushed }),
-    finned: new THREE.MeshStandardMaterial({ color: 0x8a92ad, metalness: 1, roughness: 0.42, map: fins }),
-    rubber: new THREE.MeshStandardMaterial({ color: 0x07080b, metalness: 0, roughness: 0.9 }),
-    chrome: new THREE.MeshStandardMaterial({ color: 0xd2d8ee, metalness: 1, roughness: 0.16 }),
-    plate: new THREE.MeshStandardMaterial({ color: 0x0b0e18, metalness: 0.92, roughness: 0.2 }),
-    mesh: new THREE.MeshStandardMaterial({ color: 0x0e1018, metalness: 0.8, roughness: 0.45, alphaMap: vent, alphaTest: 0.5, side: THREE.DoubleSide }),
-    sleeve: new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.15, roughness: 0.82, map: braid, bumpMap: braid, bumpScale: 0.5 }),
-    frost: new THREE.MeshStandardMaterial({ color: 0x232945, metalness: 0.2, roughness: 0.28, transparent: true, opacity: 0.88, side: THREE.DoubleSide }),
+    steel: new THREE.MeshStandardMaterial({ color: 0xe6e0ff, metalness: 0.1, roughness: 0.42, roughnessMap: brushed, bumpMap: brushed, bumpScale: 0.12 }),
+    matte: new THREE.MeshStandardMaterial({ color: 0x2c2568, metalness: 0.15, roughness: 0.55 }),
+    alu: new THREE.MeshStandardMaterial({ color: 0xb9b0ee, metalness: 0.55, roughness: 0.34, roughnessMap: brushed }),
+    finned: new THREE.MeshStandardMaterial({ color: 0xd9d3fb, metalness: 0.6, roughness: 0.4, map: fins }),
+    rubber: new THREE.MeshStandardMaterial({ color: 0x1b1642, metalness: 0, roughness: 0.9 }),
+    chrome: new THREE.MeshStandardMaterial({ color: 0xf1eeff, metalness: 0.9, roughness: 0.18 }),
+    plate: new THREE.MeshStandardMaterial({ color: 0x3a2f86, metalness: 0.3, roughness: 0.4 }),
+    mesh: new THREE.MeshStandardMaterial({ color: 0x4a3f9a, metalness: 0.4, roughness: 0.5, alphaMap: vent, alphaTest: 0.5, side: THREE.DoubleSide }),
+    sleeve: new THREE.MeshStandardMaterial({ color: 0xff9ec4, metalness: 0.05, roughness: 0.82, map: braid, bumpMap: braid, bumpScale: 0.5 }),
+    frost: new THREE.MeshStandardMaterial({ color: 0x6a5fd0, metalness: 0.1, roughness: 0.3, transparent: true, opacity: 0.85, side: THREE.DoubleSide }),
     glass: new THREE.MeshPhysicalMaterial({
-      color: 0xaebdff, metalness: 0, roughness: 0.02, transparent: true, opacity: 0.07, depthWrite: false,
-      clearcoat: 1, clearcoatRoughness: 0.03, envMapIntensity: 2.4
+      color: 0xd8ccff, metalness: 0, roughness: 0.03, transparent: true, opacity: 0.1, depthWrite: false,
+      clearcoat: 1, clearcoatRoughness: 0.03, envMapIntensity: 2
     }),
     lcd: new THREE.MeshBasicMaterial({ map: lcd.texture, toneMapped: false })
   };

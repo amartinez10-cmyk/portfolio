@@ -64,43 +64,35 @@ export function buildCase(kit) {
   return { edge };
 }
 
-// Plataforma giratoria bajo el PC: placa brillante, aro de neón y marcas cada 5 grados
+// Plataforma bajo el PC: un disco blanco con un aro amarillo (como los de las maquetas de
+// threejs-journey) y marcas cada 5 grados para que se note cuánto gira al arrastrar
 export function buildPedestal(kit) {
   const { H } = DIM;
-  const { mats, palette, lite } = kit;
+  const { mats, lite } = kit;
   const y = -H / 2 - 0.2;
   const R = 2.05;
+  const yellow = new THREE.MeshBasicMaterial({ color: 0xffc233, toneMapped: false });
+  const navy = new THREE.MeshBasicMaterial({ color: 0x2a2361, toneMapped: false });
+  kit.own(yellow);
+  kit.own(navy);
 
-  kit.cyl(R, R + 0.05, 0.1, mats.plate, 0, y, 0);
-  const ring = new THREE.Mesh(new THREE.TorusGeometry(R + 0.02, 0.016, 8, lite ? 64 : 128), kit.glowMat(1.7));
+  kit.cyl(R, R + 0.08, 0.16, mats.steel, 0, y - 0.02, 0);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(R - 0.06, 0.05, 10, lite ? 64 : 128), yellow);
   ring.rotation.x = Math.PI / 2;
-  ring.position.y = y + 0.052;
+  ring.position.y = y + 0.07;
   kit.root.add(ring);
 
   const ticks = [];
   for (let i = 0; i < 72; i++) {
     const g = new THREE.BoxGeometry(i % 6 === 0 ? 0.03 : 0.014, 0.006, i % 6 === 0 ? 0.16 : 0.09);
-    const r = R - 0.12;
+    const r = R - 0.28;
     const a = (i / 72) * Math.PI * 2;
     g.rotateY(Math.PI / 2 - a);   // la marca (larga en Z) apunta hacia fuera
     g.translate(Math.cos(a) * r, 0, Math.sin(a) * r);
     ticks.push(g);
   }
-  const tickMesh = new THREE.Mesh(mergeGeometries(ticks), kit.glowMat(0.9));
-  tickMesh.position.y = y + 0.053;
+  const tickMesh = new THREE.Mesh(mergeGeometries(ticks), navy);
+  tickMesh.position.y = y + 0.065;
   kit.root.add(tickMesh);
   ticks.forEach((g) => g.dispose());
-
-  // Charco de luz en el suelo, bajo la plataforma
-  const pool = new THREE.Mesh(
-    new THREE.PlaneGeometry(R * 3.1, R * 3.1),
-    new THREE.MeshBasicMaterial({
-      map: kit.glow, color: palette.accent, transparent: true, opacity: 0.6,
-      blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false
-    })
-  );
-  pool.rotation.x = -Math.PI / 2;
-  pool.position.y = y - 0.08;
-  kit.root.add(pool);
-  kit.own(pool.material);
 }
