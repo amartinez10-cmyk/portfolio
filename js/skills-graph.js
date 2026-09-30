@@ -7,6 +7,7 @@
  * HTML real (que sigue existiendo, accesible y traducida, debajo).
  */
 import * as THREE from "three";
+import { createBillboards } from "./billboards.js";
 
 const GOLDEN_ANGLE = 2.399963;
 const NODE_SIZE = 0.5;      // tamaño del icono (unidades de escena)
@@ -25,14 +26,15 @@ function glowTexture() {
 }
 
 // Disco oscuro con un aro blanco y el icono (o iconos) de la habilidad dentro. Se dibuja en 512 × 512
-// para que se vea nítido aunque el icono se acerque a la cámara (modo "explorar el PC").
-function iconTexture(ids, palette) {
-  const size = 512;
-  const k = size / 192;                      // los tamaños de SkillIcons.draw están pensados para 192 px
-  const c = document.createElement("canvas");
-  c.width = c.height = size;
-  const g = c.getContext("2d");
-  const h = size / 2;
+// para que se vea nítido aunque el icono se acerque a la cámara (modo "explorar el PC"). Todos los
+// iconos van juntos en un atlas: así se dibujan de una vez.
+const TILE = 512;
+
+function drawIcon(g, ox, oy, ids, palette) {
+  const k = TILE / 192;                      // los tamaños de SkillIcons.draw están pensados para 192 px
+  const h = TILE / 2;
+  g.save();
+  g.translate(ox, oy);
   g.beginPath();
   g.arc(h, h, h - 20, 0, Math.PI * 2);
   g.fillStyle = "rgba(36, 26, 96, 0.97)";
@@ -42,10 +44,21 @@ function iconTexture(ids, palette) {
   g.stroke();
   const icons = window.SkillIcons;
   if (icons && ids && ids.length) icons.draw(g, ids, h, h, (ids.length === 1 ? 92 : 112) * k, palette);
+  g.restore();
+}
+
+function iconAtlas(lists, count, palette) {
+  const cols = Math.max(1, Math.ceil(Math.sqrt(count)));
+  const rows = Math.max(1, Math.ceil(count / cols));
+  const c = document.createElement("canvas");
+  c.width = cols * TILE;
+  c.height = rows * TILE;
+  const g = c.getContext("2d");
+  for (let i = 0; i < count; i++) drawIcon(g, (i % cols) * TILE, Math.floor(i / cols) * TILE, lists[i], palette);
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.anisotropy = 8;
-  return tex;
+  return { tex, cols, rows };
 }
 
 export function createSkillsGraph({ palette, lite, touch, listKey = "skills.hard" }) {
@@ -54,53 +67,53 @@ export function createSkillsGraph({ palette, lite, touch, listKey = "skills.hard
   const hitGeo = new THREE.SphereGeometry(touch ? 0.42 : 0.3, 8, 6);
   const tmp = new THREE.Color();
 
-  let nodes = [];           // { mesh (icono), halo, hit, base, level }
+  let nodes = [];           // { mesh (ancla), icon, halo (fichas de los lotes de cuadrados), hit, base, level }
+  let iconBatch = null;     // todos los iconos, en una sola llamada de dibujo
+  let haloBatch = null;
+  let pulseBatch = null;
+  let atlas = null;
   let dirs = [];            // dirección de cada nodo (unitaria), independiente del tamaño
   let edges = [];           // pares [a, b]
   let edgeLines = null;
   let pulses = [];
-  const pulseGroup = new THREE.Group();
-  group.add(pulseGroup);
   const layout = { rx: 4.6, ry: 1.45, rz: 2.4 };
 
   function clearAll() {
     nodes.forEach((n) => {
-      group.remove(n.mesh, n.halo, n.hit);
-      n.mesh.material.map.dispose();
-      n.mesh.material.dispose();
-      n.halo.material.dispose();
+      group.remove(n.mesh, n.hit);
       n.hit.material.dispose();
     });
+    [iconBatch, haloBatch, pulseBatch].forEach((batch) => {
+      if (!batch) return;
+      group.remove(batch.mesh);
+      batch.dispose();
+    });
+    if (atlas) atlas.tex.dispose();
     if (edgeLines) { group.remove(edgeLines); edgeLines.geometry.dispose(); edgeLines.material.dispose(); }
-    pulses.forEach((p) => { pulseGroup.remove(p.sprite); p.sprite.material.dispose(); });
     nodes = []; dirs = []; edges = []; pulses = []; edgeLines = null;
+    iconBatch = haloBatch = pulseBatch = atlas = null;
   }
 
   // Hélice: los nodos suben dando vueltas alrededor del eje del modelo
   function build(count) {
     clearAll();
-    const lists = (window.SkillIcons && window.SkillIcons.LISTS) || {};
+    const lists = ((window.SkillIcons && window.SkillIcons.LISTS) || {})[listKey] || [];
+    atlas = iconAtlas(lists, count, palette);
+    iconBatch = createBillboards({ map: atlas.tex, capacity: count, grid: [atlas.cols, atlas.rows], renderOrder: 6, sorted: true });
+    haloBatch = createBillboards({ map: glow, capacity: count, additive: true, renderOrder: 5 });
+    group.add(haloBatch.mesh, iconBatch.mesh);
     for (let i = 0; i < count; i++) {
       const h = count > 1 ? (i / (count - 1)) * 2 - 1 : 0;
       const ring = 0.82 + 0.18 * Math.cos((h * Math.PI) / 2);
       const a = i * GOLDEN_ANGLE;
       dirs.push(new THREE.Vector3(Math.cos(a) * ring, h, Math.sin(a) * ring));
 
-      const ids = (lists[listKey] || [])[i];
-      const mesh = new THREE.Sprite(new THREE.SpriteMaterial({
-        map: iconTexture(ids, palette), transparent: true, depthWrite: false, toneMapped: false
-      }));
-      mesh.scale.setScalar(NODE_SIZE);
-      mesh.renderOrder = 6;
-      const halo = new THREE.Sprite(new THREE.SpriteMaterial({
-        map: glow, color: palette.accent3.clone(), transparent: true, opacity: 0.4,
-        blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false
-      }));
-      halo.scale.setScalar(NODE_SIZE * 2.1);
-      halo.renderOrder = 5;
+      const mesh = new THREE.Object3D();                       // ancla: dónde está el icono (para etiquetas, líneas y pulsos)
+      const icon = iconBatch.add(0, 0, 0, NODE_SIZE, 1, 1, 1, 1, i);
+      const halo = haloBatch.add(0, 0, 0, NODE_SIZE * 2.1, palette.accent3.r, palette.accent3.g, palette.accent3.b, 0.4, 0);
       const hit = new THREE.Mesh(hitGeo, new THREE.MeshBasicMaterial({ visible: false }));
-      group.add(halo, mesh, hit);
-      nodes.push({ mesh, halo, hit, base: new THREE.Vector3(), level: 0 });
+      group.add(mesh, hit);
+      nodes.push({ mesh, icon, halo, hit, base: new THREE.Vector3(), level: 0 });
     }
 
     // Cada nodo se une a sus dos vecinos más cercanos
@@ -123,14 +136,12 @@ export function createSkillsGraph({ palette, lite, touch, listKey = "skills.hard
     group.add(edgeLines);
 
     // Pulsos de datos que recorren las conexiones
-    for (let i = 0; i < (lite ? 5 : 12) && edges.length; i++) {
-      const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
-        map: glow, color: 0xffffff, transparent: true, opacity: 0.9,
-        blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false
-      }));
-      sprite.scale.setScalar(0.22);
-      pulseGroup.add(sprite);
-      pulses.push({ sprite, edge: Math.floor(Math.random() * edges.length), t: Math.random(), speed: 0.25 + Math.random() * 0.35 });
+    const pulseCount = edges.length ? (lite ? 5 : 12) : 0;
+    pulseBatch = createBillboards({ map: glow, capacity: Math.max(1, pulseCount), additive: true });
+    group.add(pulseBatch.mesh);
+    for (let i = 0; i < pulseCount; i++) {
+      const item = pulseBatch.add(0, 0, 0, 0.22, 1, 1, 1, 0.9, 0);
+      pulses.push({ item, edge: Math.floor(Math.random() * edges.length), t: Math.random(), speed: 0.25 + Math.random() * 0.35 });
     }
     applyLayout();
   }
@@ -163,14 +174,20 @@ export function createSkillsGraph({ palette, lite, touch, listKey = "skills.hard
       }
       const bob = animated ? Math.sin(t * 0.7 + i * 1.3) * 0.08 : 0;
       n.mesh.position.set(n.base.x, n.base.y + bob, n.base.z);
-      n.halo.position.copy(n.mesh.position);
       n.hit.position.copy(n.mesh.position);
-      n.mesh.scale.setScalar(NODE_SIZE * (1 + n.level * 0.55));
-      n.mesh.material.color.setScalar(0.82 + 0.18 * n.level);
-      n.halo.material.color.copy(palette.accent3).lerp(palette.accent2, n.level);
-      n.halo.material.opacity = 0.32 + n.level * 0.6;
-      n.halo.scale.setScalar(NODE_SIZE * (2.1 + n.level * 1.4));
+      const icon = n.icon;
+      icon.x = n.mesh.position.x; icon.y = n.mesh.position.y; icon.z = n.mesh.position.z;
+      icon.size = NODE_SIZE * (1 + n.level * 0.55);
+      icon.r = icon.g = icon.b = 0.82 + 0.18 * n.level;
+      const halo = n.halo;
+      halo.x = icon.x; halo.y = icon.y; halo.z = icon.z;
+      tmp.copy(palette.accent3).lerp(palette.accent2, n.level);
+      halo.r = tmp.r; halo.g = tmp.g; halo.b = tmp.b;
+      halo.a = 0.32 + n.level * 0.6;
+      halo.size = NODE_SIZE * (2.1 + n.level * 1.4);
     });
+    iconBatch.touch();
+    haloBatch.touch();
 
     const pos = edgeLines.geometry.attributes.position;
     const col = edgeLines.geometry.attributes.color;
@@ -187,7 +204,7 @@ export function createSkillsGraph({ palette, lite, touch, listKey = "skills.hard
     pos.needsUpdate = true;
     col.needsUpdate = true;
 
-    pulseGroup.visible = animated;
+    pulseBatch.mesh.visible = animated;
     if (animated) {
       pulses.forEach((p) => {
         p.t += dt * p.speed * ambient;
@@ -196,9 +213,14 @@ export function createSkillsGraph({ palette, lite, touch, listKey = "skills.hard
           p.edge = Math.floor(Math.random() * edges.length);
         }
         const [a, b] = edges[p.edge];
-        p.sprite.position.lerpVectors(nodes[a].mesh.position, nodes[b].mesh.position, p.t);
-        p.sprite.material.opacity = 0.9 * Math.sin(p.t * Math.PI);
+        const A = nodes[a].mesh.position;
+        const B = nodes[b].mesh.position;
+        p.item.x = A.x + (B.x - A.x) * p.t;
+        p.item.y = A.y + (B.y - A.y) * p.t;
+        p.item.z = A.z + (B.z - A.z) * p.t;
+        p.item.a = 0.9 * Math.sin(p.t * Math.PI);
       });
+      pulseBatch.touch();
     }
     return moving || (animated && ambient > 0);
   }

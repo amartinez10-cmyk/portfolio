@@ -16,6 +16,7 @@ import * as THREE from "three";
 import { createKit } from "./pc-kit.js";
 import { buildCase, buildPedestal } from "./pc-case.js";
 import { buildInside } from "./pc-inside.js";
+import { batchStatic } from "./batch.js";
 
 export const MODEL_URL = null;
 
@@ -97,6 +98,8 @@ export function createHeroModel({ palette, lite }) {
     step("plataforma", () => buildPedestal(kit));
     step("interior", () => buildInside(kit));
     pickables = kit.finalize();
+    // Se dibuja con pocas mallas fusionadas; las originales quedan ocultas y siguen sirviendo para señalar
+    if (!/[?&]batch=off(&|$)/.test(location.search)) batchStatic(kit.root, { ticks: [(t) => kit.update(t)] });
   }
 
   // .glb propio (Draco opcional). Se centra y se escala a la altura del PC.

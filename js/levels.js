@@ -13,6 +13,7 @@ import { createHeroModel } from "./hero-model.js";
 import { BASE_DROP } from "./pc-case.js";
 import { createSkillsGraph } from "./skills-graph.js";
 import { buildExtras } from "./levels-extra.js";
+import { batchStatic } from "./batch.js";
 
 // Color de las paredes y de la luz del borde de cada nivel (el acento también lo lee el CSS)
 export const LEVEL_STYLE = {
@@ -27,6 +28,22 @@ export const LEVEL_STYLE = {
 const PC_SCALE = 1.7;                 // la torre mide 3,5 de alto: en la sala son ≈ 6
 const PC_POS = { x: -0.5, z: 1.9 };   // dónde está el PC en la sala
 const GRAPH_SCALE = 2.6;
+
+// Con ?batch=off las mallas no se fusionan (para comparar el dibujado con y sin fusión)
+const BATCH = !/[?&]batch=off(&|$)/.test(location.search);
+
+// Junta las piezas fijas de cada objeto de la sala en pocas mallas (ver batch.js)
+function batchLevel(root, room, keep) {
+  const loose = root.children.filter((o) => o.isMesh && !o.isInstancedMesh);
+  if (loose.length > 1) {
+    const g = new THREE.Group();
+    g.userData.noHover = true;
+    loose.forEach((m) => g.add(m));
+    root.add(g);
+  }
+  root.children.slice().forEach((o) => { if (o.isGroup && o !== keep) batchStatic(o); });
+  batchStatic(room.group, { ticks: [], skip: new Set([root]) });
+}
 
 export function createLevels({ palette, lite, order }) {
   const kit = createKit({ lite });
@@ -64,25 +81,27 @@ export function createLevels({ palette, lite, order }) {
     root.add(desk);
     const top = 2.7;
     const m1 = P.monitor({ seed: 5, w: 3.5, h: 2 });
-    m1.position.set(1.0, top, -6.12);
+    m1.position.set(0.6, top, -6.12);
     m1.rotation.y = 0.12;
     const m2 = P.monitor({ seed: 8, w: 3.5, h: 2 });
-    m2.position.set(4.5, top, -6.12);
+    m2.position.set(4.1, top, -6.12);
     m2.rotation.y = -0.12;
     const mat = P.deskMat({ w: 5.4, d: 2.15, color: C.navy, edge: C.violet });
     mat.position.set(2.85, top, -5.1);
     const kb = P.keyboard();
     kb.position.set(2.5, top + 0.05, -4.75);
     const mouse = P.mouse();
-    mouse.position.set(4.6, top + 0.05, -4.7);
+    mouse.position.set(4.4, top + 0.05, -4.7);
+    // La lámpara, al final de la mesa junto a la pared, con el brazo hacia delante para no rozar el monitor
     const lamp = P.deskLamp({ color: C.coral });
-    kit.fit(lamp, 6.2, top, -6.1, -0.5);
+    kit.fit(lamp, 6.4, top, -6.1, -Math.PI / 2);
     const mug = P.mug({ color: C.yellow });
-    mug.position.set(-0.35, top, -4.9);
-    const cactus = P.plants.barrel({ size: 0.75, pot: C.white });
-    cactus.position.set(-0.85, top, -6.25);
+    mug.position.set(5.75, top, -4.4);
+    // El cactus, en el suelo junto a la mesa (en la mesa no cabía entre el monitor y el borde)
+    const cactus = P.plants.barrel({ size: 1.1, pot: C.white });
+    kit.fit(cactus, -2.9, 0, -6.0);
     const phones = P.headphones({ color: C.pink });
-    phones.position.set(6.15, top, -4.35);
+    phones.position.set(-0.45, top, -4.7);
     phones.rotation.y = -0.5;
     [mat, m1, m2, kb, mouse, lamp, mug, cactus, phones].forEach((o) => root.add(o));
 
@@ -109,12 +128,13 @@ export function createLevels({ palette, lite, order }) {
     root.add(bush);
 
     // Cuadros y reloj en la pared derecha
+    // (kit.hang deja siempre un margen hasta el borde de la pared: nada cuelga fuera)
     const f1 = P.frame({ w: 2.4, h: 3, seed: 3 });
-    f1.position.set(0.8, 7.0, -6.82);
+    kit.hang(f1, 0.3, 7.3, -6.82);
     const f2 = P.frame({ w: 2, h: 2, seed: 7, palette: [C.yellow, C.coral, C.sky, C.white] });
-    f2.position.set(3.5, 7.4, -6.82);
+    kit.hang(f2, 2.9, 7.4, -6.82);
     const clock = P.clock({ r: 1.05 });
-    clock.position.set(6.1, 7.1, -6.8);
+    kit.hang(clock, 5.3, 7.1, -6.8);
     [f1, f2, clock].forEach((o) => root.add(o));
 
     pc.userData.noHover = true;
@@ -140,6 +160,7 @@ export function createLevels({ palette, lite, order }) {
         console.error("[3D] nivel " + id + ": falló al construirse", err);
       }
     }
+    if (BATCH) batchLevel(root, room, extra && extra.pc);
     const ticks = [];
     root.traverse((o) => { if (o.userData && o.userData.tick) ticks.push(o.userData.tick); });
     if (extra && extra.tick) ticks.push(extra.tick);

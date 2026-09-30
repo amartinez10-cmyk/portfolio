@@ -7,6 +7,7 @@ import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { brushedMap, ventMap, finMap, braidMap, glowTexture } from "./pc-textures.js";
+import { createBillboards } from "./billboards.js";
 
 // Forma de una aspa de ventilador (largo 1, curvada como una hoja)
 const BLADE = new THREE.Shape();
@@ -18,6 +19,9 @@ export function createKit({ palette, lite }) {
   const root = new THREE.Group();
   const fans = [];        // { blades, speed }
   const leds = [];        // { color, phase }: colores que van cambiando
+  const halos = [];       // { anchor, phase, opacity, item }: resplandores de los ventiladores
+  const ledMats = new Map();
+  let haloBatch = null;
   const parts = new Map();
   const disposables = [];
   const glow = glowTexture();
@@ -51,27 +55,30 @@ export function createKit({ palette, lite }) {
 
   /* ---------- LED RGB: accent → accent2 → accent3 ---------- */
 
+  // Un material por fase de color: las luces con la misma fase comparten material (y se dibujan juntas)
   function glowMat(phase) {
-    const mat = new THREE.MeshBasicMaterial({ color: palette.accent.clone(), toneMapped: false });
-    leds.push({ color: mat.color, phase });
-    disposables.push(mat);
+    const key = (((phase % 3) + 3) % 3).toFixed(3);
+    let mat = ledMats.get(key);
+    if (!mat) {
+      mat = new THREE.MeshBasicMaterial({ color: palette.accent.clone(), toneMapped: false });
+      leds.push({ color: mat.color, phase });
+      disposables.push(mat);
+      ledMats.set(key, mat);
+    }
     return mat;
   }
 
+  // Resplandor de una luz: aquí solo se deja una marca (un nodo vacío); en finalize() todos los
+  // resplandores pasan a un único lote de cuadrados que miran a la cámara
   function halo(size, phase, opacity) {
-    const mat = new THREE.SpriteMaterial({
-      map: glow, color: palette.accent.clone(), transparent: true, opacity,
-      blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false
-    });
-    leds.push({ color: mat.color, phase });
-    disposables.push(mat);
-    const sprite = new THREE.Sprite(mat);
-    sprite.scale.setScalar(size);
-    return sprite;
+    const anchor = new THREE.Object3D();
+    halos.push({ anchor, size, phase, opacity, item: null });
+    return anchor;
   }
 
   // Las luces del PC pasan despacio de lila a blanco y a azul hielo, como las de la foto
   const cycleColors = [new THREE.Color(0xc9b6ff), new THREE.Color(0xffffff), new THREE.Color(0xa8d4ff)];
+  const ledColor = new THREE.Color();
   function cycle(target, x) {
     const p = ((x % 3) + 3) % 3;
     const i = Math.floor(p);
@@ -245,6 +252,20 @@ export function createKit({ palette, lite }) {
 
   // Marca las mallas de cada parte y calcula su volumen (con el modelo aún sin mover)
   function finalize() {
+    if (halos.length) {
+      haloBatch = createBillboards({ map: glow, capacity: halos.length, additive: true });
+      root.add(haloBatch.mesh);
+      root.updateWorldMatrix(true, true);
+      const inv = new THREE.Matrix4().copy(root.matrixWorld).invert();
+      const rel = new THREE.Matrix4();
+      const p = new THREE.Vector3();
+      const q = new THREE.Quaternion();
+      const sc = new THREE.Vector3();
+      halos.forEach((h) => {
+        rel.multiplyMatrices(inv, h.anchor.matrixWorld).decompose(p, q, sc);
+        h.item = haloBatch.add(p.x, p.y, p.z, h.size * sc.x, 1, 1, 1, h.opacity, 0);
+      });
+    }
     const pickables = [];
     parts.forEach((p) => {
       p.group.traverse((o) => {
@@ -261,9 +282,17 @@ export function createKit({ palette, lite }) {
   function update(t) {
     fans.forEach((f) => { f.blades.rotation.z = t * f.speed; });
     leds.forEach((l) => cycle(l.color, t * 0.35 + l.phase));
+    if (haloBatch) {
+      halos.forEach((h) => {
+        cycle(ledColor, t * 0.35 + h.phase);
+        h.item.r = ledColor.r; h.item.g = ledColor.g; h.item.b = ledColor.b;
+      });
+      haloBatch.touch();
+    }
   }
 
   function dispose() {
+    if (haloBatch) haloBatch.dispose();
     root.traverse((o) => { if (o.geometry) o.geometry.dispose(); });
     frameCache.forEach((g) => g.dispose());
     bladeCache.forEach((g) => g.dispose());

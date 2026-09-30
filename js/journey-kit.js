@@ -162,6 +162,25 @@ export function createKit({ lite = false } = {}) {
     return obj;
   }
 
+  // Cuelga un objeto plano (cuadro, reloj, diploma…) en la pared del fondo (Z = -7) a la altura y, dejando
+  // siempre 'margin' libre hasta el extremo de la pared y hasta la esquina: nunca queda colgando del borde.
+  // 'lo' y 'hi' limitan la zona de la pared que puede ocupar (por defecto, toda).
+  function hang(obj, x, y, z = -6.86, margin = 0.55, lo = -7, hi = 7) {
+    obj.position.set(0, 0, 0);
+    obj.rotation.y = 0;
+    obj.updateMatrixWorld(true);
+    _box.makeEmpty();
+    obj.traverse((m) => {
+      if (!m.isMesh || m.isSprite || !m.geometry || !m.castShadow) return;
+      if (!m.geometry.boundingBox) m.geometry.computeBoundingBox();
+      _part.copy(m.geometry.boundingBox).applyMatrix4(m.matrixWorld);
+      _box.union(_part);
+    });
+    if (!_box.isEmpty()) x = Math.min(Math.max(x, lo + margin - _box.min.x), hi - margin - _box.max.x);
+    obj.position.set(x, y, z);
+    return obj;
+  }
+
   // Suelo de la habitación, las piezas que cuelgan de la pared… cualquier malla propia
   function mesh(geometry, material, x, y, z, parent, shadow = true) {
     return put(new THREE.Mesh(geometry, asMat(material)), x, y, z, parent, shadow);
@@ -282,7 +301,7 @@ export function createKit({ lite = false } = {}) {
   }
 
   return {
-    C, lite, seg, mat, glow, asMat, box, rbox, cyl, cone, ball, torus, plane, grp, mesh, bar, lathe, fit,
+    C, lite, seg, mat, glow, asMat, box, rbox, cyl, cone, ball, torus, plane, grp, mesh, bar, lathe, fit, hang,
     canvasTex, redraw, decal, screen, roundRect, halo, pool, dispose
   };
 }

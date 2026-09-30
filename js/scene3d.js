@@ -21,6 +21,7 @@ import { createLevels, LEVEL_STYLE } from "./levels.js";
 import { createDecor } from "./world-decor.js";
 import { createStudioEnv } from "./studio-env.js";
 import { createStageInput } from "./stage-input.js";
+import { auditLayout } from "./layout-audit.js";
 
 const GAP = 30;                                          // separación entre niveles
 const AXIS = new THREE.Vector3(1, 0, -1).normalize();    // la fila de niveles va hacia la derecha de la pantalla
@@ -709,43 +710,8 @@ function startNow({ level = "full", force = false } = {}) {
       if (yaw !== undefined) rig.yaw.t = yaw;
       if (pitch !== undefined) rig.pitch.t = pitch;
     },
-    // Revisa qué objetos de cada sala atraviesan las paredes o se salen del suelo (para pruebas)
-    audit: () => {
-      const out = [];
-      const box = new THREE.Box3();
-      const part = new THREE.Box3();
-      levels.items.forEach((lv) => {
-        // Sin el balanceo ni el tamaño animado del nivel: se mide la sala tal cual está construida
-        const keep = [lv.holder.rotation.y, lv.holder.scale.x, lv.holder.position.y];
-        lv.holder.rotation.y = 0;
-        lv.holder.scale.setScalar(1);
-        lv.holder.position.y = lv.pos.y;
-        lv.holder.updateMatrixWorld(true);
-        lv.root.children.forEach((o, i) => {
-          if (!o.isGroup && !o.isMesh) return;
-          // Solo geometría real (no sprites ni resplandores)
-          box.makeEmpty();
-          o.traverse((m) => {
-            if (!m.isMesh || !m.geometry || m.isSprite || !m.castShadow) return;      // solo geometría sólida
-            if (!m.geometry.boundingBox) m.geometry.computeBoundingBox();
-            part.copy(m.geometry.boundingBox).applyMatrix4(m.matrixWorld);
-            box.union(part);
-          });
-          if (box.isEmpty()) return;
-          const p = lv.pos;
-          const min = { x: box.min.x - p.x, z: box.min.z - p.z };
-          const max = { x: box.max.x - p.x, z: box.max.z - p.z, y: box.max.y - p.y };
-          if (min.x < -7.06 || min.z < -7.06 || max.x > 7.3 || max.z > 7.3) {
-            out.push(lv.id + "#" + i + " [" + o.children.length + " hijos] x " + min.x.toFixed(2) + ".." + max.x.toFixed(2) + " z " + min.z.toFixed(2) + ".." + max.z.toFixed(2) + " y<" + max.y.toFixed(1));
-          }
-        });
-        lv.holder.rotation.y = keep[0];
-        lv.holder.scale.setScalar(keep[1]);
-        lv.holder.position.y = keep[2];
-        lv.holder.updateMatrixWorld(true);
-      });
-      return out;
-    },
+    // Revisa la colocación de los objetos de cada sala: los que se salen del hueco y los que se atraviesan
+    audit: () => auditLayout(levels, THREE),
     // Posición en pantalla (px) de una pieza del PC o de un icono de habilidad: para pruebas
     partScreen: (id) => {
       const v = new THREE.Vector3();
@@ -759,7 +725,23 @@ function startNow({ level = "full", force = false } = {}) {
       return [Math.round((v.x * 0.5 + 0.5) * W), Math.round((-v.y * 0.5 + 0.5) * H)];
     },
     orbit: (yaw, pitch) => { input.orbit.yaw = yaw; input.orbit.pitch = pitch || 0; input.orbit.idle = 0; wake(); },
-    levels, input, THREE, rig,
+    // Tiempo medio (ms) de la simulación y del dibujado en CPU, para medir el coste de un cambio
+    bench: (frames = 30) => {
+      const gl = renderer.getContext();
+      let tu = 0, tr = 0, tg = 0;
+      for (let i = 0; i < frames; i++) {
+        let t0 = performance.now();
+        update(1 / 60);
+        const t1 = performance.now();
+        render();
+        const t2 = performance.now();
+        gl.finish();
+        tu += t1 - t0; tr += t2 - t1; tg += performance.now() - t2;
+      }
+      const info = renderer.info;
+      return { update: +(tu / frames).toFixed(2), render: +(tr / frames).toFixed(2), gpuWait: +(tg / frames).toFixed(2), calls: info.render.calls, triangles: info.render.triangles, geometries: info.memory.geometries, textures: info.memory.textures, programs: info.programs.length };
+    },
+    levels, input, THREE, rig, renderer,
     dispose
   };
 
