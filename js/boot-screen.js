@@ -1,6 +1,7 @@
 /*
- * Pantalla de carga "hacker": lluvia de código, un terminal que escribe el arranque (en el
- * idioma de la web) y una barra de progreso. Los pasos esperan de verdad a lo que cargan:
+ * Pantalla de carga: el mismo espacio de la web (degradado índigo, estrellas y la paleta lila,
+ * rosa y ámbar) con letras y piezas de colores que caen al vacío, un terminal que escribe el
+ * arranque (en el idioma de la web) y una barra de progreso. Los pasos esperan de verdad a lo que cargan:
  * el de los módulos 3D no termina hasta que la escena está lista. Al acabar aparece
  * "ACCESO CONCEDIDO", la pantalla se apaga como un tubo catódico y se avisa a la página
  * (evento portfolio:boot-done) para que empiece su entrada y el 3D vuele hasta su sitio.
@@ -64,73 +65,213 @@
     return new Promise(function (resolve) { setTimeout(function () { resolve(value); }, ms); });
   }
 
-  /* ---------- Lluvia de código ---------- */
+  /* ---------- Letras y piezas que caen al vacío ---------- */
 
+  // Letras grandes y redondeadas (como los títulos de las salas) y piezas de colores (como las que
+  // flotan entre las salas) que caen desde arriba en tres planos de profundidad: las lejanas son
+  // pequeñas y lentas, las cercanas grandes y rápidas, con estela. Caen acelerando y se apagan al
+  // llegar al fondo, como si se perdieran en el vacío.
   var rain = (function () {
     var canvas = els.rain;
     var ctx = canvas.getContext("2d");
-    var glyphs = "アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワン0123456789ABCDEF<>{}[]$#%&*+=/";
-    var size = 16;
-    var drops = [];
-    var speeds = [];
-    var gates = [];      // cada columna se activa cuando la intensidad supera su umbral
-    var parked = [];
-    var api = { intensity: 0.5, speed: 1, hot: false };
+    var COLORS = ["#c9b6ff", "#9b7bff", "#ff7eb6", "#ffc247", "#8fd6ff", "#7fe3c6", "#ffffff"];
+    var CHARS = "ALEXMARTINEZ{}</>01#$&ABCDEFGHJKLNOPQRSTUVWY";
+    var FONT = '800 84px Outfit, "Avenir Next", "Segoe UI", system-ui, sans-serif';
+    var TILE = 132;          // lado de cada dibujo precalculado
+    var GLYPH = 84;          // lo que mide la letra dentro de él
+    var SHAPES = 5;
+    var cache = {};
+    var parts = [];
+    var stars = [];
+    var api = { intensity: 0.7, speed: 1, hot: false };
     var w = 0;
     var h = 0;
+    var px = 1;
     var raf = 0;
     var last = 0;
+    var clock = 0;
+    var max = 0;
+
+    function tile(draw) {
+      var c = document.createElement("canvas");
+      c.width = c.height = TILE;
+      draw(c.getContext("2d"), TILE / 2);
+      return c;
+    }
+
+    function letterSprite(ch, color) {
+      var key = "L" + ch + color;
+      if (!cache[key]) {
+        cache[key] = tile(function (g, m) {
+          g.font = FONT;
+          g.textAlign = "center";
+          g.textBaseline = "middle";
+          g.fillStyle = "rgba(24, 10, 80, 0.5)";
+          g.fillText(ch, m + 4, m + 9);
+          g.shadowColor = color;
+          g.shadowBlur = 18;
+          g.fillStyle = color;
+          g.fillText(ch, m, m + 2);
+          g.shadowBlur = 0;
+          g.fillStyle = "rgba(255, 255, 255, 0.34)";
+          g.fillText(ch, m - 1.5, m);
+        });
+      }
+      return cache[key];
+    }
+
+    function shapeSprite(kind, color) {
+      var key = "S" + kind + color;
+      if (!cache[key]) {
+        cache[key] = tile(function (g, m) {
+          var r = m * 0.58;
+          g.shadowColor = color;
+          g.shadowBlur = 16;
+          g.fillStyle = color;
+          g.strokeStyle = color;
+          g.lineWidth = 14;
+          g.beginPath();
+          if (kind === 0) {                                   // hexágono
+            for (var i = 0; i < 6; i++) g.lineTo(m + Math.cos(i * Math.PI / 3) * r, m + Math.sin(i * Math.PI / 3) * r);
+            g.closePath();
+          } else if (kind === 1) {                            // triángulo
+            for (var j = 0; j < 3; j++) g.lineTo(m + Math.cos(j * 2.094 - 1.5708) * r * 1.1, m + Math.sin(j * 2.094 - 1.5708) * r * 1.1 + r * 0.15);
+            g.closePath();
+          } else if (kind === 2) {                            // rombo
+            g.moveTo(m, m - r * 1.15); g.lineTo(m + r * 0.8, m); g.lineTo(m, m + r * 1.15); g.lineTo(m - r * 0.8, m);
+            g.closePath();
+          } else if (kind === 3) {                            // cuadrado redondeado
+            var s = r * 0.86, k = r * 0.3;
+            g.moveTo(m - s + k, m - s);
+            g.arcTo(m + s, m - s, m + s, m + s, k); g.arcTo(m + s, m + s, m - s, m + s, k);
+            g.arcTo(m - s, m + s, m - s, m - s, k); g.arcTo(m - s, m - s, m + s, m - s, k);
+            g.closePath();
+          } else {                                            // aro
+            g.arc(m, m, r * 0.78, 0, Math.PI * 2);
+          }
+          if (kind === 4) {
+            g.stroke();
+          } else {
+            g.fill();
+            g.shadowBlur = 0;
+            g.save();
+            g.clip();                                         // faceta clara en la mitad de arriba
+            g.fillStyle = "rgba(255, 255, 255, 0.3)";
+            g.fillRect(0, 0, TILE, m);
+            g.restore();
+          }
+        });
+      }
+      return cache[key];
+    }
+
+    function spawn(p, initial) {
+      var roll = Math.random();
+      var depth = roll < 0.45 ? 0 : roll < 0.82 ? 1 : 2;
+      p.depth = depth;
+      p.size = depth === 0 ? rand(16, 28) : depth === 1 ? rand(30, 52) : rand(58, 100);
+      p.v0 = (depth === 0 ? 34 : depth === 1 ? 84 : 170) * rand(0.8, 1.25);
+      p.a = depth === 0 ? 0.5 : depth === 1 ? 0.82 : 0.95;
+      p.x = rand(-0.02, 1.02) * w;
+      p.y = initial ? rand(-0.05, 0.72) * h : -p.size * 1.3;
+      p.age = initial ? rand(0, 3) : 0;
+      p.rot = rand(-0.6, 0.6);
+      p.vrot = rand(-1.1, 1.1) * (depth === 2 ? 0.7 : 1);
+      p.flip = rand(0, 6.28);
+      p.vflip = rand(0.6, 2.2);
+      p.sway = rand(0, 6.28);
+      p.swayAmp = rand(5, 22) * (depth + 1) / 2;
+      p.color = COLORS[Math.floor(Math.random() * COLORS.length)];
+      p.kind = Math.random() < 0.72 ? -1 : Math.floor(Math.random() * SHAPES);     // -1: una letra
+      p.ch = CHARS.charAt(Math.floor(Math.random() * CHARS.length));
+      p.alive = true;
+    }
 
     function resize() {
-      var px = Math.min(window.devicePixelRatio || 1, 2);
+      px = Math.min(window.devicePixelRatio || 1, 2);
       w = canvas.clientWidth;
       h = canvas.clientHeight;
       canvas.width = Math.floor(w * px);
       canvas.height = Math.floor(h * px);
-      ctx.setTransform(px, 0, 0, px, 0, 0);
-      ctx.font = size + "px ui-monospace, Consolas, monospace";
-      var cols = Math.ceil(w / size);
-      while (drops.length < cols) {
-        drops.push(-Math.random() * 40);
-        speeds.push(rand(0.5, 1.4));
-        gates.push(Math.random());
-        parked.push(true);
+      max = Math.max(44, Math.min(150, Math.round((w * h) / 8500)));
+      while (parts.length < max) parts.push({ alive: false });
+      if (!stars.length) {
+        for (var i = 0; i < 120; i++) stars.push({ x: Math.random(), y: Math.random(), r: rand(0.5, 1.5), ph: rand(0, 6.28), sp: rand(0.6, 2) });
       }
     }
 
-    function glyph() { return glyphs.charAt(Math.floor(Math.random() * glyphs.length)); }
+    function draw(p, x, y, sx, scale, alpha) {
+      var img = p.kind < 0 ? letterSprite(p.ch, p.color) : shapeSprite(p.kind, p.color);
+      ctx.globalAlpha = alpha;
+      ctx.setTransform(px * Math.cos(p.rot) * sx * scale, px * Math.sin(p.rot) * sx * scale, -px * Math.sin(p.rot) * scale, px * Math.cos(p.rot) * scale, px * x, px * y);
+      ctx.drawImage(img, -TILE / 2, -TILE / 2);
+    }
 
     function tick(now) {
       raf = requestAnimationFrame(tick);
-      if (now - last < 42) return;   // ~24 fps: el aspecto de un terminal
+      var dt = Math.min(0.05, Math.max(0.001, (now - last) / 1000));
       last = now;
-      ctx.fillStyle = "rgba(0, 0, 0, 0.065)";
-      ctx.fillRect(0, 0, w, h);
-      for (var i = 0; i < drops.length; i++) {
-        if (parked[i]) {
-          if (gates[i] >= api.intensity) continue;
-          parked[i] = false;
-          drops[i] = -Math.random() * 20;
-        }
-        var y = drops[i] * size;
-        if (y > 0) {
-          var x = i * size;
-          ctx.fillStyle = api.hot ? "#ffffff" : "#d8fbff";
-          ctx.fillText(glyph(), x, y);
-          ctx.fillStyle = gates[i] > 0.85 ? "rgba(181,124,255,0.9)" : gates[i] > 0.4 ? "rgba(51,225,255,0.85)" : "rgba(108,134,255,0.85)";
-          ctx.fillText(glyph(), x, y - size);
-        }
-        drops[i] += speeds[i] * api.speed;
-        if (drops[i] * size > h && Math.random() > 0.975) {
-          if (gates[i] < api.intensity) drops[i] = 0;
-          else parked[i] = true;
+      clock += dt;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.globalAlpha = 1;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Estrellas que parpadean al fondo
+      ctx.setTransform(px, 0, 0, px, 0, 0);
+      ctx.fillStyle = "#e6dcff";
+      for (var s = 0; s < stars.length; s++) {
+        var st = stars[s];
+        ctx.globalAlpha = 0.18 + 0.4 * (0.5 + 0.5 * Math.sin(clock * st.sp + st.ph));
+        ctx.beginPath();
+        ctx.arc(st.x * w, st.y * h, st.r, 0, 6.2832);
+        ctx.fill();
+      }
+
+      var target = Math.round(max * Math.min(1, api.intensity));
+      var alive = 0;
+      for (var i = 0; i < parts.length; i++) if (parts[i].alive) alive++;
+      var free = alive < target ? Math.min(3, Math.ceil((target - alive) * dt * 1.4)) : 0;
+
+      // De más lejos a más cerca, para que lo cercano tape a lo lejano
+      for (var d = 0; d < 3; d++) {
+        for (var k = 0; k < parts.length; k++) {
+          var p = parts[k];
+          if (!p.alive) {
+            if (d === 0 && free > 0) { spawn(p, false); free--; } else continue;
+          }
+          if (p.depth !== d) continue;
+          p.age += dt * api.speed;
+          var vel = p.v0 * (1 + Math.min(2.2, p.age * 0.55)) * api.speed;   // caen acelerando
+          p.y += vel * dt;
+          p.rot += p.vrot * dt * api.speed;
+          p.flip += p.vflip * dt * api.speed;
+          var x = p.x + Math.sin(clock * 0.8 + p.sway) * p.swayAmp;
+          var fade = Math.max(0, Math.min(1, (p.y - h * 0.7) / (h * 0.3)));    // se pierde en el vacío
+          if (p.y > h + p.size || fade >= 1) { p.alive = false; continue; }
+          var scale = (p.size / GLYPH) * (1 - 0.4 * fade);
+          var sx = 0.2 + 0.8 * Math.abs(Math.cos(p.flip));                    // giran como si fueran de bulto
+          var alpha = p.a * (1 - fade);
+          if (d === 2) {
+            draw(p, x, p.y - vel * 0.05, sx, scale, alpha * 0.14);
+            draw(p, x, p.y - vel * 0.026, sx, scale, alpha * 0.28);
+          }
+          draw(p, x, p.y, sx, scale, alpha);
         }
       }
+      ctx.globalAlpha = 1;
     }
 
     api.start = function () {
       resize();
+      for (var i = 0; i < parts.length; i++) {
+        if (i < Math.round(max * 0.7)) spawn(parts[i], true);
+      }
       window.addEventListener("resize", resize);
+      // La tipografía de la web puede tardar un momento: cuando llega se vuelven a dibujar las letras
+      if (document.fonts && document.fonts.load) {
+        document.fonts.load('800 84px Outfit').then(function () { cache = {}; }, function () { /* se queda la de reserva */ });
+      }
+      last = performance.now();
       raf = requestAnimationFrame(tick);
     };
     api.stop = function () {
@@ -151,7 +292,6 @@
   var hexLines = [];
   for (var i = 0; i < 44; i++) hexLines.push("");
   var progress = { shown: 0, target: 0 };
-  var BAR = 30;
 
   function tickData() {
     var bytes = [];
@@ -165,8 +305,7 @@
 
     progress.shown += (progress.target - progress.shown) * 0.22;
     var p = Math.min(1, progress.shown);
-    var n = Math.round(p * BAR);
-    els.blocks.textContent = "█".repeat(n) + "░".repeat(BAR - n);
+    els.blocks.style.setProperty("--p", p.toFixed(3));
     els.pct.textContent = Math.round(p * 100) + "%";
   }
 
@@ -353,7 +492,7 @@
       if (step.wait && !state.skipped) result = await withSpinner(line, step.wait());
       put(line, "[ " + (result === "ok" ? t("boot.ok", "OK") : t("boot.omitted", "SKIPPED")) + " ]", result === "ok" ? "ok" : "skip");
       progress.target = (i + 1) / steps.length;
-      rain.intensity = 0.5 + 0.5 * progress.target;
+      rain.intensity = 0.7 + 0.3 * progress.target;
       await sleep(rand(25, 60));
     }
     if (state.skipped) return;

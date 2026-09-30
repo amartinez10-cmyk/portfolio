@@ -1,6 +1,9 @@
 /*
- * Pantalla de carga "hacker" (js/boot-screen.js). Solo existe mientras <html> lleva la clase
- * "booting", que pone el <head> salvo con "reducir movimiento" o con ?boot=off.
+ * Pantalla de carga (js/boot-screen.js): el mismo espacio que la web, con letras y piezas de colores
+ * que caen al vacío. Solo existe mientras <html> lleva la clase "booting", que pone el <head> salvo
+ * con "reducir movimiento" o con ?boot=off.
+ *
+ * Colores: los de la web (índigo de fondo, lila #9b7bff, ámbar #ffc247 y rosa #ff7eb6).
  */
 
 .boot {
@@ -13,12 +16,29 @@ html.booting .boot {
   inset: 0;
   z-index: 1000;
   overflow: hidden;
-  background: #000;
-  color: #33e1ff;
+  /* El mismo fondo que la página: degradado índigo con halos suaves */
+  background:
+    radial-gradient(70vmax 55vmax at 26% 44%, rgba(139, 108, 255, 0.34), transparent 62%),
+    radial-gradient(52vmax 42vmax at 92% 6%, rgba(255, 112, 182, 0.17), transparent 62%),
+    radial-gradient(48vmax 46vmax at 66% 104%, rgba(64, 160, 255, 0.14), transparent 62%),
+    linear-gradient(180deg, #0c0826 0%, #140e38 52%, #1a1148 100%);
+  color: #e9e2ff;
   font-family: ui-monospace, "Cascadia Mono", "SF Mono", Consolas, "Liberation Mono", monospace;
   font-size: clamp(0.75rem, 0.6rem + 0.45vw, 0.9375rem);
   line-height: 1.55;
   cursor: progress;
+}
+
+/* Cuadrícula de puntos, como la del fondo de la web */
+html.booting .boot::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(rgba(200, 184, 255, 0.28) 1px, transparent 1.6px);
+  background-size: 38px 38px;
+  -webkit-mask-image: radial-gradient(ellipse 70% 65% at 32% 46%, #000 0%, rgba(0, 0, 0, 0.4) 55%, transparent 100%);
+  mask-image: radial-gradient(ellipse 70% 65% at 32% 46%, #000 0%, rgba(0, 0, 0, 0.4) 55%, transparent 100%);
 }
 
 .sr-only {
@@ -38,18 +58,16 @@ html.booting .boot {
   inset: 0;
   width: 100%;
   height: 100%;
-  opacity: 0.85;
 }
 
-/* Líneas de barrido, viñeta y un parpadeo de tubo catódico */
+/* Viñeta y, abajo, el vacío: todo lo que cae se pierde en la oscuridad */
 .boot__crt {
   position: absolute;
   inset: 0;
   pointer-events: none;
   background:
-    radial-gradient(ellipse at center, transparent 45%, rgba(0, 0, 0, 0.75) 100%),
-    repeating-linear-gradient(0deg, rgba(120, 200, 255, 0.05) 0 1px, transparent 1px 3px);
-  animation: boot-flicker 130ms steps(2) infinite;
+    linear-gradient(0deg, rgba(5, 2, 20, 0.92) 0%, rgba(5, 2, 20, 0.55) 16%, transparent 40%),
+    radial-gradient(ellipse 120% 100% at 34% 46%, transparent 55%, rgba(6, 3, 24, 0.6) 100%);
 }
 
 .boot__hud {
@@ -62,8 +80,13 @@ html.booting .boot {
   gap: 1rem;
   font-size: 0.75rem;
   letter-spacing: 0.12em;
-  color: rgba(51, 225, 255, 0.7);
-  text-shadow: 0 0 8px rgba(51, 225, 255, 0.5);
+  color: rgba(214, 200, 255, 0.72);
+  text-shadow: 0 0 10px rgba(155, 123, 255, 0.55);
+}
+
+.boot__hud b {
+  color: #ffc247;
+  font-weight: 600;
 }
 
 .boot__panel {
@@ -72,12 +95,15 @@ html.booting .boot {
   left: 50%;
   width: min(92vw, 42rem);
   transform: translate(-50%, -50%);
-  border: 1px solid rgba(51, 225, 255, 0.35);
-  border-radius: 0.5rem;
-  background: rgba(2, 8, 16, 0.82);
-  box-shadow: 0 0 2.5rem rgba(51, 225, 255, 0.18), inset 0 0 2rem rgba(51, 225, 255, 0.05);
-  -webkit-backdrop-filter: blur(3px);
-  backdrop-filter: blur(3px);
+  border: 1px solid rgba(196, 178, 255, 0.3);
+  border-radius: 1.25rem;
+  background: linear-gradient(155deg, rgba(52, 36, 132, 0.62), rgba(22, 14, 62, 0.7));
+  box-shadow:
+    0 1.75rem 4rem rgba(8, 4, 40, 0.55),
+    0 0 3.5rem rgba(155, 123, 255, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
   transition: opacity 250ms ease, transform 400ms ease;
 }
 
@@ -85,17 +111,25 @@ html.booting .boot {
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  padding: 0.5rem 0.875rem;
-  border-bottom: 1px solid rgba(51, 225, 255, 0.2);
+  padding: 0.7rem 1rem;
+  border-bottom: 1px solid rgba(196, 178, 255, 0.16);
   font-size: 0.75rem;
-  color: rgba(51, 225, 255, 0.7);
+  color: rgba(214, 200, 255, 0.72);
 }
 
 .boot__titlebar i {
-  width: 0.5rem;
-  height: 0.5rem;
+  width: 0.65rem;
+  height: 0.65rem;
   border-radius: 50%;
-  background: rgba(51, 225, 255, 0.35);
+  background: #ff7eb6;
+}
+
+.boot__titlebar i:nth-child(2) {
+  background: #ffc247;
+}
+
+.boot__titlebar i:nth-child(3) {
+  background: #7fe3c6;
 }
 
 .boot__titlebar span {
@@ -105,23 +139,24 @@ html.booting .boot {
 .boot__log {
   min-height: 11.5em;
   margin: 0;
-  padding: 0.875rem 1rem 0.5rem;
+  padding: 0.95rem 1.15rem 0.5rem;
   font: inherit;
   white-space: pre-wrap;
-  text-shadow: 0 0 6px rgba(51, 225, 255, 0.45);
+  color: #d9ceff;
+  text-shadow: 0 0 8px rgba(155, 123, 255, 0.4);
 }
 
 .boot__log .cmd {
-  color: #eaffff;
+  color: #ffffff;
 }
 
 .boot__log .ok {
-  color: #6dffb0;
-  text-shadow: 0 0 8px rgba(109, 255, 176, 0.6);
+  color: #7fe3c6;
+  text-shadow: 0 0 8px rgba(127, 227, 198, 0.55);
 }
 
 .boot__log .skip {
-  color: #ffd166;
+  color: #ffc247;
 }
 
 .boot__caret {
@@ -129,24 +164,39 @@ html.booting .boot {
   width: 0.55em;
   height: 1.05em;
   vertical-align: text-bottom;
-  background: currentColor;
+  background: #ffc247;
   animation: boot-blink 700ms steps(2) infinite;
 }
 
 .boot__progress {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.25rem 1rem 1rem;
-  color: #eaffff;
+  gap: 0.85rem;
+  padding: 0.25rem 1.15rem 1.1rem;
+  color: #ffffff;
 }
 
+/* Barra de progreso: el relleno lo mueve el script con la variable --p (0 a 1) */
 .boot__blocks {
+  --p: 0;
+  position: relative;
   flex: 1;
+  height: 0.65rem;
   overflow: hidden;
-  letter-spacing: 0;
-  white-space: nowrap;
-  text-shadow: 0 0 8px rgba(51, 225, 255, 0.7);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 1.4rem rgba(155, 123, 255, 0.25);
+}
+
+.boot__blocks::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #9b7bff, #ff7eb6 62%, #ffc247);
+  transform: scaleX(var(--p));
+  transform-origin: left;
+  transition: transform 90ms linear;
 }
 
 .boot__pct {
@@ -154,7 +204,7 @@ html.booting .boot {
   text-align: right;
 }
 
-/* Volcado hexadecimal que corre por el lateral */
+/* Volcado hexadecimal que corre por el lateral, apenas visible */
 .boot__hex {
   position: absolute;
   top: 4.5rem;
@@ -164,7 +214,7 @@ html.booting .boot {
   overflow: hidden;
   font-size: 0.6875rem;
   line-height: 1.5;
-  color: rgba(109, 140, 255, 0.55);
+  color: rgba(190, 172, 255, 0.34);
   white-space: pre;
   mask-image: linear-gradient(transparent, #000 15%, #000 85%, transparent);
   -webkit-mask-image: linear-gradient(transparent, #000 15%, #000 85%, transparent);
@@ -180,11 +230,11 @@ html.booting .boot {
   position: absolute;
   right: clamp(1rem, 4vw, 2.5rem);
   bottom: clamp(0.75rem, 3vh, 1.5rem);
-  padding: 0.5rem 1rem;
-  border: 1px solid rgba(51, 225, 255, 0.4);
-  border-radius: 0.375rem;
-  background: rgba(2, 8, 16, 0.7);
-  color: #33e1ff;
+  padding: 0.5rem 1.1rem;
+  border: 1px solid rgba(196, 178, 255, 0.4);
+  border-radius: 999px;
+  background: rgba(30, 20, 84, 0.55);
+  color: #e9e2ff;
   font: inherit;
   font-size: 0.8125rem;
   letter-spacing: 0.1em;
@@ -195,8 +245,8 @@ html.booting .boot {
 
 .boot__skip:hover,
 .boot__skip:focus-visible {
-  background: #33e1ff;
-  color: #001018;
+  background: #9b7bff;
+  color: #ffffff;
 }
 
 /* ---------- ACCESO CONCEDIDO ---------- */
@@ -213,13 +263,14 @@ html.booting .boot {
 .boot__granted span {
   position: relative;
   padding: 0 0.5em;
+  font-family: "Outfit", "Avenir Next", "Segoe UI", system-ui, sans-serif;
   font-size: clamp(1.75rem, 1rem + 5.2vw, 5.5rem);
-  font-weight: 700;
+  font-weight: 800;
   line-height: 1;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.08em;
   text-align: center;
   color: #fff;
-  text-shadow: 0 0 1.25rem #33e1ff, 0 0 4rem #6c86ff;
+  text-shadow: 0 0 1.25rem #9b7bff, 0 0 4rem #ff7eb6;
 }
 
 .boot__granted span::before,
@@ -232,13 +283,13 @@ html.booting .boot {
 }
 
 .boot__granted span::before {
-  color: #ff3df0;
+  color: #ff7eb6;
   text-shadow: none;
   animation: boot-glitch-a 900ms steps(1) infinite;
 }
 
 .boot__granted span::after {
-  color: #00f0ff;
+  color: #8fd6ff;
   text-shadow: none;
   animation: boot-glitch-b 900ms steps(1) infinite;
 }
@@ -258,7 +309,7 @@ html.booting .boot {
   opacity: 0.25;
 }
 
-/* Línea brillante en la que se apaga la pantalla (efecto tubo catódico) */
+/* Línea brillante en la que se apaga la pantalla */
 .boot__line {
   position: absolute;
   top: calc(50% - 1.5px);
@@ -267,15 +318,11 @@ html.booting .boot {
   height: 3px;
   opacity: 0;
   background: #fff;
-  box-shadow: 0 0 1rem 0.25rem #33e1ff, 0 0 4rem 0.5rem #6c86ff;
+  box-shadow: 0 0 1rem 0.25rem #c9b6ff, 0 0 4rem 0.5rem #ff7eb6;
 }
 
 @keyframes boot-blink {
   50% { opacity: 0; }
-}
-
-@keyframes boot-flicker {
-  50% { opacity: 0.86; }
 }
 
 @keyframes boot-shake {
