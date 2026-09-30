@@ -183,7 +183,7 @@ export function buildExtras({ kit, props }) {
     place(root, Q.cubeTower(), -5.5, 0, 0.6, 0.4);
     stand(root, P.plants.cactus({ size: 1, pot: C.white }), 6.0, 0, 3.4);
     stand(root, P.plants.succulent({ size: 0.9, pot: C.mint }), -5.6, 3.1, 4.9);      // sobre las cajas
-    stand(root, P.floorLamp({ shade: C.yellow, h: 5.4 }), 6.1, 0, 1.0);
+    stand(root, P.floorLamp({ shade: C.yellow, h: 5.4 }), -5.9, 0, -3.6);
     place(root, P.rug({ w: 5, d: 3.2, color: C.teal, border: C.white }), 4.5, 0, -2.4);
   }
 
@@ -233,7 +233,7 @@ export function buildExtras({ kit, props }) {
       });
     };
 
-    stand(root, P.floorLamp({ shade: C.cream, h: 5.8 }), -5.9, 0, -0.9);
+    stand(root, P.floorLamp({ shade: C.cream, h: 5.8 }), 6.0, 0, -0.9);
     stand(root, P.plants.fiddle({ size: 1.1, pot: C.white }), -5.7, 0, 5.2);
     place(root, P.books({ n: 5, seed: 4 }), -5.5, 0, 2.4, 0.4);
     place(root, P.rug({ w: 6.4, round: true, color: C.violet, border: C.lilac }), 2.4, 0, 3.4);
