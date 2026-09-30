@@ -71,8 +71,11 @@ export function buildExtras({ kit, props }) {
 
     place(root, P.rug({ w: 7, round: true, color: C.blue, border: C.white }), -1.8, 0, 2.6);
     place(root, Q.cvEasel(), -1.8, 0, 2.6, 0.75);
-    place(root, Q.cabinet({ color: C.white, drawers: 2 }), -5.4, 0, 4.2, Math.PI / 2);
-    place(root, P.books({ n: 5, seed: 6 }), -5.4, 3.4, 4.2, 0.3);       // los libros, sobre el archivador
+    const cabinet = place(root, Q.cabinet({ color: C.white, drawers: 2 }), -5.4, 0, 4.2, Math.PI / 2);
+    const books = P.books({ n: 5, seed: 6 });                            // los libros, sobre el archivador
+    books.position.set(0, 3.4, 0);
+    books.rotation.y = 0.3 - Math.PI / 2;
+    cabinet.add(books);                                                   // dentro del archivador: saltan juntos
     stand(root, P.plants.fiddle({ size: 1.05, pot: C.white }), -5.8, 0, -1.6);
     stand(root, P.plants.bush({ size: 0.85, pot: C.blue }), 6.0, 0, 3.6);
 
@@ -178,11 +181,13 @@ export function buildExtras({ kit, props }) {
 
     // Cajas y torre de cubos de colores
     place(root, P.crate({ s: 1.7, color: C.wood, band: C.woodDark }), -5.7, 0, 4.9, 0.2);
-    place(root, P.crate({ s: 1.4, color: C.wood, band: C.woodDark }), -5.6, 1.7, 4.9, -0.2);
+    const topCrate = place(root, P.crate({ s: 1.4, color: C.wood, band: C.woodDark }), -5.6, 1.7, 4.9, -0.2);
+    const sprout = P.plants.succulent({ size: 0.9, pot: C.mint });        // sobre las cajas, dentro de la de arriba
+    sprout.position.set(0, 1.4, 0);
+    topCrate.add(sprout);
     place(root, P.crate({ s: 1.5, color: C.wood, band: C.woodDark }), -3.9, 0, 5.6, 0.1);
     place(root, Q.cubeTower(), -5.5, 0, 0.6, 0.4);
     stand(root, P.plants.cactus({ size: 1, pot: C.white }), 6.0, 0, 3.4);
-    stand(root, P.plants.succulent({ size: 0.9, pot: C.mint }), -5.6, 3.1, 4.9);      // sobre las cajas
     stand(root, P.floorLamp({ shade: C.yellow, h: 5.4 }), -5.9, 0, -3.6);
     place(root, P.rug({ w: 5, d: 3.2, color: C.teal, border: C.white }), 4.5, 0, -2.4);
   }

@@ -29,10 +29,11 @@ function glowTexture() {
 // para que se vea nítido aunque el icono se acerque a la cámara (modo "explorar el PC"). Todos los
 // iconos van juntos en un atlas: así se dibujan de una vez.
 const TILE = 512;
+const MAX_ATLAS = 4096;                      // lado máximo del atlas (casi todas las tarjetas admiten al menos 4096)
 
-function drawIcon(g, ox, oy, ids, palette) {
-  const k = TILE / 192;                      // los tamaños de SkillIcons.draw están pensados para 192 px
-  const h = TILE / 2;
+function drawIcon(g, ox, oy, tile, ids, palette) {
+  const k = tile / 192;                      // los tamaños de SkillIcons.draw están pensados para 192 px
+  const h = tile / 2;
   g.save();
   g.translate(ox, oy);
   g.beginPath();
@@ -50,11 +51,14 @@ function drawIcon(g, ox, oy, ids, palette) {
 function iconAtlas(lists, count, palette) {
   const cols = Math.max(1, Math.ceil(Math.sqrt(count)));
   const rows = Math.max(1, Math.ceil(count / cols));
+  // Si hubiera tantas habilidades que el atlas no cupiera en una textura, las casillas se hacen más pequeñas
+  let tile = TILE;
+  while (tile > 64 && Math.max(cols, rows) * tile > MAX_ATLAS) tile /= 2;
   const c = document.createElement("canvas");
-  c.width = cols * TILE;
-  c.height = rows * TILE;
+  c.width = cols * tile;
+  c.height = rows * tile;
   const g = c.getContext("2d");
-  for (let i = 0; i < count; i++) drawIcon(g, (i % cols) * TILE, Math.floor(i / cols) * TILE, lists[i], palette);
+  for (let i = 0; i < count; i++) drawIcon(g, (i % cols) * tile, Math.floor(i / cols) * tile, tile, lists[i], palette);
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.anisotropy = 8;

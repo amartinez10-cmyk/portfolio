@@ -54,6 +54,7 @@ export function auditLayout(levels, THREE) {
     lv.holder.scale.setScalar(1);
     lv.holder.position.y = lv.pos.y;
     lv.holder.updateMatrixWorld(true);
+    try {
 
     const parts = [];
     const box = new THREE.Box3();
@@ -97,10 +98,12 @@ export function auditLayout(levels, THREE) {
       out.pairs.push(lv.id + " " + k + (v.la || v.lb ? " (lámpara)" : "") + " prof " + v.d.toFixed(2) + " en " + v.at.map((n) => n.toFixed(1)).join(","));
     });
 
-    lv.holder.rotation.y = keep[0];
-    lv.holder.scale.setScalar(keep[1]);
-    lv.holder.position.y = keep[2];
-    lv.holder.updateMatrixWorld(true);
+    } finally {
+      lv.holder.rotation.y = keep[0];
+      lv.holder.scale.setScalar(keep[1]);
+      lv.holder.position.y = keep[2];
+      lv.holder.updateMatrixWorld(true);
+    }
   });
   return out;
 }

@@ -75,7 +75,8 @@
     var canvas = els.rain;
     var ctx = canvas.getContext("2d");
     var COLORS = ["#c9b6ff", "#9b7bff", "#ff7eb6", "#ffc247", "#8fd6ff", "#7fe3c6", "#ffffff"];
-    var CHARS = "ALEXMARTINEZ{}</>01#$&ABCDEFGHJKLNOPQRSTUVWY";
+    // Pocas letras distintas: cada letra y color se dibuja una sola vez (máx. ~20 × 7) y se reutiliza
+    var CHARS = "ALEXMRTINZ{}</>01#$&";
     var FONT = '800 84px Outfit, "Avenir Next", "Segoe UI", system-ui, sans-serif';
     var TILE = 132;          // lado de cada dibujo precalculado
     var GLYPH = 84;          // lo que mide la letra dentro de él
@@ -83,7 +84,9 @@
     var cache = {};
     var parts = [];
     var stars = [];
-    var api = { intensity: 0.7, speed: 1, hot: false };
+    var starLayer = null;    // las estrellas fijas, dibujadas una vez; solo unas pocas parpadean cada fotograma
+    var TWINKLE = 30;
+    var api = { intensity: 0.7, speed: 1 };
     var w = 0;
     var h = 0;
     var px = 1;
@@ -198,6 +201,18 @@
       if (!stars.length) {
         for (var i = 0; i < 120; i++) stars.push({ x: Math.random(), y: Math.random(), r: rand(0.5, 1.5), ph: rand(0, 6.28), sp: rand(0.6, 2) });
       }
+      starLayer = document.createElement("canvas");
+      starLayer.width = canvas.width;
+      starLayer.height = canvas.height;
+      var sg = starLayer.getContext("2d");
+      sg.setTransform(px, 0, 0, px, 0, 0);
+      sg.fillStyle = "#e6dcff";
+      for (var f = TWINKLE; f < stars.length; f++) {
+        sg.globalAlpha = 0.2 + 0.25 * ((stars[f].ph % 1));
+        sg.beginPath();
+        sg.arc(stars[f].x * w, stars[f].y * h, stars[f].r, 0, 6.2832);
+        sg.fill();
+      }
     }
 
     function draw(p, x, y, sx, scale, alpha) {
@@ -216,10 +231,11 @@
       ctx.globalAlpha = 1;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Estrellas que parpadean al fondo
+      // Estrellas al fondo: las fijas de golpe y unas pocas que parpadean
+      if (starLayer && starLayer.width > 0 && starLayer.height > 0) ctx.drawImage(starLayer, 0, 0);
       ctx.setTransform(px, 0, 0, px, 0, 0);
       ctx.fillStyle = "#e6dcff";
-      for (var s = 0; s < stars.length; s++) {
+      for (var s = 0; s < TWINKLE; s++) {
         var st = stars[s];
         ctx.globalAlpha = 0.18 + 0.4 * (0.5 + 0.5 * Math.sin(clock * st.sp + st.ph));
         ctx.beginPath();
@@ -408,7 +424,6 @@
     boot.classList.add("is-granted");
     rain.intensity = 1;
     rain.speed = 2.4;
-    rain.hot = true;
     flash();
     await sleep(850);
   }

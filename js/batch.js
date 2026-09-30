@@ -22,7 +22,11 @@ import * as THREE from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 
 const NOOP = () => {};
-const PROBE_TIMES = [0.7, 3.9, 8.3, 21.1];
+// Instantes en los que se comprueba qué se mueve. Lo que se anime solo en condiciones raras se marca a mano con userData.noBatch
+const PROBE_TIMES = [0.7, 3.9, 8.3, 21.1, 47.3, 113.9];
+
+// Con ?batch=off no se fusiona nada (para comparar el dibujado con y sin fusión)
+export const BATCH_ENABLED = !/[?&]batch=off(&|$)/.test(location.search);
 const _inv = new THREE.Matrix4();
 const _rel = new THREE.Matrix4();
 
@@ -88,6 +92,8 @@ function batchable(mesh) {
   if (!mesh.isMesh || mesh.isInstancedMesh || mesh.isSkinnedMesh || mesh.userData.noBatch) return false;
   const m = mesh.material;
   if (!m || Array.isArray(m) || m.isShaderMaterial || m.transparent || m.depthWrite === false || m.blending !== THREE.NormalBlending) return false;
+  // Materiales con ajustes que el material compartido no reproduce
+  if (m.visible === false || m.polygonOffset || m.wireframe || m.dithering) return false;
   const g = mesh.geometry;
   if (!g || !g.attributes.position || !g.attributes.normal || Object.keys(g.morphAttributes).length) return false;
   for (const name in g.attributes) if (g.attributes[name].isInterleavedBufferAttribute) return false;
@@ -155,6 +161,7 @@ function signature(mesh, materialKey) {
 //   ticks: funciones que animan el objeto (por defecto, los userData.tick que encuentre dentro)
 //   skip:  nodos que no se tocan (con todo lo que llevan dentro)
 export function batchStatic(target, { ticks, skip } = {}) {
+  if (target.userData.noBatch) return [];
   const list = ticks || [];
   if (!ticks) target.traverse((o) => { if (typeof o.userData.tick === "function") list.push(o.userData.tick); });
   const found = probe(target, list);

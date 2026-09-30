@@ -13,7 +13,7 @@ import { createHeroModel } from "./hero-model.js";
 import { BASE_DROP } from "./pc-case.js";
 import { createSkillsGraph } from "./skills-graph.js";
 import { buildExtras } from "./levels-extra.js";
-import { batchStatic } from "./batch.js";
+import { batchStatic, BATCH_ENABLED } from "./batch.js";
 
 // Color de las paredes y de la luz del borde de cada nivel (el acento también lo lee el CSS)
 export const LEVEL_STYLE = {
@@ -29,11 +29,8 @@ const PC_SCALE = 1.7;                 // la torre mide 3,5 de alto: en la sala s
 const PC_POS = { x: -0.5, z: 1.9 };   // dónde está el PC en la sala
 const GRAPH_SCALE = 2.6;
 
-// Con ?batch=off las mallas no se fusionan (para comparar el dibujado con y sin fusión)
-const BATCH = !/[?&]batch=off(&|$)/.test(location.search);
-
 // Junta las piezas fijas de cada objeto de la sala en pocas mallas (ver batch.js)
-function batchLevel(root, room, keep) {
+function batchLevel(root, room) {
   const loose = root.children.filter((o) => o.isMesh && !o.isInstancedMesh);
   if (loose.length > 1) {
     const g = new THREE.Group();
@@ -41,7 +38,7 @@ function batchLevel(root, room, keep) {
     loose.forEach((m) => g.add(m));
     root.add(g);
   }
-  root.children.slice().forEach((o) => { if (o.isGroup && o !== keep) batchStatic(o); });
+  root.children.slice().forEach((o) => { if (o.isGroup) batchStatic(o); });
   batchStatic(room.group, { ticks: [], skip: new Set([root]) });
 }
 
@@ -138,6 +135,7 @@ export function createLevels({ palette, lite, order }) {
     [f1, f2, clock].forEach((o) => root.add(o));
 
     pc.userData.noHover = true;
+    pc.userData.noBatch = true;      // el PC se fusiona por su cuenta (hero-model.js): sus aspas y luces se animan
     about = { model, graph, pc, graphHolder, pcSpin: spin };
     return about;
   }
@@ -160,7 +158,7 @@ export function createLevels({ palette, lite, order }) {
         console.error("[3D] nivel " + id + ": falló al construirse", err);
       }
     }
-    if (BATCH) batchLevel(root, room, extra && extra.pc);
+    if (BATCH_ENABLED) batchLevel(root, room);
     const ticks = [];
     root.traverse((o) => { if (o.userData && o.userData.tick) ticks.push(o.userData.tick); });
     if (extra && extra.tick) ticks.push(extra.tick);

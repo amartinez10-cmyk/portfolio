@@ -109,7 +109,7 @@ export function createBillboards({ map, capacity, grid = [1, 1], additive = fals
     // Da de alta un cuadrado y devuelve su ficha (se cambia con set())
     add(x = 0, y = 0, z = 0, size = 1, r = 1, g = 1, b = 1, a = 1, tile = 0) {
       const item = { x, y, z, size, r, g, b, a, tile, depth: 0 };
-      items.push(item);
+      if (items.length < capacity) items.push(item);      // pasada la capacidad la ficha no se dibuja (no se sale del buffer)
       dirty = true;
       return item;
     },
