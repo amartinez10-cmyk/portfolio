@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="css/styles.css">
   <link rel="stylesheet" href="css/theme3d.css">
   <link rel="stylesheet" href="css/paradigm.css">
+  <link rel="stylesheet" href="css/resume.css">
   <link rel="stylesheet" href="css/boot.css">
   <!-- Three.js desde CDN (sin instalar nada). El 3D se carga más tarde, desde js/boot3d.js:
        si el CDN o WebGL fallan, la página funciona igual sin él. -->
@@ -229,7 +230,40 @@
     <!-- CURRÍCULUM -->
     <section id="resume" class="page" aria-labelledby="resume-title" data-tilt data-depth="12" hidden>
       <h1 id="resume-title" tabindex="-1" data-i18n="nav.resume">Currículum</h1>
-      <p data-i18n="resume.body">Pronto encontrarás aquí mi currículum.</p>
+      <p data-i18n="resume.body">Aquí tienes mi currículum en dos formatos: el Europass (en inglés) y mi currículum en español.</p>
+
+      <!-- Los dos PDF, incrustados (js/resume.js cambia entre uno y otro). Si el navegador no puede
+           mostrar PDF dentro de la página (móviles), se ven los botones para abrirlos o descargarlos. -->
+      <div class="cv" data-cv>
+        <div class="cv__tabs" role="tablist" aria-orientation="horizontal" data-i18n-aria-label="resume.tabs" aria-label="Formatos del currículum">
+          <button type="button" class="cv__tab" role="tab" id="cv-tab-europass" aria-controls="cv-panel-europass" aria-selected="true" data-i18n="resume.tab.europass">Europass</button>
+          <button type="button" class="cv__tab" role="tab" id="cv-tab-es" aria-controls="cv-panel-es" aria-selected="false" tabindex="-1" data-i18n="resume.tab.es">CV en español</button>
+        </div>
+
+        <div class="cv__panel" id="cv-panel-europass" role="tabpanel" aria-labelledby="cv-tab-europass">
+          <div class="cv__sheet">
+            <object class="cv__object" data="cv/Alex-Martinez-Cobo_Europass-CV.pdf#toolbar=0&amp;navpanes=0&amp;scrollbar=0&amp;view=FitH" type="application/pdf" data-i18n-aria-label="resume.viewer.europass" aria-label="Currículum Europass en PDF">
+              <p class="cv__fallback" data-i18n="resume.fallback">Tu navegador no puede mostrar el PDF aquí. Ábrelo o descárgalo con los botones de abajo.</p>
+            </object>
+          </div>
+          <div class="cv__actions">
+            <a class="cv__btn" href="cv/Alex-Martinez-Cobo_Europass-CV.pdf" target="_blank" rel="noopener" data-i18n="resume.open">Abrir en una pestaña nueva</a>
+            <a class="cv__btn cv__btn--primary" href="cv/Alex-Martinez-Cobo_Europass-CV.pdf" download data-i18n="resume.download">Descargar PDF</a>
+          </div>
+        </div>
+
+        <div class="cv__panel" id="cv-panel-es" role="tabpanel" aria-labelledby="cv-tab-es" hidden>
+          <div class="cv__sheet">
+            <object class="cv__object" data="cv/Alex-Martinez-Cobo_CV-ES.pdf#toolbar=0&amp;navpanes=0&amp;scrollbar=0&amp;view=FitH" type="application/pdf" data-i18n-aria-label="resume.viewer.es" aria-label="Currículum en español en PDF">
+              <p class="cv__fallback" data-i18n="resume.fallback">Tu navegador no puede mostrar el PDF aquí. Ábrelo o descárgalo con los botones de abajo.</p>
+            </object>
+          </div>
+          <div class="cv__actions">
+            <a class="cv__btn" href="cv/Alex-Martinez-Cobo_CV-ES.pdf" target="_blank" rel="noopener" data-i18n="resume.open">Abrir en una pestaña nueva</a>
+            <a class="cv__btn cv__btn--primary" href="cv/Alex-Martinez-Cobo_CV-ES.pdf" download data-i18n="resume.download">Descargar PDF</a>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- CERTIFICADOS -->
@@ -264,6 +298,7 @@
   <script src="js/section-theme.js"></script>
   <script src="js/fx.js"></script>
   <script src="js/paradigm.js"></script>
+  <script src="js/resume.js"></script>
   <script src="js/boot3d.js"></script>
 </body>
 </html>

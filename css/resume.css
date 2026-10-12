@@ -1,0 +1,175 @@
+/*
+ * Sección Currículum: los dos PDF (Europass y el currículum en español) incrustados en la tarjeta
+ * de cristal, con pestañas para cambiar de uno a otro y botones para abrirlos o descargarlos.
+ * El cambio de pestaña lo hace js/resume.js.
+ */
+
+.cv {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+
+/* ---------- Pestañas (un control segmentado) ---------- */
+
+.cv__tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  border: 1px solid var(--glass-edge);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.cv__tab {
+  min-height: 2.5rem;
+  padding: 0.45rem 0.9rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: background-color 200ms ease, color 200ms ease, box-shadow 200ms ease;
+}
+
+.cv__tab:hover {
+  color: var(--ink);
+}
+
+.cv__tab[aria-selected="true"] {
+  color: #fff;
+  background: linear-gradient(135deg, var(--level-accent), var(--accent-3));
+  box-shadow: 0 0.5rem 1.25rem -0.5rem var(--level-accent);
+}
+
+.cv__tab:focus-visible,
+.cv__btn:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+/* ---------- La hoja: un A4 que se ve entero ---------- */
+
+.cv__panel {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.cv__panel[hidden] {
+  display: none;
+}
+
+.cv__sheet {
+  aspect-ratio: 210 / 297;
+  /* Que quepa entera en la pantalla: si falta altura, la hoja se estrecha y se centra */
+  width: min(100%, calc((100vh - 17rem) * 0.707));
+  width: min(100%, calc((100svh - 17rem) * 0.707));
+  min-width: 15rem;
+  margin-inline: auto;
+  overflow: hidden;
+  border: 1px solid var(--glass-edge);
+  border-radius: 0.9rem;
+  background: #fff;
+  box-shadow: 0 1.5rem 3rem -1.25rem rgba(0, 0, 0, 0.75);
+}
+
+/* El PDF en español (de Canva) mide 595,5 × 850 pt, un poco más alto que un A4 */
+#cv-panel-es .cv__sheet {
+  aspect-ratio: 595.5 / 850;
+}
+
+.cv__object {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+/* Aparece solo si el navegador no puede mostrar el PDF dentro de la página */
+.cv__fallback {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  margin: 0;
+  padding: 1.5rem;
+  color: #2a2361;
+  font-size: 0.9375rem;
+  text-align: center;
+}
+
+/* ---------- Botones ---------- */
+
+.cv__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.cv__btn {
+  flex: 1 1 10rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.75rem;
+  padding: 0.55rem 1.1rem;
+  border: 1px solid var(--glass-edge);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--ink);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+  transition: background-color 200ms ease, border-color 200ms ease, transform 200ms var(--ease-out);
+}
+
+.cv__btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.cv__btn:active {
+  transform: scale(0.97);
+}
+
+.cv__btn--primary {
+  border-color: transparent;
+  background: linear-gradient(135deg, var(--level-accent), var(--accent-3));
+  color: #fff;
+}
+
+.cv__btn--primary:hover {
+  background: linear-gradient(135deg, var(--level-accent), var(--accent-3));
+  filter: brightness(1.12);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cv__tab,
+  .cv__btn {
+    transition: none;
+  }
+}
+
+/* Alto contraste: sin degradados */
+@media (forced-colors: active) {
+  .cv__tab[aria-selected="true"],
+  .cv__btn--primary {
+    background: Highlight;
+    color: HighlightText;
+  }
+}
+
+@media print {
+  .cv__tabs {
+    display: none;
+  }
+
+  .cv__panel[hidden] {
+    display: grid;
+  }
+}
