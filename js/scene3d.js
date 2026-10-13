@@ -163,12 +163,23 @@ async function waitForFonts() {
   } catch (err) { /* sin tipografía: se usa la de reserva */ }
 }
 
+// Cede el hilo principal un instante: entre trozo y trozo de trabajo el navegador puede pintar un
+// fotograma (la pantalla de carga sigue moviéndose mientras se monta el 3D)
+function yieldToBrowser() {
+  if (globalThis.scheduler && typeof globalThis.scheduler.yield === "function") return globalThis.scheduler.yield();
+  return new Promise((resolve) => {
+    const channel = new MessageChannel();
+    channel.port1.onmessage = () => resolve();
+    channel.port2.postMessage(0);
+  });
+}
+
 export async function start(options = {}) {
   await waitForFonts();
   return startNow(options);
 }
 
-function startNow({ level = "full", force = false } = {}) {
+async function startNow({ level = "full", force = false } = {}) {
   const canvas = document.getElementById("scene");
   const stageEl = document.getElementById("stage");
   const root = document.documentElement;
@@ -179,12 +190,7 @@ function startNow({ level = "full", force = false } = {}) {
   const ac = new AbortController();
   const on = (target, type, fn, opts) => target.addEventListener(type, fn, Object.assign({ signal: ac.signal }, opts));
 
-  let renderer;
-  try {
-    renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: "high-performance" });
-  } catch (err) {
-    return Promise.reject(err);
-  }
+  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: "high-performance" });
   renderer.setClearColor(0x000000, 0);
   renderer.toneMapping = THREE.NeutralToneMapping || THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1;
@@ -229,7 +235,7 @@ function startNow({ level = "full", force = false } = {}) {
   /* ---------- Niveles y decorado ---------- */
 
   const levelPos = (i) => AXIS.clone().multiplyScalar(i * GAP);
-  const levels = createLevels({ palette, lite, order });
+  const levels = await createLevels({ palette, lite, order, pause: yieldToBrowser });
   levels.items.forEach((lv) => {
     lv.pos = levelPos(lv.index);
     lv.holder.position.copy(lv.pos);
@@ -243,11 +249,13 @@ function startNow({ level = "full", force = false } = {}) {
     lv.root.traverse((o) => { if (o.userData.lamp) anchors.push(o); });
     lv.holder.updateMatrixWorld(true);
     lv.lamps = anchors.map((obj) => {
-      const light = new THREE.PointLight(obj.userData.lamp.color, 0, 12, 2);
+      const lamp = obj.userData.lamp;
+      const light = new THREE.PointLight(lamp.color, 0, lamp.distance ?? 12, 2);
       world.add(light);
       // Posición de la bombilla respecto a la sala (se calcula una sola vez)
-      const local = lv.holder.worldToLocal(obj.localToWorld(new THREE.Vector3(0, obj.userData.lamp.y, 0)));
-      return { light, local, power: obj.userData.lamp.power };
+      const local = lv.holder.worldToLocal(obj.localToWorld(new THREE.Vector3(0, lamp.y, 0)));
+      // steady: luz que no se atenúa al aparecer la sala (la del interior del PC)
+      return { light, local, power: lamp.power, steady: !!lamp.steady };
     });
   });
   const decor = createDecor({
@@ -434,6 +442,7 @@ function startNow({ level = "full", force = false } = {}) {
   /* ---------- Cuadro a cuadro ---------- */
 
   let ready = false;
+  let disposed = false;
   let running = false;
   let raf = 0;
   let last = 0;
@@ -490,7 +499,7 @@ function startNow({ level = "full", force = false } = {}) {
       lv.lamps.forEach((l) => {
         // La sala se escala, gira un poco y flota: la luz sigue a la lámpara sin actualizar toda la sala
         l.light.position.copy(l.local).multiplyScalar(lv.holder.scale.x).applyAxisAngle(Y_AXIS, lv.holder.rotation.y).add(lv.holder.position);
-        l.light.intensity = l.power * pop * pop;
+        l.light.intensity = l.steady ? l.power : l.power * pop * pop;
       });
     });
 
@@ -574,9 +583,13 @@ function startNow({ level = "full", force = false } = {}) {
     const raw = (now - last) / 1000;
     last = now;
     const active = update(Math.max(0, Math.min(raw, 0.05)));
+    const warming = warmStep();
     render();
-    watchPerformance(raw);
-    idleFrames = active ? 0 : idleFrames + 1;
+    // Un fotograma de precalentado (y el siguiente, que arrastra su coste) no cuenta para bajar la resolución
+    if (warming) perfSkip = 2;
+    if (perfSkip > 0) perfSkip--;
+    else watchPerformance(raw);
+    idleFrames = active || warmQueue.length ? 0 : idleFrames + 1;
     // Pestaña oculta o nada que animar: el bucle se para hasta que haga falta otro fotograma
     if (document.hidden || idleFrames > 8) {
       running = false;
@@ -591,6 +604,58 @@ function startNow({ level = "full", force = false } = {}) {
     idleFrames = 0;
     last = performance.now();
     raf = requestAnimationFrame(frame);
+  }
+
+  /* ---------- Precalentado ----------
+     La primera vez que se dibuja una sala, la tarjeta gráfica tiene que compilar sus shaders y recibir
+     sus geometrías y texturas, y mientras tanto la imagen se congela: pasaba al quitar la pantalla de
+     carga (la sala de la sección actual no se dibuja hasta entonces) y al llegar a una sala nueva.
+     Ahora los shaders de TODAS las salas se compilan antes del primer dibujado, en paralelo y sin
+     bloquear (compileShaders), y después, en cada fotograma, una sala más se dibuja en un solo píxel
+     para subir sus geometrías y texturas (warmStep). Al terminar se avisa (portfolio:3d-warm) y la
+     pantalla de carga puede irse sin que nada se congele detrás. */
+
+  let warmQueue = [];
+  let perfSkip = 0;
+  const warmSize = new THREE.Vector2();
+
+  async function compileShaders() {
+    try {
+      if (renderer.extensions.has("KHR_parallel_shader_compile")) {
+        // En paralelo y sin bloquear; con límite de tiempo por si algún shader tarda: lo que falte, al dibujar
+        await Promise.race([renderer.compileAsync(world, cam), new Promise((resolve) => setTimeout(resolve, 8000))]);
+      } else {
+        renderer.compile(world, cam);     // sin compilación en paralelo: al menos se encargan todos de una vez
+      }
+    } catch (err) { /* se compilará al dibujar */ }
+  }
+
+  function warmStep() {
+    const lv = warmQueue.shift();
+    if (!lv) return false;
+    // Toda la sala, aunque esté oculta o fuera de cámara, en un píxel del lienzo: el dibujado normal de
+    // justo después lo tapa entero, así que no se ve nada
+    const culled = [];
+    lv.holder.traverse((o) => {
+      if (o.frustumCulled) { o.frustumCulled = false; culled.push(o); }
+    });
+    const wasVisible = lv.holder.visible;
+    lv.holder.visible = true;
+    renderer.getSize(warmSize);
+    renderer.setScissorTest(true);
+    renderer.setScissor(0, 0, 1, 1);
+    renderer.setViewport(0, 0, 1, 1);
+    renderer.render(world, cam);
+    renderer.setViewport(0, 0, warmSize.x, warmSize.y);
+    renderer.setScissor(0, 0, warmSize.x, warmSize.y);
+    renderer.setScissorTest(false);
+    lv.holder.visible = wasVisible;
+    culled.forEach((o) => { o.frustumCulled = true; });
+    if (!warmQueue.length) {
+      root.dataset.warm = "done";
+      document.dispatchEvent(new CustomEvent("portfolio:3d-warm"));
+    }
+    return true;
   }
 
   /* ---------- Resolución adaptable ---------- */
@@ -666,6 +731,8 @@ function startNow({ level = "full", force = false } = {}) {
   resizeObserver.observe(canvas);
 
   function dispose() {
+    disposed = true;
+    warmQueue = [];
     ac.abort();
     resizeObserver.disconnect();
     running = false;
@@ -741,7 +808,7 @@ function startNow({ level = "full", force = false } = {}) {
       const info = renderer.info;
       return { update: +(tu / frames).toFixed(2), render: +(tr / frames).toFixed(2), gpuWait: +(tg / frames).toFixed(2), calls: info.render.calls, triangles: info.render.triangles, geometries: info.memory.geometries, textures: info.memory.textures, programs: info.programs.length };
     },
-    levels, input, THREE, rig, renderer,
+    levels, input, THREE, rig, renderer, camera: cam, scene: world,
     dispose
   };
 
@@ -751,9 +818,15 @@ function startNow({ level = "full", force = false } = {}) {
   if (document.fonts && document.fonts.load) {
     Promise.all([document.fonts.load('800 100px "Outfit"'), document.fonts.ready]).then(() => { refreshTitles(); wake(); }, () => {});
   }
+  // Los shaders de todas las salas, antes del primer dibujado (ver "Precalentado")
+  await compileShaders();
+  if (disposed) throw new Error("el 3D se descartó mientras se preparaba");
   update(1 / 60);
   render();
   ready = true;
+  // Primero la sala de la sección actual y sus vecinas: son las que se verán al quitar la pantalla de carga
+  const here = activeIndex();
+  warmQueue = levels.items.slice().sort((a, b) => Math.abs(a.index - here) - Math.abs(b.index - here));
   wake();
-  return Promise.resolve({ level: lite ? "lite" : "full", dispose });
+  return { level: lite ? "lite" : "full", dispose };
 }

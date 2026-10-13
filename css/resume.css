@@ -1,6 +1,7 @@
 /*
- * Sección Currículum: los dos PDF (Europass y el currículum en español) incrustados en la tarjeta
- * de cristal, con pestañas para cambiar de uno a otro y botones para abrirlos o descargarlos.
+ * Sección Currículum: los dos currículums (Europass y en español) en la tarjeta de cristal, con
+ * pestañas para cambiar de uno a otro. Cada uno se ve como la imagen de su PDF y los botones abren o
+ * descargan el PDF.
  * El cambio de pestaña lo hace js/resume.js.
  */
 
@@ -53,7 +54,7 @@
   outline-offset: 2px;
 }
 
-/* ---------- La hoja: un A4 que se ve entero ---------- */
+/* ---------- La hoja: la imagen del PDF, entera ---------- */
 
 .cv__panel {
   display: grid;
@@ -65,7 +66,6 @@
 }
 
 .cv__sheet {
-  aspect-ratio: 210 / 297;
   /* Que quepa entera en la pantalla: si falta altura, la hoja se estrecha y se centra */
   width: min(100%, calc((100vh - 17rem) * 0.707));
   width: min(100%, calc((100svh - 17rem) * 0.707));
@@ -78,28 +78,11 @@
   box-shadow: 0 1.5rem 3rem -1.25rem rgba(0, 0, 0, 0.75);
 }
 
-/* El PDF en español (de Canva) mide 595,5 × 850 pt, un poco más alto que un A4 */
-#cv-panel-es .cv__sheet {
-  aspect-ratio: 595.5 / 850;
-}
-
-.cv__object {
+/* width y height en el HTML reservan el hueco con la proporción de cada hoja antes de que cargue */
+.cv__img {
   display: block;
   width: 100%;
-  height: 100%;
-  border: 0;
-}
-
-/* Aparece solo si el navegador no puede mostrar el PDF dentro de la página */
-.cv__fallback {
-  display: grid;
-  place-items: center;
-  height: 100%;
-  margin: 0;
-  padding: 1.5rem;
-  color: #2a2361;
-  font-size: 0.9375rem;
-  text-align: center;
+  height: auto;
 }
 
 /* ---------- Botones ---------- */

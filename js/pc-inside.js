@@ -184,9 +184,13 @@ export function buildInside(kit) {
 
   /* ---------- Luz interior: da volumen al plástico y al cristal ---------- */
 
-  const l1 = new THREE.PointLight(0xc9b6ff, 6, 9, 2);
-  const l2 = new THREE.PointLight(0xa8d4ff, 5, 9, 2);
-  l1.position.set(0.3, 0.9, 0.4);
-  l2.position.set(-0.9, -0.15, 0.45);
-  kit.root.add(l1, l2);
+  // Aquí solo se marca dónde van: las luces de verdad las crea js/scene3d.js fuera de la sala (como las
+  // de las lámparas), para que el número de luces de la escena no cambie cuando esta sala se oculta.
+  // Si cambiara, la tarjeta gráfica tendría que recompilar los shaders de todo y la imagen se congelaría.
+  [[0xc9b6ff, 6, 0.3, 0.9, 0.4], [0xa8d4ff, 5, -0.9, -0.15, 0.45]].forEach(([color, power, x, y, z]) => {
+    const anchor = new THREE.Object3D();
+    anchor.position.set(x, y, z);
+    anchor.userData.lamp = { y: 0, color, power, distance: 9, steady: true };
+    kit.root.add(anchor);
+  });
 }

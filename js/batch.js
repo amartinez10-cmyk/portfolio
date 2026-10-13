@@ -212,7 +212,7 @@ export function batchStatic(target, { ticks, skip } = {}) {
     merged.raycast = NOOP;                      // al señalar con el ratón cuentan las piezas originales
     merged.userData.batched = meshes.length;
     target.add(merged);
-    meshes.forEach((m) => { m.visible = false; });
+    meshes.forEach((m) => { m.visible = false; m.userData.batchedOriginal = true; });   // marcada para poder comparar con y sin fusión
     made.push(merged);
   });
   return made;

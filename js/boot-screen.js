@@ -395,11 +395,30 @@
     ]);
   }
 
+  // El 3D compila sus shaders y sube sus texturas mientras esta pantalla está delante (ver
+  // "Precalentado" en js/scene3d.js): se espera a que acabe para que al quitarla nada se congele
+  function shadersReady() {
+    var s = root.dataset.scene;
+    if (s === "off") return Promise.resolve("off");
+    if (root.dataset.warm === "done") return Promise.resolve("ok");
+    return Promise.race([
+      new Promise(function (resolve) {
+        document.addEventListener("portfolio:3d-warm", function () { resolve("ok"); }, { once: true });
+      }),
+      new Promise(function (resolve) {
+        document.addEventListener("portfolio:3d-status", function (e) {
+          if (e.detail && e.detail.status === "off") resolve("off");
+        }, { once: true });
+      }),
+      timeout(9000, "off")
+    ]);
+  }
+
   var steps = [
     { key: "boot.l1", fallback: "Starting kernel" },
     { key: "boot.l2", fallback: "Checking hardware", wait: pageLoaded },
     { key: "boot.l3", fallback: "Mounting 3D modules", wait: sceneReady },
-    { key: "boot.l4", fallback: "Compiling shaders" },
+    { key: "boot.l4", fallback: "Compiling shaders", wait: shadersReady },
     { key: "boot.l5", fallback: "Loading skills" },
     { key: "boot.l6", fallback: "Encrypting connection" }
   ];

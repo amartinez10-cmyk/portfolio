@@ -1,6 +1,6 @@
 /*
  * Sección Currículum: cambia entre el Europass y el currículum en español (pestañas accesibles:
- * clic, flechas, Inicio y Fin). Cada PDF está incrustado en su panel.
+ * clic, flechas, Inicio y Fin). Cada panel enseña la imagen de su PDF y los botones para abrirlo o descargarlo.
  */
 (function () {
   "use strict";

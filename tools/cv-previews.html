@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vistas previas del currículum</title>
+<style>
+  :root { color-scheme: light dark; --bg: #f6f4ff; --ink: #1c1548; --edge: #c9bff5; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #140e38; --ink: #f4f0ff; --edge: #4b3c9a; } }
+  body { margin: 0; padding: 1.5rem 1rem; font: 16px/1.5 system-ui, sans-serif; background: var(--bg); color: var(--ink); }
+  main { max-width: 46rem; margin: 0 auto; }
+  ul { padding-left: 1.2rem; }
+  li { margin: 0.6rem 0; }
+  a { color: inherit; font-weight: 600; }
+  img { display: block; max-width: 10rem; margin-top: 0.4rem; border: 1px solid var(--edge); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Vistas previas del currículum</h1>
+  <p>La sección Currículum enseña cada CV como una imagen de su PDF. Si cambias un PDF de <code>cv/</code>,
+     abre esta página (en GitHub Pages o con un servidor local; con doble clic no funciona), descarga las
+     imágenes nuevas y sustituye las de <code>cv/</code> con el mismo nombre.</p>
+  <p id="status">Generando…</p>
+  <ul id="list"></ul>
+</main>
+<script type="module">
+  // Dibuja la primera página de cada PDF con pdf.js y ofrece la imagen WebP para descargar
+  const V = "4.10.38";
+  const CDN = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${V}`;
+  const FILES = ["Alex-Martinez-Cobo_Europass-CV", "Alex-Martinez-Cobo_CV-ES"];
+  const WIDTH = 1240;            // el mismo ancho que las imágenes de la web
+  const status = document.getElementById("status");
+  const list = document.getElementById("list");
+  try {
+    const pdfjs = await import(`${CDN}/build/pdf.min.mjs`);
+    pdfjs.GlobalWorkerOptions.workerSrc = `${CDN}/build/pdf.worker.min.mjs`;
+    for (const name of FILES) {
+      const doc = await pdfjs.getDocument({
+        url: `../cv/${name}.pdf`, cMapUrl: `${CDN}/cmaps/`, cMapPacked: true, standardFontDataUrl: `${CDN}/standard_fonts/`
+      }).promise;
+      const page = await doc.getPage(1);
+      const viewport = page.getViewport({ scale: WIDTH / page.getViewport({ scale: 1 }).width });
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(viewport.width);
+      canvas.height = Math.round(viewport.height);
+      const ctx = canvas.getContext("2d");
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      await page.render({ canvasContext: ctx, viewport }).promise;
+      const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/webp", 0.9));
+      const url = URL.createObjectURL(blob);
+      const li = document.createElement("li");
+      li.innerHTML = `<a download="${name}.webp" href="${url}">${name}.webp</a> · ${canvas.width}×${canvas.height} px · ${Math.round(blob.size / 1024)} KB<br>` +
+        `En index.html, pon en su &lt;img&gt; width="${canvas.width}" height="${canvas.height}".`;
+      const img = new Image();
+      img.src = url;
+      img.alt = "";
+      li.appendChild(img);
+      list.appendChild(li);
+    }
+    status.textContent = "Listo.";
+  } catch (err) {
+    status.textContent = "No se pudo generar: " + (err && err.message) + ". Abre la página con un servidor (no con doble clic).";
+  }
+</script>
+</body>
+</html>

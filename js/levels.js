@@ -42,7 +42,8 @@ function batchLevel(root, room) {
   batchStatic(room.group, { ticks: [], skip: new Set([root]) });
 }
 
-export function createLevels({ palette, lite, order }) {
+// pause(): cede el hilo un momento entre sala y sala, para que la pantalla de carga siga animándose
+export async function createLevels({ palette, lite, order, pause }) {
   const kit = createKit({ lite });
   const props = createProps(kit);
   const { P } = props;
@@ -142,7 +143,8 @@ export function createLevels({ palette, lite, order }) {
 
   const builders = Object.assign({ about: buildAbout }, buildExtras({ kit, props, palette, lite }));
 
-  order.forEach((id, index) => {
+  for (let index = 0; index < order.length; index++) {
+    const id = order[index];
     const style = LEVEL_STYLE[id] || LEVEL_STYLE.about;
     const room = buildRoom(kit, style);
     const root = new THREE.Group();     // los objetos de la sala
@@ -158,6 +160,7 @@ export function createLevels({ palette, lite, order }) {
         console.error("[3D] nivel " + id + ": falló al construirse", err);
       }
     }
+    if (pause) await pause();
     if (BATCH_ENABLED) batchLevel(root, room);
     const ticks = [];
     root.traverse((o) => { if (o.userData && o.userData.tick) ticks.push(o.userData.tick); });
@@ -168,7 +171,8 @@ export function createLevels({ palette, lite, order }) {
       id, index, holder, room, root, extra, style, hoverables,
       update(t, dt) { ticks.forEach((fn) => fn(t, dt)); }
     });
-  });
+    if (pause) await pause();
+  }
 
   // Los títulos de las paredes salen del menú, en el idioma actual
   function setTitles(dict) {
