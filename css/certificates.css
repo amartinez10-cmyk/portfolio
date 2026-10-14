@@ -252,6 +252,13 @@
   aspect-ratio: var(--ratio, 0.68);
   object-fit: contain;
   filter: drop-shadow(0 1.5rem 2.5rem rgba(0, 0, 0, 0.6));
+  transition: filter 250ms ease;
+}
+
+/* Mientras llega la imagen grande se ve la miniatura ampliada: desenfocada, para que no parezca
+   que el certificado es así de borroso */
+.cert-viewer__img.is-loading {
+  filter: blur(8px) drop-shadow(0 1.5rem 2.5rem rgba(0, 0, 0, 0.6));
 }
 
 .cert-viewer__bar {

@@ -447,6 +447,7 @@ async function startNow({ level = "full", force = false } = {}) {
   let raf = 0;
   let last = 0;
   let idleFrames = 0;
+  let covered = false;   // un visor a pantalla completa tapa la sala (evento portfolio:overlay)
 
   function resize() {
     W = Math.max(1, canvas.clientWidth);
@@ -590,8 +591,8 @@ async function startNow({ level = "full", force = false } = {}) {
     if (perfSkip > 0) perfSkip--;
     else watchPerformance(raw);
     idleFrames = active || warmQueue.length ? 0 : idleFrames + 1;
-    // Pestaña oculta o nada que animar: el bucle se para hasta que haga falta otro fotograma
-    if (document.hidden || idleFrames > 8) {
+    // Pestaña oculta, sala tapada o nada que animar: el bucle se para hasta que haga falta otro fotograma
+    if (document.hidden || covered || idleFrames > 8) {
       running = false;
       return;
     }
@@ -599,7 +600,7 @@ async function startNow({ level = "full", force = false } = {}) {
   }
 
   function wake() {
-    if (!ready || running || document.hidden) return;
+    if (!ready || running || document.hidden || covered) return;
     running = true;
     idleFrames = 0;
     last = performance.now();
@@ -718,6 +719,12 @@ async function startNow({ level = "full", force = false } = {}) {
     wake();
   });
   on(document, "visibilitychange", () => wake());
+  // El visor de certificados (js/certificates.js) tapa toda la pantalla: mientras está abierto la sala
+  // no se dibuja (detrás de su fondo desenfocado no se distingue) y así no le quita fluidez
+  on(document, "portfolio:overlay", (e) => {
+    covered = !!(e.detail && e.detail.open);
+    wake();
+  });
   on(canvas, "webglcontextlost", (e) => { e.preventDefault(); dispose(); });
 
   const onMotionChange = () => {

@@ -22,6 +22,7 @@
   var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
   var current = 0;
   var loading = 0;   // sube con cada cambio: una imagen que termina de cargar tarde ya no se pone
+  var images = {};   // las imágenes grandes ya pedidas, por dirección
 
   function textOf(link, selector) {
     var el = link.querySelector(selector);
@@ -45,23 +46,49 @@
     return link.getAttribute("href");
   }
 
+  // Pide la imagen grande de un certificado (una sola vez) y la devuelve. Las de los vecinos van con
+  // prioridad baja para no quitarle velocidad a la que se quiere ver.
+  function preload(link, priority) {
+    var href = src(link);
+    if (!images[href]) {
+      images[href] = new Image();
+      images[href].fetchPriority = priority || "high";
+      images[href].src = href;
+    }
+    return images[href];
+  }
+
+  // Los vecinos del que se ve, para que pasar al siguiente o al anterior sea inmediato
+  function preloadNeighbours() {
+    [current - 1, current + 1].forEach(function (i) {
+      preload(links[(i + links.length) % links.length], "low");
+    });
+  }
+
   // dir: 1 o -1 si se pasa al siguiente o al anterior (la hoja entra desde ese lado); 0 al abrir
   function show(index, dir) {
     current = (index + links.length) % links.length;
     var link = links[current];
     var thumb = link.querySelector("img");
-    var full = new Image();
+    var full = preload(link);
     var token = ++loading;
     if (thumb) img.style.setProperty("--ratio", thumb.getAttribute("width") + " / " + thumb.getAttribute("height"));
-    full.src = src(link);
-    if (full.complete && full.naturalWidth) {
+    if (full.complete || !thumb) {
       img.src = full.src;
+      img.classList.remove("is-loading");
+      preloadNeighbours();
     } else {
-      // Mientras llega la grande se ve la miniatura (ya cargada) ampliada
-      if (thumb) img.src = thumb.currentSrc || thumb.src;
-      full.onload = full.onerror = function () {
-        if (token === loading) img.src = full.src;
+      // Mientras llega la grande se ve la miniatura (ya cargada) ampliada y desenfocada
+      img.src = thumb.currentSrc || thumb.src;
+      img.classList.add("is-loading");
+      var done = function () {
+        if (token !== loading) return;
+        img.src = full.src;
+        img.classList.remove("is-loading");
+        preloadNeighbours();
       };
+      full.addEventListener("load", done, { once: true });
+      full.addEventListener("error", done, { once: true });
     }
     openLink.href = src(link);
     caption();
@@ -71,10 +98,11 @@
         { duration: 280, easing: "cubic-bezier(0.23, 1, 0.32, 1)" }
       );
     }
-    // Los vecinos se cargan ya, para que pasar al siguiente sea inmediato
-    [current - 1, current + 1].forEach(function (i) {
-      new Image().src = src(links[(i + links.length) % links.length]);
-    });
+  }
+
+  // Avisa a la escena 3D (js/scene3d.js) de que el visor la tapa o la destapa: tapada no se dibuja
+  function overlay(isOpen) {
+    document.dispatchEvent(new CustomEvent("portfolio:overlay", { detail: { open: isOpen } }));
   }
 
   function open(index) {
@@ -83,10 +111,19 @@
     root.classList.add("cert-viewer-open");
     show(index, 0);
     viewer.showModal();
+    overlay(true);
   }
 
   links.forEach(function (link, i) {
     link.setAttribute("aria-haspopup", "dialog");
+    // Si el ratón se queda un momento encima (no al pasar de largo) o llega el foco, se empieza a
+    // cargar ya la imagen grande, y al abrir el visor suele estar lista
+    var intent = 0;
+    link.addEventListener("pointerenter", function (e) {
+      if (e.pointerType === "mouse") intent = setTimeout(function () { preload(link); }, 120);
+    });
+    link.addEventListener("pointerleave", function () { clearTimeout(intent); });
+    link.addEventListener("focus", function () { preload(link); });
     link.addEventListener("click", function (e) {
       if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
       e.preventDefault();
@@ -102,6 +139,7 @@
     loading++;
     root.classList.remove("cert-viewer-open");
     root.style.scrollbarGutter = "";
+    overlay(false);
   }).observe(viewer, { attributes: true, attributeFilter: ["open"] });
 
   viewer.addEventListener("click", function (e) {
