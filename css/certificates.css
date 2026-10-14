@@ -1,0 +1,414 @@
+/*
+ * Sección Certificados: unas cifras, los botones (carpeta de Drive y PDF con todos) y los
+ * certificados agrupados por entidad, cada uno con su miniatura. Al pulsar uno se abre en grande en
+ * el visor (#cert-viewer, un <dialog> que maneja js/certificates.js).
+ * Los botones tienen el mismo aspecto que los del currículum (.cv__btn, en css/resume.css).
+ */
+
+/* ---------- Cifras ---------- */
+
+.certs__stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin: 1.1rem 0 1rem;
+  padding: 0;
+  list-style: none;
+}
+
+.certs__stats li {
+  padding: 0.6rem 0.75rem 0.65rem;
+  border: 1px solid var(--glass-edge);
+  border-radius: 0.9rem;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--muted);
+  font-size: 0.8125rem;
+  line-height: 1.3;
+}
+
+.certs__stats b {
+  display: block;
+  margin-bottom: 0.1rem;
+  font-family: var(--display);
+  font-size: 1.45rem;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  background: linear-gradient(135deg, #fff 20%, var(--level-accent));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ---------- Botones ---------- */
+
+.certs__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.certs__btn svg {
+  flex: none;
+  width: 1.15rem;
+  height: 1.15rem;
+  margin-right: 0.5rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ---------- Los certificados, por entidad ---------- */
+
+.certs__group {
+  margin-top: 1.6rem;
+}
+
+.certs__group--ms { --issuer: #4aa8ff; }
+.certs__group--cisco { --issuer: #31d0e8; }
+.certs__group--sp { --issuer: #ff8f4d; }
+
+.certs__issuer {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0 0 0.7rem;
+  font-family: var(--display);
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+/* Punto de color de la entidad */
+.certs__issuer::before {
+  content: "";
+  flex: none;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: var(--issuer);
+  box-shadow: 0 0 0.75rem var(--issuer);
+}
+
+.certs__count {
+  margin-left: auto;
+  min-width: 1.75rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--muted);
+  font-family: var(--font);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.certs__list {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cert {
+  display: grid;
+  grid-template-columns: 2.9rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.45rem 0.85rem 0.45rem 0.45rem;
+  border: 1px solid var(--glass-edge);
+  border-radius: 0.95rem;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--ink);
+  text-decoration: none;
+  cursor: zoom-in;
+  transition: background-color 200ms ease, border-color 200ms ease, transform 200ms var(--ease-out);
+}
+
+.cert:hover {
+  background: rgba(255, 255, 255, 0.11);
+  border-color: rgba(255, 255, 255, 0.34);
+}
+
+.cert:active {
+  transform: scale(0.985);
+}
+
+.cert:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+/* Miniatura: la hoja en pequeño, con su sombra */
+.cert__thumb {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 17 / 25;
+  object-fit: cover;
+  object-position: top;
+  border-radius: 0.3rem;
+  background: #fff;
+  box-shadow: 0 0.4rem 0.8rem -0.35rem rgba(0, 0, 0, 0.75);
+}
+
+.cert__text {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.cert__title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.cert__meta {
+  color: var(--muted);
+  font-size: 0.8125rem;
+  line-height: 1.3;
+}
+
+.cert__icon {
+  width: 1.15rem;
+  height: 1.15rem;
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 2;
+  stroke-linecap: round;
+  transition: stroke 200ms ease, transform 200ms var(--ease-out);
+}
+
+.cert:hover .cert__icon,
+.cert:focus-visible .cert__icon {
+  stroke: var(--ink);
+  transform: scale(1.12);
+}
+
+/* ---------- Visor: el certificado en grande ---------- */
+
+.cert-viewer {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  overflow: hidden;
+}
+
+.cert-viewer::backdrop {
+  background: rgba(8, 5, 28, 0.86);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+/* Mientras está abierto la página de detrás no se desplaza (js/certificates.js) y el cursor
+   personalizado, que quedaría debajo, se esconde */
+.cert-viewer-open {
+  overflow: hidden;
+}
+
+.cert-viewer-open .cursor {
+  visibility: hidden;
+}
+
+.cert-viewer__frame {
+  position: relative;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 1rem;
+  height: 100%;
+  padding: clamp(0.75rem, 3vh, 1.75rem) clamp(0.75rem, 6vw, 6rem) clamp(0.75rem, 2.5vh, 1.5rem);
+}
+
+.cert-viewer__stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  touch-action: pan-y pinch-zoom;   /* el deslizamiento horizontal lo recoge js/certificates.js */
+}
+
+/* La caja tiene la proporción de la hoja (--ratio) y ocupa todo el alto posible; la imagen se
+   ajusta dentro. Así la miniatura (mientras carga la grande) y la grande se ven igual de grandes. */
+.cert-viewer__img {
+  display: block;
+  width: auto;
+  height: 100%;
+  max-width: 100%;
+  aspect-ratio: var(--ratio, 0.68);
+  object-fit: contain;
+  filter: drop-shadow(0 1.5rem 2.5rem rgba(0, 0, 0, 0.6));
+}
+
+.cert-viewer__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+  width: min(100%, 46rem);
+  margin-inline: auto;
+  padding: 0.8rem 0.9rem 0.8rem 1.25rem;
+  border: 1px solid var(--glass-edge);
+  border-radius: 1.25rem;
+  background: linear-gradient(155deg, rgba(52, 36, 132, 0.75), rgba(22, 14, 62, 0.85));
+  box-shadow: 0 1.5rem 3rem -1.5rem rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.cert-viewer__caption {
+  flex: 1 1 18rem;
+  min-width: 0;
+}
+
+.cert-viewer__issuer,
+.cert-viewer__meta {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
+.cert-viewer__title {
+  margin: 0.1rem 0 0.15rem;
+  font-family: var(--display);
+  font-size: clamp(1.05rem, 0.95rem + 0.45vw, 1.3rem);
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.cert-viewer .cert-viewer__open {
+  flex: 0 0 auto;
+}
+
+/* Botones redondos: cerrar, anterior y siguiente */
+.cert-viewer__btn {
+  position: absolute;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  padding: 0;
+  border: 1px solid var(--glass-edge);
+  border-radius: 50%;
+  background: rgba(22, 14, 62, 0.72);
+  color: var(--ink);
+  cursor: pointer;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  transition: background-color 200ms ease, border-color 200ms ease, transform 200ms var(--ease-out);
+}
+
+.cert-viewer__btn:hover {
+  background: rgba(64, 44, 158, 0.9);
+  border-color: rgba(255, 255, 255, 0.42);
+}
+
+.cert-viewer__btn:active {
+  transform: scale(0.93);
+}
+
+.cert-viewer__btn:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+.cert-viewer__btn svg {
+  width: 1.35rem;
+  height: 1.35rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.cert-viewer__close {
+  top: clamp(0.75rem, 3vh, 1.75rem);
+  right: clamp(0.75rem, 1.6vw, 1.5rem);
+}
+
+/* A media altura de la zona de la imagen (el pie ocupa unos 6 rem) */
+.cert-viewer__nav {
+  top: calc(50% - 3rem);
+  translate: 0 -50%;
+}
+
+.cert-viewer__nav--prev {
+  left: clamp(0.5rem, 1.6vw, 1.5rem);
+}
+
+.cert-viewer__nav--next {
+  right: clamp(0.5rem, 1.6vw, 1.5rem);
+}
+
+/* En el móvil la hoja ocupa casi todo el ancho: las flechas, más pequeñas, van encima de ella */
+@media (max-width: 699px) {
+  .cert-viewer__btn {
+    width: 2.6rem;
+    height: 2.6rem;
+  }
+
+  .cert-viewer__frame {
+    padding-top: 4rem;
+  }
+
+  .cert-viewer .cert-viewer__open {
+    flex: 1 1 100%;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .cert-viewer[open] .cert-viewer__frame {
+    animation: cert-viewer-in 320ms var(--ease-out);
+  }
+
+  .cert-viewer[open]::backdrop {
+    animation: cert-viewer-fade 240ms ease;
+  }
+}
+
+@keyframes cert-viewer-in {
+  from {
+    opacity: 0;
+    transform: translateY(1rem) scale(0.98);
+  }
+}
+
+@keyframes cert-viewer-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cert,
+  .cert__icon,
+  .cert-viewer__btn {
+    transition: none;
+  }
+}
+
+/* Alto contraste e impresión (no se imprimen los fondos): sin texto con degradado */
+@media print, (forced-colors: active) {
+  .certs__stats b {
+    background: none;
+    -webkit-text-fill-color: currentColor;
+  }
+}
+
+@media print {
+  .certs__actions,
+  .cert__icon,
+  .cert-viewer {
+    display: none;
+  }
+}

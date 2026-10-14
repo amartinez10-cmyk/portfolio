@@ -14,6 +14,7 @@
   <link rel="stylesheet" href="css/theme3d.css">
   <link rel="stylesheet" href="css/paradigm.css">
   <link rel="stylesheet" href="css/resume.css">
+  <link rel="stylesheet" href="css/certificates.css">
   <link rel="stylesheet" href="css/boot.css">
   <!-- Three.js desde CDN (sin instalar nada). El 3D se carga más tarde, desde js/boot3d.js:
        si el CDN o WebGL fallan, la página funciona igual sin él. -->
@@ -265,9 +266,105 @@
     </section>
 
     <!-- CERTIFICADOS -->
+    <!-- Los certificados y diplomas de 1.º de SMX, agrupados por entidad. Cada uno es un enlace a su
+         imagen y js/certificates.js lo abre en grande en el visor (#cert-viewer, después de <main>).
+         Las imágenes salen del PDF escaneado: certificates/ (1400 px de ancho) y certificates/thumbs/
+         (180 px); el PDF con todos está en la misma carpeta. -->
     <section id="certificates" class="page" aria-labelledby="certificates-title" data-tilt data-depth="12" hidden>
       <h1 id="certificates-title" tabindex="-1" data-i18n="nav.certificates">Certificados</h1>
-      <p data-i18n="certificates.body">Aquí iré añadiendo los certificados que obtenga.</p>
+      <p data-i18n="certificates.body">Los certificados y diplomas oficiales de mi primer curso de Sistemas Microinformáticos y Redes (SMX) en el INS Sa Palomera, de junio de 2026. Pulsa uno para verlo entero.</p>
+
+      <ul class="certs__stats">
+        <li><b>11</b> <span data-i18n="certificates.stat.count">certificados</span></li>
+        <li><b>324 h</b> <span data-i18n="certificates.stat.hours">de formación</span></li>
+        <li><b>7</b> <span data-i18n="certificates.stat.microsoft">de Microsoft</span></li>
+      </ul>
+
+      <div class="certs__actions">
+        <!-- Carpeta de Drive con todos los certificados (oficiales y no oficiales): pon su enlace en
+             href y quita "hidden" -->
+        <a class="cv__btn cv__btn--primary certs__btn" href="" target="_blank" rel="noopener" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 7.2c0-.8.7-1.5 1.5-1.5h4.1l2 2.1H19c.8 0 1.5.7 1.5 1.5v8.5c0 .8-.7 1.5-1.5 1.5H5c-.8 0-1.5-.7-1.5-1.5z"/></svg>
+          <span data-i18n="certificates.drive">Todos mis certificados en Drive</span>
+        </a>
+        <a class="cv__btn certs__btn" href="certificates/Alex-Martinez-Cobo_Certificados.pdf" download>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v10.5M7.5 10l4.5 4.5 4.5-4.5M5 19.5h14"/></svg>
+          <span data-i18n="certificates.downloadAll">Descargar todos (PDF)</span>
+        </a>
+      </div>
+
+      <div class="certs__group certs__group--ms" data-issuer="Microsoft Imagine Academy">
+        <h2 class="certs__issuer">Microsoft Imagine Academy <span class="certs__count" aria-hidden="true">7</span></h2>
+        <ul class="certs__list">
+          <li><a class="cert" href="certificates/ms-windows10.webp" data-cert>
+            <img class="cert__thumb" src="certificates/thumbs/ms-windows10.webp" width="180" height="273" alt="" loading="lazy" decoding="async">
+            <span class="cert__text"><span class="cert__title" data-i18n="certificates.windows10">Administración básica de sistemas en Windows 10</span> <span class="cert__meta">30 <span data-i18n="certificates.hours">horas</span></span></span>
+            <svg class="cert__icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5M10.5 8v5M8 10.5h5"/></svg>
+          </a></li>
+          <li><a class="cert" href="certificates/ms-word2019.webp" data-cert>
+            <img class="cert__thumb" src="certificates/thumbs/ms-word2019.webp" width="180" height="261" alt="" loading="lazy" decoding="async">
+            <span class="cert__text"><span class="cert__title" data-i18n="certificates.word">Elaboración avanzada de documentos de texto con Word 2019</span> <span class="cert__meta">30 <span data-i18n="certificates.hours">horas</span></span></span>
+            <svg class="cert__icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5M10.5 8v5M8 10.5h5"/></svg>
+          </a></li>
+          <li><a class="cert" href="certificates/ms-excel2019.webp" data-cert>
+            <img class="cert__thumb" src="certificates/thumbs/ms-excel2019.webp" width="180" height="268" alt="" loading="lazy" decoding="async">
+            <span class="cert__text"><span class="cert__title" data-i18n="certificates.excel">Elaboración avanzada de hojas de cálculo con Excel 2019</span> <span class="cert__meta">30 <span data-i18n="certificates.hours">horas</span></span></span>
+            <svg class="cert__icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5M10.5 8v5M8 10.5h5"/></svg>
+          </a></li>
+          <li><a class="cert" href="certificates/ms-access2019.webp" data-cert>
+            <img class="cert__thumb" src="certificates/thumbs/ms-access2019.webp" width="180" height="265" alt="" loading="lazy" decoding="async">
+            <span class="cert__text"><span class="cert__title" data-i18n="certificates.access">Elaboración de aplicaciones con bases de datos con Access 2019</span> <span class="cert__meta">35 <span data-i18n="certificates.hours">horas</span></span></span>
+            <svg class="cert__icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5M10.5 8v5M8 10.5h5"/></svg>
+          </a></li>
+          <li><a class="cert" href="certificates/ms-powerpoint2019.webp" data-cert>
+            <img class="cert__thumb" src="certificates/thumbs/ms-powerpoint2019.webp" width="180" height="262" alt="" loading="lazy" decoding="async">
+            <span class="cert__text"><span class="cert__title" data-i18n="certificates.powerpoint">Elaboración de presentaciones con PowerPoint 2019</span> <span class="cert__meta">15 <span data-i18n="certificates.hours">horas</span></span></span>
+            <svg class="cert__icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5M10.5 8v5M8 10.5h5"/></svg>
+          </a></li>
+          <li><a class="cert" href="certificates/ms-outlook2019.webp" data-cert>
+            <img class="cert__thumb" src="certificates/thumbs/ms-outlook2019.webp" width="180" height="262" alt="" loading="lazy" decoding="async">
+            <span class="cert__text"><span class="cert__title" data-i18n="certificates.outlook">Gestión de correo y agenda con Outlook 2019</span> <span class="cert__meta">15 <span data-i18n="certificates.hours">horas</span></span></span>
+            <svg class="cert__icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5M10.5 8v5M8 10.5h5"/></svg>
+          </a></li>
+          <li><a class="cert" href="certificates/ms-ia-excel.webp" data-cert>
+            <img class="cert__thumb" src="certificates/thumbs/ms-ia-excel.webp" width="180" height="273" alt="" loading="lazy" decoding="async">
+            <span class="cert__text"><span class="cert__title" data-i18n="certificates.aiExcel">Uso de herramientas de inteligencia artificial y Excel avanzado</span> <span class="cert__meta">20 <span data-i18n="certificates.hours">horas</span></span></span>
+            <svg class="cert__icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5M10.5 8v5M8 10.5h5"/></svg>
+          </a></li>
+        </ul>
+      </div>
+
+      <div class="certs__group certs__group--cisco" data-issuer="Cisco Networking Academy">
+        <h2 class="certs__issuer">Cisco Networking Academy <span class="certs__count" aria-hidden="true">1</span></h2>
+        <ul class="certs__list">
+          <li><a class="cert" href="certificates/cisco-ccna-itn.webp" data-cert>
+            <img class="cert__thumb" src="certificates/thumbs/cisco-ccna-itn.webp" width="180" height="264" alt="" loading="lazy" decoding="async">
+            <span class="cert__text"><span class="cert__title" data-i18n="certificates.ccna">Introducción a las redes (CCNA Routing and Switching)</span> <span class="cert__meta">66 <span data-i18n="certificates.hours">horas</span></span></span>
+            <svg class="cert__icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5M10.5 8v5M8 10.5h5"/></svg>
+          </a></li>
+        </ul>
+      </div>
+
+      <div class="certs__group certs__group--sp" data-issuer="INS Sa Palomera">
+        <h2 class="certs__issuer">INS Sa Palomera <span class="certs__count" aria-hidden="true">3</span></h2>
+        <ul class="certs__list">
+          <li><a class="cert" href="certificates/sp-linux.webp" data-cert>
+            <img class="cert__thumb" src="certificates/thumbs/sp-linux.webp" width="180" height="266" alt="" loading="lazy" decoding="async">
+            <span class="cert__text"><span class="cert__title" data-i18n="certificates.linux">Administración básica de sistemas Linux</span> <span class="cert__meta">30 <span data-i18n="certificates.hours">horas</span></span></span>
+            <svg class="cert__icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5M10.5 8v5M8 10.5h5"/></svg>
+          </a></li>
+          <li><a class="cert" href="certificates/sp-mobils.webp" data-cert>
+            <img class="cert__thumb" src="certificates/thumbs/sp-mobils.webp" width="180" height="260" alt="" loading="lazy" decoding="async">
+            <span class="cert__text"><span class="cert__title" data-i18n="certificates.mobile">Introducción a la reparación de móviles</span> <span class="cert__meta">20 <span data-i18n="certificates.hours">horas</span></span></span>
+            <svg class="cert__icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5M10.5 8v5M8 10.5h5"/></svg>
+          </a></li>
+          <li><a class="cert" href="certificates/sp-sostenibilitat.webp" data-cert>
+            <img class="cert__thumb" src="certificates/thumbs/sp-sostenibilitat.webp" width="180" height="264" alt="" loading="lazy" decoding="async">
+            <span class="cert__text"><span class="cert__title" data-i18n="certificates.sustainability">Sostenibilidad aplicada al sistema productivo</span> <span class="cert__meta">33 <span data-i18n="certificates.hours">horas</span> · <span data-i18n="certificates.inEnglish">en inglés</span></span></span>
+            <svg class="cert__icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5M10.5 8v5M8 10.5h5"/></svg>
+          </a></li>
+        </ul>
+      </div>
     </section>
 
     <!-- PROYECTOS -->
@@ -289,6 +386,33 @@
     </section>
   </main>
 
+  <!-- Visor de certificados (js/certificates.js): el certificado en grande, su título y flechas para
+       pasar al anterior o al siguiente. Va fuera de las secciones para que nada lo recorte. -->
+  <dialog class="cert-viewer" id="cert-viewer" aria-labelledby="cert-viewer-title">
+    <div class="cert-viewer__frame">
+      <button type="button" class="cert-viewer__btn cert-viewer__close" data-i18n-aria-label="certificates.close" aria-label="Cerrar" autofocus>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg>
+      </button>
+      <button type="button" class="cert-viewer__btn cert-viewer__nav cert-viewer__nav--prev" data-step="-1" data-i18n-aria-label="certificates.prev" aria-label="Certificado anterior">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5L8 12l6.5 6.5"/></svg>
+      </button>
+      <button type="button" class="cert-viewer__btn cert-viewer__nav cert-viewer__nav--next" data-step="1" data-i18n-aria-label="certificates.next" aria-label="Certificado siguiente">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg>
+      </button>
+      <div class="cert-viewer__stage">
+        <img class="cert-viewer__img" alt="" decoding="async">
+      </div>
+      <div class="cert-viewer__bar">
+        <div class="cert-viewer__caption" aria-live="polite">
+          <p class="cert-viewer__issuer"><span class="cert-viewer__org"></span> · <span class="cert-viewer__count"></span></p>
+          <h2 class="cert-viewer__title" id="cert-viewer-title"></h2>
+          <p class="cert-viewer__meta"></p>
+        </div>
+        <a class="cv__btn cert-viewer__open" href="" target="_blank" rel="noopener" data-i18n="resume.open">Abrir en una pestaña nueva</a>
+      </div>
+    </div>
+  </dialog>
+
   <script src="js/translations.js"></script>
   <script src="js/boot-screen.js"></script>
   <script src="js/skill-icons.js"></script>
@@ -297,6 +421,7 @@
   <script src="js/fx.js"></script>
   <script src="js/paradigm.js"></script>
   <script src="js/resume.js"></script>
+  <script src="js/certificates.js"></script>
   <script src="js/boot3d.js"></script>
 </body>
 </html>
