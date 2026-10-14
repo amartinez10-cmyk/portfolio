@@ -49,6 +49,11 @@
   gap: 0.6rem;
 }
 
+/* Uno debajo del otro: en la tarjeta no caben dos en una línea sin partir el texto */
+.certs__btn {
+  flex-basis: 100%;
+}
+
 .certs__btn svg {
   flex: none;
   width: 1.15rem;
