@@ -238,7 +238,8 @@
       <!-- Cada currículum se ve como una imagen de su PDF (nítida y sin el marco gris del visor de PDF
            del navegador, igual en el móvil); los botones abren o descargan el PDF de verdad.
            js/resume.js cambia entre uno y otro. Si cambias un PDF, regenera su imagen con
-           tools/cv-previews.html. -->
+           tools/cv-previews.html y sube el número de "?v=" de sus enlaces: si no, el navegador puede
+           seguir enseñando la copia vieja que guardó. -->
       <div class="cv" data-cv>
         <div class="cv__tabs" role="tablist" aria-orientation="horizontal" data-i18n-aria-label="resume.tabs" aria-label="Formatos del currículum">
           <button type="button" class="cv__tab" role="tab" id="cv-tab-europass" aria-controls="cv-panel-europass" aria-selected="true" data-i18n="resume.tab.europass">Europass</button>
@@ -247,21 +248,21 @@
 
         <div class="cv__panel" id="cv-panel-europass" role="tabpanel" aria-labelledby="cv-tab-europass">
           <div class="cv__sheet">
-            <img class="cv__img" src="cv/Alex-Martinez-Cobo_Europass-CV.webp" width="1240" height="1755" loading="lazy" decoding="async" data-i18n-alt="resume.viewer.europass" alt="Currículum Europass de Alex Martínez Cobo">
+            <img class="cv__img" src="cv/Alex-Martinez-Cobo_Europass-CV.webp?v=2" width="1240" height="1755" loading="lazy" decoding="async" data-i18n-alt="resume.viewer.europass" alt="Currículum Europass de Alex Martínez Cobo">
           </div>
           <div class="cv__actions">
-            <a class="cv__btn" href="cv/Alex-Martinez-Cobo_Europass-CV.pdf" target="_blank" rel="noopener" data-i18n="resume.open">Abrir en una pestaña nueva</a>
-            <a class="cv__btn cv__btn--primary" href="cv/Alex-Martinez-Cobo_Europass-CV.pdf" download data-i18n="resume.download">Descargar PDF</a>
+            <a class="cv__btn" href="cv/Alex-Martinez-Cobo_Europass-CV.pdf?v=2" target="_blank" rel="noopener" data-i18n="resume.open">Abrir en una pestaña nueva</a>
+            <a class="cv__btn cv__btn--primary" href="cv/Alex-Martinez-Cobo_Europass-CV.pdf?v=2" download data-i18n="resume.download">Descargar PDF</a>
           </div>
         </div>
 
         <div class="cv__panel" id="cv-panel-es" role="tabpanel" aria-labelledby="cv-tab-es" hidden>
           <div class="cv__sheet">
-            <img class="cv__img" src="cv/Alex-Martinez-Cobo_CV-ES.webp" width="1240" height="1754" loading="lazy" decoding="async" data-i18n-alt="resume.viewer.es" alt="Currículum en español de Alex Martínez Cobo">
+            <img class="cv__img" src="cv/Alex-Martinez-Cobo_CV-ES.webp?v=1" width="1240" height="1754" loading="lazy" decoding="async" data-i18n-alt="resume.viewer.es" alt="Currículum en español de Alex Martínez Cobo">
           </div>
           <div class="cv__actions">
-            <a class="cv__btn" href="cv/Alex-Martinez-Cobo_CV-ES.pdf" target="_blank" rel="noopener" data-i18n="resume.open">Abrir en una pestaña nueva</a>
-            <a class="cv__btn cv__btn--primary" href="cv/Alex-Martinez-Cobo_CV-ES.pdf" download data-i18n="resume.download">Descargar PDF</a>
+            <a class="cv__btn" href="cv/Alex-Martinez-Cobo_CV-ES.pdf?v=1" target="_blank" rel="noopener" data-i18n="resume.open">Abrir en una pestaña nueva</a>
+            <a class="cv__btn cv__btn--primary" href="cv/Alex-Martinez-Cobo_CV-ES.pdf?v=1" download data-i18n="resume.download">Descargar PDF</a>
           </div>
         </div>
       </div>
