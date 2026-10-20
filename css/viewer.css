@@ -1,0 +1,230 @@
+/*
+ * Visor de imágenes a pantalla completa (#viewer, un <dialog> que maneja js/viewer.js): los
+ * certificados y las diapositivas de los proyectos en grande, con su pie, flechas y botón de cerrar.
+ */
+
+.viewer {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  overflow: hidden;
+}
+
+.viewer::backdrop {
+  background: rgba(8, 5, 28, 0.86);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+/* Mientras está abierto la página de detrás no se desplaza (js/viewer.js) y el cursor
+   personalizado, que quedaría debajo, se esconde */
+.viewer-open {
+  overflow: hidden;
+}
+
+.viewer-open .cursor {
+  visibility: hidden;
+}
+
+.viewer__frame {
+  position: relative;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 1rem;
+  height: 100%;
+  padding: clamp(0.75rem, 3vh, 1.75rem) clamp(0.75rem, 6vw, 6rem) clamp(0.75rem, 2.5vh, 1.5rem);
+}
+
+.viewer__stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  touch-action: pan-y pinch-zoom;   /* el deslizamiento horizontal lo recoge js/viewer.js */
+}
+
+/* La caja tiene la proporción de la imagen (--ratio) y ocupa todo el alto posible; la imagen se
+   ajusta dentro. Así la miniatura (mientras carga la grande) y la grande se ven igual de grandes. */
+.viewer__img {
+  display: block;
+  width: auto;
+  height: 100%;
+  max-width: 100%;
+  aspect-ratio: var(--ratio, 0.68);
+  object-fit: contain;
+  filter: drop-shadow(0 1.5rem 2.5rem rgba(0, 0, 0, 0.6));
+  transition: filter 250ms ease;
+}
+
+/* Mientras llega la imagen grande se ve la miniatura ampliada: desenfocada, para que no parezca
+   que la imagen es así de borrosa */
+.viewer__img.is-loading {
+  filter: blur(8px) drop-shadow(0 1.5rem 2.5rem rgba(0, 0, 0, 0.6));
+}
+
+.viewer__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+  width: min(100%, 46rem);
+  margin-inline: auto;
+  padding: 0.8rem 0.9rem 0.8rem 1.25rem;
+  border: 1px solid var(--glass-edge);
+  border-radius: 1.25rem;
+  background: linear-gradient(155deg, rgba(52, 36, 132, 0.75), rgba(22, 14, 62, 0.85));
+  box-shadow: 0 1.5rem 3rem -1.5rem rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.viewer__caption {
+  flex: 1 1 18rem;
+  min-width: 0;
+}
+
+.viewer__kicker,
+.viewer__meta {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
+.viewer__meta:empty {
+  display: none;
+}
+
+.viewer__title {
+  margin: 0.1rem 0 0.15rem;
+  font-family: var(--display);
+  font-size: clamp(1.05rem, 0.95rem + 0.45vw, 1.3rem);
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.viewer .viewer__open {
+  flex: 0 0 auto;
+}
+
+/* Botones redondos: cerrar, anterior y siguiente */
+.viewer__btn {
+  position: absolute;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  padding: 0;
+  border: 1px solid var(--glass-edge);
+  border-radius: 50%;
+  background: rgba(22, 14, 62, 0.72);
+  color: var(--ink);
+  cursor: pointer;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  transition: background-color 200ms ease, border-color 200ms ease, transform 200ms var(--ease-out);
+}
+
+.viewer__btn:hover {
+  background: rgba(64, 44, 158, 0.9);
+  border-color: rgba(255, 255, 255, 0.42);
+}
+
+.viewer__btn:active {
+  transform: scale(0.93);
+}
+
+.viewer__btn:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+.viewer__btn svg {
+  width: 1.35rem;
+  height: 1.35rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.viewer__close {
+  top: clamp(0.75rem, 3vh, 1.75rem);
+  right: clamp(0.75rem, 1.6vw, 1.5rem);
+}
+
+/* A media altura de la zona de la imagen (el pie ocupa unos 6 rem) */
+.viewer__nav {
+  top: calc(50% - 3rem);
+  translate: 0 -50%;
+}
+
+.viewer__nav--prev {
+  left: clamp(0.5rem, 1.6vw, 1.5rem);
+}
+
+.viewer__nav--next {
+  right: clamp(0.5rem, 1.6vw, 1.5rem);
+}
+
+/* Un grupo de una sola imagen no tiene anterior ni siguiente */
+.viewer.is-single .viewer__nav {
+  display: none;
+}
+
+/* En el móvil la imagen ocupa casi todo el ancho: las flechas, más pequeñas, van encima de ella */
+@media (max-width: 699px) {
+  .viewer__btn {
+    width: 2.6rem;
+    height: 2.6rem;
+  }
+
+  .viewer__frame {
+    padding-top: 4rem;
+  }
+
+  .viewer .viewer__open {
+    flex: 1 1 100%;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .viewer[open] .viewer__frame {
+    animation: viewer-in 320ms var(--ease-out);
+  }
+
+  .viewer[open]::backdrop {
+    animation: viewer-fade 240ms ease;
+  }
+}
+
+@keyframes viewer-in {
+  from {
+    opacity: 0;
+    transform: translateY(1rem) scale(0.98);
+  }
+}
+
+@keyframes viewer-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .viewer__btn {
+    transition: none;
+  }
+}
+
+@media print {
+  .viewer {
+    display: none;
+  }
+}

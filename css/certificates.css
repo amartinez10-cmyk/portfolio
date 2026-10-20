@@ -1,8 +1,8 @@
 /*
  * Sección Certificados: unas cifras, los botones (carpeta de Drive y PDF con todos) y los
  * certificados agrupados por entidad, cada uno con su miniatura. Al pulsar uno se abre en grande en
- * el visor (#cert-viewer, un <dialog> que maneja js/certificates.js).
- * Los botones tienen el mismo aspecto que los del currículum (.cv__btn, en css/resume.css).
+ * el visor (css/viewer.css y js/viewer.js).
+ * Los botones son los del currículum (.cv__btn y .cv__btn--block, en css/resume.css).
  */
 
 /* ---------- Cifras ---------- */
@@ -47,23 +47,6 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.6rem;
-}
-
-/* Uno debajo del otro: en la tarjeta no caben dos en una línea sin partir el texto */
-.certs__btn {
-  flex-basis: 100%;
-}
-
-.certs__btn svg {
-  flex: none;
-  width: 1.15rem;
-  height: 1.15rem;
-  margin-right: 0.5rem;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
 }
 
 /* ---------- Los certificados, por entidad ---------- */
@@ -194,217 +177,9 @@
   transform: scale(1.12);
 }
 
-/* ---------- Visor: el certificado en grande ---------- */
-
-.cert-viewer {
-  width: 100%;
-  height: 100%;
-  max-width: none;
-  max-height: none;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--ink);
-  overflow: hidden;
-}
-
-.cert-viewer::backdrop {
-  background: rgba(8, 5, 28, 0.86);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
-}
-
-/* Mientras está abierto la página de detrás no se desplaza (js/certificates.js) y el cursor
-   personalizado, que quedaría debajo, se esconde */
-.cert-viewer-open {
-  overflow: hidden;
-}
-
-.cert-viewer-open .cursor {
-  visibility: hidden;
-}
-
-.cert-viewer__frame {
-  position: relative;
-  display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
-  gap: 1rem;
-  height: 100%;
-  padding: clamp(0.75rem, 3vh, 1.75rem) clamp(0.75rem, 6vw, 6rem) clamp(0.75rem, 2.5vh, 1.5rem);
-}
-
-.cert-viewer__stage {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 0;
-  touch-action: pan-y pinch-zoom;   /* el deslizamiento horizontal lo recoge js/certificates.js */
-}
-
-/* La caja tiene la proporción de la hoja (--ratio) y ocupa todo el alto posible; la imagen se
-   ajusta dentro. Así la miniatura (mientras carga la grande) y la grande se ven igual de grandes. */
-.cert-viewer__img {
-  display: block;
-  width: auto;
-  height: 100%;
-  max-width: 100%;
-  aspect-ratio: var(--ratio, 0.68);
-  object-fit: contain;
-  filter: drop-shadow(0 1.5rem 2.5rem rgba(0, 0, 0, 0.6));
-  transition: filter 250ms ease;
-}
-
-/* Mientras llega la imagen grande se ve la miniatura ampliada: desenfocada, para que no parezca
-   que el certificado es así de borroso */
-.cert-viewer__img.is-loading {
-  filter: blur(8px) drop-shadow(0 1.5rem 2.5rem rgba(0, 0, 0, 0.6));
-}
-
-.cert-viewer__bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.75rem 1.25rem;
-  width: min(100%, 46rem);
-  margin-inline: auto;
-  padding: 0.8rem 0.9rem 0.8rem 1.25rem;
-  border: 1px solid var(--glass-edge);
-  border-radius: 1.25rem;
-  background: linear-gradient(155deg, rgba(52, 36, 132, 0.75), rgba(22, 14, 62, 0.85));
-  box-shadow: 0 1.5rem 3rem -1.5rem rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.12);
-}
-
-.cert-viewer__caption {
-  flex: 1 1 18rem;
-  min-width: 0;
-}
-
-.cert-viewer__issuer,
-.cert-viewer__meta {
-  margin: 0;
-  color: var(--muted);
-  font-size: 0.8125rem;
-  line-height: 1.4;
-}
-
-.cert-viewer__title {
-  margin: 0.1rem 0 0.15rem;
-  font-family: var(--display);
-  font-size: clamp(1.05rem, 0.95rem + 0.45vw, 1.3rem);
-  font-weight: 600;
-  line-height: 1.25;
-}
-
-.cert-viewer .cert-viewer__open {
-  flex: 0 0 auto;
-}
-
-/* Botones redondos: cerrar, anterior y siguiente */
-.cert-viewer__btn {
-  position: absolute;
-  z-index: 1;
-  display: grid;
-  place-items: center;
-  width: 3rem;
-  height: 3rem;
-  padding: 0;
-  border: 1px solid var(--glass-edge);
-  border-radius: 50%;
-  background: rgba(22, 14, 62, 0.72);
-  color: var(--ink);
-  cursor: pointer;
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
-  transition: background-color 200ms ease, border-color 200ms ease, transform 200ms var(--ease-out);
-}
-
-.cert-viewer__btn:hover {
-  background: rgba(64, 44, 158, 0.9);
-  border-color: rgba(255, 255, 255, 0.42);
-}
-
-.cert-viewer__btn:active {
-  transform: scale(0.93);
-}
-
-.cert-viewer__btn:focus-visible {
-  outline: 2px solid #fff;
-  outline-offset: 2px;
-}
-
-.cert-viewer__btn svg {
-  width: 1.35rem;
-  height: 1.35rem;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.cert-viewer__close {
-  top: clamp(0.75rem, 3vh, 1.75rem);
-  right: clamp(0.75rem, 1.6vw, 1.5rem);
-}
-
-/* A media altura de la zona de la imagen (el pie ocupa unos 6 rem) */
-.cert-viewer__nav {
-  top: calc(50% - 3rem);
-  translate: 0 -50%;
-}
-
-.cert-viewer__nav--prev {
-  left: clamp(0.5rem, 1.6vw, 1.5rem);
-}
-
-.cert-viewer__nav--next {
-  right: clamp(0.5rem, 1.6vw, 1.5rem);
-}
-
-/* En el móvil la hoja ocupa casi todo el ancho: las flechas, más pequeñas, van encima de ella */
-@media (max-width: 699px) {
-  .cert-viewer__btn {
-    width: 2.6rem;
-    height: 2.6rem;
-  }
-
-  .cert-viewer__frame {
-    padding-top: 4rem;
-  }
-
-  .cert-viewer .cert-viewer__open {
-    flex: 1 1 100%;
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .cert-viewer[open] .cert-viewer__frame {
-    animation: cert-viewer-in 320ms var(--ease-out);
-  }
-
-  .cert-viewer[open]::backdrop {
-    animation: cert-viewer-fade 240ms ease;
-  }
-}
-
-@keyframes cert-viewer-in {
-  from {
-    opacity: 0;
-    transform: translateY(1rem) scale(0.98);
-  }
-}
-
-@keyframes cert-viewer-fade {
-  from {
-    opacity: 0;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .cert,
-  .cert__icon,
-  .cert-viewer__btn {
+  .cert__icon {
     transition: none;
   }
 }
@@ -419,8 +194,7 @@
 
 @media print {
   .certs__actions,
-  .cert__icon,
-  .cert-viewer {
+  .cert__icon {
     display: none;
   }
 }

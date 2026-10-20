@@ -1,0 +1,172 @@
+/*
+ * Sección Proyectos: cada proyecto es una tarjeta con la portada grande, el texto, las demás
+ * diapositivas en pequeño y los botones (.cv__btn, en css/resume.css). Las diapositivas se abren en el
+ * visor (css/viewer.css y js/viewer.js).
+ */
+
+.project {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+
+/* ---------- Portada ---------- */
+
+.project__cover {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  border: 1px solid var(--glass-edge);
+  border-radius: 0.9rem;
+  box-shadow: 0 1.25rem 2.5rem -1.25rem rgba(0, 0, 0, 0.75);
+  cursor: zoom-in;
+}
+
+.project__cover img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  transition: transform 450ms var(--ease-out);
+}
+
+.project__cover:hover img {
+  transform: scale(1.03);
+}
+
+/* Botón redondo de "ampliar" en la esquina */
+.project__zoom {
+  position: absolute;
+  right: 0.7rem;
+  bottom: 0.7rem;
+  display: grid;
+  place-items: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  border: 1px solid var(--glass-edge);
+  border-radius: 50%;
+  background: rgba(22, 14, 62, 0.72);
+  color: #fff;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  transition: transform 200ms var(--ease-out), background-color 200ms ease;
+}
+
+.project__cover:hover .project__zoom {
+  transform: scale(1.08);
+  background: rgba(64, 44, 158, 0.9);
+}
+
+.project__zoom svg {
+  width: 1.2rem;
+  height: 1.2rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ---------- Texto ---------- */
+
+.page .project__kicker {
+  margin: 0 0 0.3rem;
+  color: var(--level-accent);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.project__title {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 1.4rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+}
+
+.page .project__desc {
+  margin: 0.5rem 0 0;
+}
+
+.project__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.8rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.project__tags li {
+  padding: 0.2rem 0.65rem;
+  border: 1px solid var(--glass-edge);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* ---------- Las demás diapositivas ---------- */
+
+.project__slides {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.project__slide {
+  display: block;
+  overflow: hidden;
+  border: 1px solid var(--glass-edge);
+  border-radius: 0.45rem;
+  cursor: zoom-in;
+  transition: transform 200ms var(--ease-out), border-color 200ms ease;
+}
+
+.project__slide img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}
+
+.project__slide:hover {
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-2px);
+}
+
+.project__cover:focus-visible,
+.project__slide:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+/* ---------- Botones ---------- */
+
+.project__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .project__cover img,
+  .project__zoom,
+  .project__slide {
+    transition: none;
+  }
+}
+
+@media print {
+  .project__zoom,
+  .project__actions {
+    display: none;
+  }
+}

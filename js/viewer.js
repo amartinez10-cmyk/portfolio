@@ -1,52 +1,72 @@
 /*
- * Sección Certificados: cada certificado es un enlace a su imagen y aquí se abre en grande en el
- * visor (#cert-viewer, un <dialog>) sin salir de la página. Dentro se pasa al anterior o al siguiente
- * con las flechas (botones o teclado) o deslizando el dedo, y se cierra con Esc, la X o pulsando fuera
- * de la hoja. Sin JavaScript, o con Ctrl/Cmd + clic, los enlaces abren la imagen sin más.
+ * Visor de imágenes a pantalla completa (#viewer, un <dialog>): los certificados y las diapositivas
+ * de los proyectos se abren en grande sin salir de la página.
+ *
+ * Cada enlace con data-viewer="grupo" es una imagen de ese grupo: su href es la imagen grande y su
+ * <img>, la miniatura (se ve ampliada mientras llega la grande). Dentro del visor se pasa a la anterior
+ * o a la siguiente del mismo grupo con las flechas (botones o teclado) o deslizando el dedo, y se
+ * cierra con Esc, la X o pulsando fuera. Un botón con data-viewer-open="grupo" abre el grupo desde la
+ * primera. Sin JavaScript, o con Ctrl/Cmd + clic, los enlaces abren la imagen sin más.
+ *
+ * El pie sale del propio enlace: el título, de [data-viewer-title], y el detalle, de [data-viewer-meta]
+ * (los dos dentro del enlace). Encima va la etiqueta del antepasado con data-viewer-label (un texto o
+ * una clave de js/translations.js) y la posición. data-viewer-alt, también en un antepasado, es la
+ * clave del texto alternativo de la imagen grande ("{title}" se cambia por el título).
  */
 (function () {
   "use strict";
 
-  var links = Array.prototype.slice.call(document.querySelectorAll("[data-cert]"));
-  var viewer = document.getElementById("cert-viewer");
-  if (!links.length || !viewer || typeof viewer.showModal !== "function") return;
+  var viewer = document.getElementById("viewer");
+  if (!viewer || typeof viewer.showModal !== "function") return;
 
   var root = document.documentElement;
-  var stage = viewer.querySelector(".cert-viewer__stage");
-  var img = viewer.querySelector(".cert-viewer__img");
-  var org = viewer.querySelector(".cert-viewer__org");
-  var count = viewer.querySelector(".cert-viewer__count");
-  var title = viewer.querySelector(".cert-viewer__title");
-  var meta = viewer.querySelector(".cert-viewer__meta");
-  var openLink = viewer.querySelector(".cert-viewer__open");
+  var stage = viewer.querySelector(".viewer__stage");
+  var img = viewer.querySelector(".viewer__img");
+  var label = viewer.querySelector(".viewer__label");
+  var count = viewer.querySelector(".viewer__count");
+  var title = viewer.querySelector(".viewer__title");
+  var meta = viewer.querySelector(".viewer__meta");
+  var openLink = viewer.querySelector(".viewer__open");
   var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  var items = [];    // los enlaces del grupo abierto
   var current = 0;
   var loading = 0;   // sube con cada cambio: una imagen que termina de cargar tarde ya no se pone
   var images = {};   // las imágenes grandes ya pedidas, por dirección
+
+  // Un texto de js/translations.js en el idioma de la página ("" si la clave no existe)
+  function t(key) {
+    var dict = window.TRANSLATIONS && window.TRANSLATIONS[root.lang];
+    return (dict && key && dict[key]) || "";
+  }
 
   function textOf(link, selector) {
     var el = link.querySelector(selector);
     return el ? el.textContent.replace(/\s+/g, " ").trim() : "";
   }
 
-  // El pie (entidad, posición, título y horas) sale del propio enlace, ya en el idioma de la página
+  function attrOf(link, name) {
+    var el = link.closest("[" + name + "]");
+    return el ? el.getAttribute(name) : "";
+  }
+
+  // El pie sale del propio enlace, ya en el idioma de la página
   function caption() {
-    var link = links[current];
-    var group = link.closest("[data-issuer]");
-    var name = textOf(link, ".cert__title");
-    var dict = window.TRANSLATIONS && window.TRANSLATIONS[root.lang];
-    org.textContent = group ? group.getAttribute("data-issuer") : "";
-    count.textContent = (current + 1) + " / " + links.length;
+    var link = items[current];
+    var name = textOf(link, "[data-viewer-title]");
+    var key = attrOf(link, "data-viewer-label");
+    var alt = t(attrOf(link, "data-viewer-alt"));
+    label.textContent = t(key) || key;
+    count.textContent = (current + 1) + " / " + items.length;
     title.textContent = name;
-    meta.textContent = textOf(link, ".cert__meta");
-    img.alt = dict && dict["certificates.viewerAlt"] ? dict["certificates.viewerAlt"].replace("{title}", name) : name;
+    meta.textContent = textOf(link, "[data-viewer-meta]");
+    img.alt = alt ? alt.replace("{title}", name) : name;
   }
 
   function src(link) {
     return link.getAttribute("href");
   }
 
-  // Pide la imagen grande de un certificado (una sola vez) y la devuelve. Las de los vecinos van con
+  // Pide la imagen grande de un enlace (una sola vez) y la devuelve. Las de los vecinos van con
   // prioridad baja para no quitarle velocidad a la que se quiere ver.
   function preload(link, priority) {
     var href = src(link);
@@ -58,17 +78,17 @@
     return images[href];
   }
 
-  // Los vecinos del que se ve, para que pasar al siguiente o al anterior sea inmediato
+  // Los vecinos de la que se ve, para que pasar a la siguiente o a la anterior sea inmediato
   function preloadNeighbours() {
     [current - 1, current + 1].forEach(function (i) {
-      preload(links[(i + links.length) % links.length], "low");
+      preload(items[(i + items.length) % items.length], "low");
     });
   }
 
-  // dir: 1 o -1 si se pasa al siguiente o al anterior (la hoja entra desde ese lado); 0 al abrir
+  // dir: 1 o -1 si se pasa a la siguiente o a la anterior (la imagen entra desde ese lado); 0 al abrir
   function show(index, dir) {
-    current = (index + links.length) % links.length;
-    var link = links[current];
+    current = (index + items.length) % items.length;
+    var link = items[current];
     var thumb = link.querySelector("img");
     var full = preload(link);
     var token = ++loading;
@@ -100,21 +120,29 @@
     }
   }
 
+  function step(dir) {
+    if (items.length > 1) show(current + dir, dir);
+  }
+
   // Avisa a la escena 3D (js/scene3d.js) de que el visor la tapa o la destapa: tapada no se dibuja
   function overlay(isOpen) {
     document.dispatchEvent(new CustomEvent("portfolio:overlay", { detail: { open: isOpen } }));
   }
 
-  function open(index) {
+  // Abre el grupo por el enlace "start" (o por la primera imagen)
+  function open(group, start) {
+    items = Array.prototype.slice.call(document.querySelectorAll('[data-viewer="' + group + '"]'));
+    if (!items.length) return;
+    viewer.classList.toggle("is-single", items.length < 2);
     // Sin barra de desplazamiento la página se ensancharía: se deja su hueco mientras está abierto
     if (window.innerWidth > root.clientWidth) root.style.scrollbarGutter = "stable";
-    root.classList.add("cert-viewer-open");
-    show(index, 0);
+    root.classList.add("viewer-open");
+    show(Math.max(0, items.indexOf(start)), 0);
     viewer.showModal();
     overlay(true);
   }
 
-  links.forEach(function (link, i) {
+  Array.prototype.forEach.call(document.querySelectorAll("[data-viewer]"), function (link) {
     link.setAttribute("aria-haspopup", "dialog");
     // Si el ratón se queda un momento encima (no al pasar de largo) o llega el foco, se empieza a
     // cargar ya la imagen grande, y al abrir el visor suele estar lista
@@ -127,28 +155,32 @@
     link.addEventListener("click", function (e) {
       if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
       e.preventDefault();
-      open(i);
+      open(link.getAttribute("data-viewer"), link);
     });
   });
 
+  Array.prototype.forEach.call(document.querySelectorAll("[data-viewer-open]"), function (button) {
+    button.setAttribute("aria-haspopup", "dialog");
+    button.addEventListener("click", function () { open(button.getAttribute("data-viewer-open"), null); });
+  });
+
   // Al cerrarse (Esc, la X, pulsando fuera o al cambiar de sección) se deshace lo de open(), y el
-  // navegador devuelve el foco al enlace que lo abrió. Se vigila el atributo "open" y no el evento
+  // navegador devuelve el foco a lo que lo abrió. Se vigila el atributo "open" y no el evento
   // "close", que algunos navegadores lanzan tarde o no lanzan.
   new MutationObserver(function () {
     if (viewer.open) return;
     loading++;
-    root.classList.remove("cert-viewer-open");
+    root.classList.remove("viewer-open");
     root.style.scrollbarGutter = "";
     overlay(false);
   }).observe(viewer, { attributes: true, attributeFilter: ["open"] });
 
   viewer.addEventListener("click", function (e) {
-    var step = e.target.closest("[data-step]");
-    if (step) {
-      var dir = Number(step.getAttribute("data-step"));
-      show(current + dir, dir);
-    } else if (e.target.closest(".cert-viewer__close") || e.target === viewer ||
-               e.target.classList.contains("cert-viewer__frame") || e.target === stage) {
+    var arrow = e.target.closest("[data-step]");
+    if (arrow) {
+      step(Number(arrow.getAttribute("data-step")));
+    } else if (e.target.closest(".viewer__close") || e.target === viewer ||
+               e.target.classList.contains("viewer__frame") || e.target === stage) {
       viewer.close();
     }
   });
@@ -156,8 +188,7 @@
   viewer.addEventListener("keydown", function (e) {
     if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
     e.preventDefault();
-    var dir = e.key === "ArrowRight" ? 1 : -1;
-    show(current + dir, dir);
+    step(e.key === "ArrowRight" ? 1 : -1);
   });
 
   // Deslizar el dedo a un lado o al otro (con ratón no: ahí están las flechas)
@@ -170,10 +201,7 @@
     var dx = e.clientX - swipe.x;
     var dy = e.clientY - swipe.y;
     swipe = null;
-    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) {
-      var dir = dx < 0 ? 1 : -1;
-      show(current + dir, dir);
-    }
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) step(dx < 0 ? 1 : -1);
   });
   stage.addEventListener("pointercancel", function () { swipe = null; });
 

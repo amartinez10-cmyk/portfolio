@@ -108,6 +108,7 @@
   font-weight: 600;
   text-align: center;
   text-decoration: none;
+  cursor: pointer;
   transition: background-color 200ms ease, border-color 200ms ease, transform 200ms var(--ease-out);
 }
 
@@ -129,6 +130,24 @@
 .cv__btn--primary:hover {
   background: linear-gradient(135deg, var(--level-accent), var(--accent-3));
   filter: brightness(1.12);
+}
+
+/* Uno debajo de otro (en las tarjetas estrechas no caben dos en una línea sin partir el texto) */
+.cv__btn--block {
+  flex-basis: 100%;
+}
+
+/* Icono delante del texto (Certificados y Proyectos) */
+.cv__btn svg {
+  flex: none;
+  width: 1.15rem;
+  height: 1.15rem;
+  margin-right: 0.5rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 @media (prefers-reduced-motion: reduce) {

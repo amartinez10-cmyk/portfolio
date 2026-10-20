@@ -719,7 +719,7 @@ async function startNow({ level = "full", force = false } = {}) {
     wake();
   });
   on(document, "visibilitychange", () => wake());
-  // El visor de certificados (js/certificates.js) tapa toda la pantalla: mientras está abierto la sala
+  // El visor de imágenes (js/viewer.js: certificados y diapositivas) tapa toda la pantalla: mientras está abierto la sala
   // no se dibuja (detrás de su fondo desenfocado no se distingue) y así no le quita fluidez
   on(document, "portfolio:overlay", (e) => {
     covered = !!(e.detail && e.detail.open);
