@@ -189,6 +189,7 @@ html.booting .boot::before {
 }
 
 .boot__blocks::after {
+  --p: inherit;          /* --p no se hereda sola (css/styles.css): la toma de .boot__blocks */
   content: "";
   position: absolute;
   inset: 0;

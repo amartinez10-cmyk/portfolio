@@ -21,6 +21,34 @@
   var raf = 0;
   var last = 0;
 
+  // Capas con parallax: el puntero (--px, --py) y el scroll (--sy) se escriben en cada una y no en
+  // <html> (esas variables no se heredan, ver css/styles.css: así solo se recalcula la capa)
+  var depthLayers = Array.prototype.slice.call(document.querySelectorAll("[data-depth]"));
+  var scrollLayers = Array.prototype.slice.call(document.querySelectorAll("[data-scroll]"));
+  var lastPx = "", lastPy = "";
+
+  // Y solo las que se ven: mover una capa cuesta (la de las habilidades, casi 1 ms por fotograma)
+  var shownLayers = depthLayers.slice();
+  if ("IntersectionObserver" in window) {
+    shownLayers = [];
+    var layerObserver = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        var i = shownLayers.indexOf(entry.target);
+        if (entry.isIntersecting && i === -1) {
+          shownLayers.push(entry.target);
+          // Al aparecer se pone en su sitio (la que estaba fuera no se movía)
+          if (lastPx) {
+            entry.target.style.setProperty("--px", lastPx);
+            entry.target.style.setProperty("--py", lastPy);
+          }
+        } else if (!entry.isIntersecting && i !== -1) {
+          shownLayers.splice(i, 1);
+        }
+      });
+    });
+    depthLayers.forEach(function (el) { layerObserver.observe(el); });
+  }
+
   // Puntero (centrado: -1 … 1) para el parallax
   var px = 0, py = 0, tx = 0, ty = 0;
   // Cursor
@@ -152,6 +180,7 @@
   // Funciona con ratón y con dedo; solo se apaga con "reducir movimiento"
   var scrollQueued = 0;
   var CARDS = ".skills__list li, .paradigm__node, .paradigm__hub";
+  var writtenP = new WeakMap();   // el último --p puesto a cada tarjeta
 
   // 0 cuando la tarjeta asoma por abajo, 1 cuando ha subido hasta quedar del todo dentro.
   // Al llegar al final de la página todas quedan en 1 (si no, las de la última fila, que ya no
@@ -168,20 +197,28 @@
   function updateScroll() {
     scrollQueued = 0;
     if (reduceMotion.matches) return;
-    root.style.setProperty("--sy", window.scrollY.toFixed(1));
-    // Tarjetas de habilidades y del paradigma personal: entran desde atrás según el scroll
+    var sy = window.scrollY.toFixed(1);
+    scrollLayers.forEach(function (el) { el.style.setProperty("--sy", sy); });
+    // Tarjetas de habilidades y del paradigma personal: entran desde atrás según el scroll.
+    // Primero se miden todas y después se escriben: medir después de escribir obligaría al
+    // navegador a recalcular la página una vez por tarjeta.
     var cards = document.querySelectorAll(CARDS);
-    for (var i = 0; i < cards.length; i++) {
-      cards[i].style.setProperty("--p", entryProgress(cards[i], i % 4).toFixed(3));
+    var progress = [];
+    for (var i = 0; i < cards.length; i++) progress.push(entryProgress(cards[i], i % 4).toFixed(3));
+    for (i = 0; i < cards.length; i++) {
+      // Las que ya están del todo dentro (o aún lejos) no cambian: no se tocan
+      if (writtenP.get(cards[i]) === progress[i]) continue;
+      writtenP.set(cards[i], progress[i]);
+      cards[i].style.setProperty("--p", progress[i]);
     }
     // Las líneas del mapa del paradigma aparecen con la primera tarjeta que llega
-    var map = document.querySelector(".paradigm__map");
-    if (map) {
+    var lines = document.querySelector(".paradigm__lines");
+    if (lines) {
       var maxP = 0;
-      map.querySelectorAll(".paradigm__node").forEach(function (n) {
+      document.querySelectorAll(".paradigm__node").forEach(function (n) {
         maxP = Math.max(maxP, parseFloat(n.style.getPropertyValue("--p")) || 0);
       });
-      map.style.setProperty("--map-p", maxP.toFixed(3));
+      lines.style.setProperty("--map-p", maxP.toFixed(3));
     }
   }
 
@@ -190,10 +227,11 @@
   }
 
   function resetScroll() {
-    root.style.removeProperty("--sy");
+    scrollLayers.forEach(function (el) { el.style.removeProperty("--sy"); });
     document.querySelectorAll(CARDS).forEach(function (li) { li.style.removeProperty("--p"); });
-    var map = document.querySelector(".paradigm__map");
-    if (map) map.style.removeProperty("--map-p");
+    writtenP = new WeakMap();
+    var lines = document.querySelector(".paradigm__lines");
+    if (lines) lines.style.removeProperty("--map-p");
   }
 
   /* ---------- Bucle único ---------- */
@@ -204,13 +242,20 @@
     last = now;
     var moving = false;
 
-    // Parallax: se suaviza el puntero y se publica en --px / --py (las capas lo leen en CSS)
+    // Parallax: se suaviza el puntero y se pone en --px / --py de cada capa (lo leen en CSS)
     var kp = 1 - Math.exp(-dt * 7);
     px += (tx - px) * kp;
     py += (ty - py) * kp;
     if (Math.abs(tx - px) + Math.abs(ty - py) > 0.0005) moving = true;
-    root.style.setProperty("--px", px.toFixed(4));
-    root.style.setProperty("--py", py.toFixed(4));
+    var spx = px.toFixed(4), spy = py.toFixed(4);
+    if (spx !== lastPx || spy !== lastPy) {
+      lastPx = spx;
+      lastPy = spy;
+      shownLayers.forEach(function (el) {
+        el.style.setProperty("--px", spx);
+        el.style.setProperty("--py", spy);
+      });
+    }
 
     // Cursor: el punto sigue al puntero y el aro llega un poco después
     if (cursor) {
@@ -291,8 +336,11 @@
     document.removeEventListener("visibilitychange", wake);
     removeCursor();
     root.classList.remove("has-fx");
-    root.style.removeProperty("--px");
-    root.style.removeProperty("--py");
+    depthLayers.forEach(function (el) {
+      el.style.removeProperty("--px");
+      el.style.removeProperty("--py");
+    });
+    lastPx = lastPy = "";
     tilts.forEach(function (s) {
       s.x = s.y = s.tx = s.ty = 0;
       s.on = false;
@@ -306,10 +354,10 @@
     else disable();
   }
 
-  document.querySelectorAll("[data-depth]").forEach(function (el) {
+  depthLayers.forEach(function (el) {
     el.style.setProperty("--depth", el.getAttribute("data-depth"));
   });
-  document.querySelectorAll("[data-scroll]").forEach(function (el) {
+  scrollLayers.forEach(function (el) {
     el.style.setProperty("--sfactor", el.getAttribute("data-scroll"));
   });
   document.querySelectorAll("[data-tilt]").forEach(setupTilt);

@@ -231,6 +231,9 @@ async function startNow({ level = "full", force = false } = {}) {
   const keyA = makeKey();
   const keyB = makeKey();
   keyB.intensity = 2;
+  // Las sombras no se recalculan solas en cada fotograma: lo decide scheduleShadows ("Sombras a su ritmo")
+  keyA.shadow.autoUpdate = keyB.shadow.autoUpdate = false;
+  keyA.shadow.needsUpdate = keyB.shadow.needsUpdate = true;
 
   /* ---------- Niveles y decorado ---------- */
 
@@ -448,11 +451,12 @@ async function startNow({ level = "full", force = false } = {}) {
   let last = 0;
   let idleFrames = 0;
   let covered = false;   // un visor a pantalla completa tapa la sala (evento portfolio:overlay)
+  let fastMotion = true; // algo se mueve deprisa (cambio de sala, saltitos): sombras en cada fotograma
 
   function resize() {
     W = Math.max(1, canvas.clientWidth);
     H = Math.max(1, canvas.clientHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, maxDpr));
+    renderer.setPixelRatio(targetDpr());
     renderer.setSize(W, H, false);
     cam.aspect = W / H;
     particles.material.uniforms.uPx.value = renderer.getPixelRatio();
@@ -570,6 +574,7 @@ async function startNow({ level = "full", force = false } = {}) {
     const aboutLv = levels.items[order.indexOf("about")];
     const aboutVisible = !!aboutLv && aboutLv.pop.v > 0.7;
     const inputActive = input.update(dt, simTime, ambient, animated, aboutVisible);
+    fastMotion = moving || bumping;
 
     return ambient > 0 || moving || inputActive || bumping || wheelVel !== 0 ||
       Math.abs(pdx) + Math.abs(pdy) > 0.0005 || Math.abs(sdx) > 0.0005;
@@ -579,12 +584,30 @@ async function startNow({ level = "full", force = false } = {}) {
     renderer.render(world, cam);
   }
 
+  /* Sombras a su ritmo: recalcular los dos mapas de sombras cuesta unos 2,5 ms de tarjeta gráfica y
+     1 ms de procesador por fotograma (medido en un portátil con gráfica integrada), y a 144 Hz solo hay
+     7 ms para todo. Las salas flotan muy despacio, así que con la escena tranquila se recalcula una luz
+     cada vez, unas 80 veces por segundo entre las dos (40 cada una: no se nota). Mientras algo se mueve
+     deprisa (cambio de sala, saltitos) se recalculan las dos en cada fotograma. */
+  let shadowTurn = 0;
+  let shadowAt = 0;
+  function scheduleShadows(now) {
+    if (fastMotion) {
+      keyA.shadow.needsUpdate = keyB.shadow.needsUpdate = true;
+      shadowAt = now;
+    } else if (now - shadowAt >= 12.5) {
+      (shadowTurn++ % 2 ? keyB : keyA).shadow.needsUpdate = true;
+      shadowAt = now;
+    }
+  }
+
   function frame(now) {
     raf = 0;
     const raw = (now - last) / 1000;
     last = now;
     const active = update(Math.max(0, Math.min(raw, 0.05)));
     const warming = warmStep();
+    scheduleShadows(now);
     render();
     // Un fotograma de precalentado (y el siguiente, que arrastra su coste) no cuenta para bajar la resolución
     if (warming) perfSkip = 2;
@@ -659,28 +682,77 @@ async function startNow({ level = "full", force = false } = {}) {
     return true;
   }
 
-  /* ---------- Resolución adaptable ---------- */
+  /* ---------- Resolución adaptable ----------
+     El objetivo es ir al ritmo de la pantalla (60, 120, 144 Hz…). Se mira cada fotograma en ventanas de
+     unos 2 s: si más de un cuarto llega tarde (más de 1,5 refrescos), la resolución del 3D baja un 10 %;
+     si después todo va a tiempo durante 10 s, prueba a subir un escalón y, si al subir vuelve a ir tarde,
+     se queda en el de abajo. Nunca baja de un píxel de imagen por píxel de la página (los textos y las
+     tarjetas no cambian: solo el lienzo 3D) ni se apaga el 3D. */
+  const perf = { avg: 1 / 60, scale: 1, ceiling: 1, probeFrom: 0, calm: 0, time: 0, deltas: [] };
+  let vsync = 1 / 60;    // lo que dura un refresco de la pantalla (ver measureVsync)
+  // La resolución que funcionó en la visita anterior: así no hay que volver a bajar escalón a escalón
+  const SCALE_KEY = "portfolio-3d-scale";
+  try {
+    const saved = parseFloat(localStorage.getItem(SCALE_KEY));
+    if (saved >= 0.4 && saved <= 1) perf.scale = saved;
+  } catch (err) { /* sin almacenamiento: se empieza al máximo */ }
 
-  // Si la media baja de ~29 fps se baja la resolución (nunca se apaga el 3D)
-  const perf = { avg: 1 / 60, samples: 0, quality: 0 };
+  const nativeDpr = () => Math.min(window.devicePixelRatio || 1, maxDpr);
+  function targetDpr() {
+    const native = nativeDpr();
+    return Math.max(Math.min(1, native), native * perf.scale);
+  }
+  function setScale(scale) {
+    const before = targetDpr();
+    perf.scale = scale;
+    try { localStorage.setItem(SCALE_KEY, scale.toFixed(3)); } catch (err) { /* sin almacenamiento */ }
+    if (Math.abs(targetDpr() - before) > 0.001) resize();
+  }
+
+  // Unos cuantos requestAnimationFrame vacíos, mientras se compilan los shaders y antes de dibujar
+  // nada: el más corto de ellos es lo que dura un refresco (16,7 ms a 60 Hz, 6,9 ms a 144 Hz)
+  function measureVsync() {
+    const t = [];
+    let prev = 0;
+    const tick = (now) => {
+      if (prev) t.push((now - prev) / 1000);
+      prev = now;
+      if (t.length < 40) requestAnimationFrame(tick);
+      else vsync = THREE.MathUtils.clamp(t.sort((a, b) => a - b)[2], 1 / 360, 1 / 24);
+    };
+    requestAnimationFrame(tick);
+  }
 
   function watchPerformance(raw) {
-    if (!animated || document.hidden || raw > 0.25) return;
+    if (!animated || document.hidden || raw <= 0 || raw > 0.25) return;
     perf.avg += (raw - perf.avg) * 0.05;
-    if (++perf.samples < 150 || perf.samples % 60) return;
-    if (perf.quality === 0 && perf.avg > 0.034) {
-      perf.quality = 1;
-      maxDpr = 1.25;
-      resize();
-    } else if (perf.quality === 1 && perf.avg > 0.04) {
-      perf.quality = 2;
-      maxDpr = 1;
-      resize();
+    perf.deltas.push(raw);
+    perf.time += raw;
+    if (perf.time < 2) return;
+    const late = perf.deltas.filter((d) => d > vsync * 1.5).length / perf.deltas.length;
+    perf.deltas.length = 0;
+    perf.time = 0;
+    const lowest = Math.min(1, 1 / nativeDpr());
+    if (late > 0.25) {
+      perf.calm = 0;
+      if (perf.probeFrom) {
+        // Al subir volvió a ir tarde: se vuelve abajo y ya no se prueba más arriba
+        perf.ceiling = perf.probeFrom;
+        setScale(perf.probeFrom);
+      } else if (perf.scale > lowest + 0.001) {
+        setScale(Math.max(lowest, perf.scale * 0.9));
+      }
+    } else if (late < 0.05) {
+      if (++perf.calm >= 5 && perf.scale < perf.ceiling - 0.001) {
+        perf.calm = 0;
+        perf.probeFrom = perf.scale;
+        setScale(Math.min(perf.ceiling, perf.scale / 0.9));
+        return;
+      }
     } else {
-      return;
+      perf.calm = 0;
     }
-    perf.samples = 0;
-    perf.avg = 1 / 60;
+    perf.probeFrom = 0;
   }
 
   /* ---------- Entradas: ratón, scroll, rueda, cambios de la página ---------- */
@@ -763,7 +835,7 @@ async function startNow({ level = "full", force = false } = {}) {
   // Para revisar el estado desde la consola: portfolio3d.stats()
   window.portfolio3d = {
     stats: () => ({
-      level, running, animated, ambient, section, quality: perf.quality,
+      level, running, animated, ambient, section, scale: +perf.scale.toFixed(3), hz: Math.round(1 / vsync),
       fps: Math.round(1 / perf.avg), dpr: renderer.getPixelRatio(),
       calls: renderer.info.render.calls, triangles: renderer.info.render.triangles,
       cam: { pos: cam.position.toArray().map((n) => +n.toFixed(2)), fov: +cam.fov.toFixed(2), aspect: +cam.aspect.toFixed(3) },
@@ -773,6 +845,7 @@ async function startNow({ level = "full", force = false } = {}) {
     // Avanza la simulación de golpe (para pruebas y capturas con la pestaña en segundo plano)
     step: (seconds = 1) => {
       for (let t = 0; t < seconds; t += 1 / 60) update(1 / 60);
+      keyA.shadow.needsUpdate = keyB.shadow.needsUpdate = true;
       render();
     },
     focus: (v) => input.setFocus(v),
@@ -806,6 +879,7 @@ async function startNow({ level = "full", force = false } = {}) {
       for (let i = 0; i < frames; i++) {
         let t0 = performance.now();
         update(1 / 60);
+        scheduleShadows(t0);
         const t1 = performance.now();
         render();
         const t2 = performance.now();
@@ -825,7 +899,9 @@ async function startNow({ level = "full", force = false } = {}) {
   if (document.fonts && document.fonts.load) {
     Promise.all([document.fonts.load('800 100px "Outfit"'), document.fonts.ready]).then(() => { refreshTitles(); wake(); }, () => {});
   }
-  // Los shaders de todas las salas, antes del primer dibujado (ver "Precalentado")
+  // Los shaders de todas las salas, antes del primer dibujado (ver "Precalentado"); mientras, se mide
+  // lo que dura un refresco de la pantalla (ver "Resolución adaptable")
+  measureVsync();
   await compileShaders();
   if (disposed) throw new Error("el 3D se descartó mientras se preparaba");
   update(1 / 60);

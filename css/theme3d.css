@@ -290,7 +290,7 @@ main,
 }
 
 /* ---------- Parallax por capas ----------
-   js/fx.js publica --px y --py (el puntero, solo con ratón) y --sy (lo que se ha bajado con el
+   js/fx.js pone en cada capa --px y --py (el puntero, solo con ratón) y --sy (lo que se ha bajado con el
    scroll). data-depth="N" desplaza la capa según el puntero; data-scroll="F" la desplaza F píxeles
    por cada píxel de scroll (F>0: se queda atrás; F<0: se adelanta). */
 

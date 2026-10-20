@@ -12,6 +12,34 @@
   initial-value: 0deg;
 }
 
+/* Variables que js/fx.js cambia en cada fotograma (puntero, scroll y entrada de las tarjetas). No se
+   heredan: así, al cambiarlas, el navegador solo recalcula el elemento que las usa. Heredadas y puestas
+   en <html>, mover el ratón obligaba a recalcular las ~500 piezas de la página en cada fotograma
+   (unos 8 ms, más que un fotograma entero a 144 Hz). */
+@property --px {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 0;
+}
+
+@property --py {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 0;
+}
+
+@property --sy {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 0;
+}
+
+@property --p {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 1;
+}
+
 :root {
   color-scheme: dark;
   transition: --level-accent 0.9s ease;
