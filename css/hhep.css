@@ -1,0 +1,24 @@
+/* Sección 7 HHEP: tres tarjetas (proactividad, misión, prioridades). Reutiliza estilos de projects.css. */
+.habit {
+  display: grid;
+  gap: 0.6rem;
+  margin-top: 1.25rem;
+  padding: 1.1rem 1.2rem;
+  border: 1px solid var(--glass-edge);
+  border-radius: 0.9rem;
+}
+.habit .project__actions { margin-top: 0.4rem; }
+.habit__jar { display: grid; gap: 0.6rem; }
+.habit__lvl {
+  padding: 0.8rem 1rem;
+  border-radius: 0.7rem;
+  border-left: 4px solid var(--lvl);
+  background: color-mix(in srgb, var(--lvl) 12%, transparent);
+}
+.habit__lvl--rocks { --lvl: #8a94a6; }
+.habit__lvl--pebbles { --lvl: #c9a46a; }
+.habit__lvl--sand { --lvl: #e8d5a3; }
+.habit__lvl h3 { margin: 0; font-size: 1.05rem; }
+.habit__lvl p { margin: 0.1rem 0 0.5rem; opacity: 0.75; font-size: 0.9rem; }
+.habit__lvl ul { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0; padding: 0; list-style: none; }
+.habit__lvl li { padding: 0.2rem 0.65rem; border-radius: 999px; background: color-mix(in srgb, var(--lvl) 25%, transparent); font-size: 0.9rem; }
