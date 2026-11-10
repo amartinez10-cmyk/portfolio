@@ -22,3 +22,15 @@
 .habit__lvl p { margin: 0.1rem 0 0.5rem; opacity: 0.75; font-size: 0.9rem; }
 .habit__lvl ul { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0; padding: 0; list-style: none; }
 .habit__lvl li { padding: 0.2rem 0.65rem; border-radius: 999px; background: color-mix(in srgb, var(--lvl) 25%, transparent); font-size: 0.9rem; }
+
+/* Tarjetas con más estructura: pasos, misión destacada y valores */
+.habit__steps, .habit__values { display: grid; grid-template-columns: 1fr; gap: 0.6rem; margin: 0.2rem 0 0; padding: 0; list-style: none; }
+.habit__steps { counter-reset: habit; }
+.habit__step, .habit__value { padding: 0.75rem 0.85rem; border: 1px solid var(--glass-edge); border-radius: 0.7rem; }
+.habit__step { counter-increment: habit; }
+.habit__step h3::before { content: counter(habit) ". "; opacity: 0.6; }
+.habit__step h3, .habit__value h4, .habit__two h3 { margin: 0 0 0.25rem; font-size: 1rem; }
+.habit__step p, .habit__value p, .habit__two p { margin: 0; font-size: 0.92rem; line-height: 1.5; }
+.habit__mission { margin: 0.2rem 0; padding: 0.2rem 0 0.2rem 1rem; border-left: 3px solid #f08ac6; font-size: 1.3rem; line-height: 1.35; font-weight: 600; }
+.habit__two { display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: 0.8rem; }
+.habit__sub { margin: 0.3rem 0 0; font-size: 0.8rem; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.75; }
