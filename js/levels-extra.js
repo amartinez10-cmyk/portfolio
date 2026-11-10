@@ -7,11 +7,13 @@
 import * as THREE from "three";
 import { createProps2 } from "./journey-props2.js";
 import { rng } from "./journey-kit.js";
+import { createEco } from "./journey-eco.js";
 
 export function buildExtras({ kit, props }) {
   const { C, grp, rbox, cyl, ball, glow, mat } = kit;
   const { P } = props;
   const Q = createProps2(kit, props);
+  const E = createEco(kit);
   const TAU = Math.PI * 2;
 
   // Coloca un objeto (posición y giro) dentro de la sala
@@ -84,6 +86,8 @@ export function buildExtras({ kit, props }) {
     place(root, P.crate({ s: 1.5, color: C.white, band: C.pink }), -0.5, 1.5, -5.9, -0.15);
     place(root, P.crate({ s: 1.5, color: C.white, band: C.yellow }), -2.3, 0, -5.9, 0.05);
 
+    E.binRow(root, 3.9, 6.05);
+
     // Aviones de papel sobre la mesa de trabajo
     const planes = [0, 1, 2].map((i) => ({ obj: Q.paperPlane({ color: [C.white, C.pink, C.yellow][i] }), radius: 4 + i * 1.2, height: 5.6 + i * 0.7, speed: 0.4 + i * 0.07, phase: i * 2.1, face: -Math.PI / 2, bank: 0.25 }));
     orbiters(root, 0.5, 0.5, planes);
@@ -118,6 +122,8 @@ export function buildExtras({ kit, props }) {
     place(root, Q.trophyShelf({ w: 6.2, h: 4.2 }), -6.2, 0, -1.5);
     stand(root, P.plants.bush({ size: 0.95, pot: C.pink }), -5.7, 0, 5.0);
     stand(root, P.floorLamp({ shade: C.pink, h: 5.6 }), -6.1, 0, -5.65);
+
+    E.binRow(root, -1.1, 6.1);
 
     // Globos atados
     [[6.3, -2.3, C.pink], [4.6, -4.3, C.sky], [6.4, -5.4, C.orange]].forEach(([x, z, color], i) => {
@@ -179,6 +185,8 @@ export function buildExtras({ kit, props }) {
     place(root, Q.landingPad({ s: 5 }), -0.2, 0, 2.6);
     place(root, Q.drone(), -0.2, 5.0, 2.6);
 
+    E.binRow(root, 3.1, 6.05);
+
     // Cajas y torre de cubos de colores
     place(root, P.crate({ s: 1.7, color: C.wood, band: C.woodDark }), -5.7, 0, 4.9, 0.2);
     const topCrate = place(root, P.crate({ s: 1.4, color: C.wood, band: C.woodDark }), -5.6, 1.7, 4.9, -0.2);
@@ -216,6 +224,8 @@ export function buildExtras({ kit, props }) {
       topH = h;
     });
     place(root, Q.flag({ color: C.red }), 5.35, topH, -4.3);
+
+    E.binRow(root, -1.0, 6.3, { step: 1.25 });
 
     // Portal a una galaxia y un telescopio apuntando hacia él
     hangOn(root, Q.porthole({ r: 2.1 }), -2.4, 6.0, -6.8);
@@ -264,6 +274,8 @@ export function buildExtras({ kit, props }) {
     stand(root, Q.globe({ r: 1.25 }), 5.9, 0, 3.6);
     stand(root, P.floorLamp({ shade: C.yellow, h: 5.8 }), 6.0, 0, -5.3);
     stand(root, P.plants.monstera({ size: 1.0, pot: C.white }), -5.9, 0, -0.8);
+
+    E.binRow(root, -0.6, 6.05);
 
     // Sobres, aviones de papel y un móvil dando vueltas
     const phone = P.phone({ seed: 33 });

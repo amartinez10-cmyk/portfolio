@@ -14,6 +14,7 @@ import { BASE_DROP } from "./pc-case.js";
 import { createSkillsGraph } from "./skills-graph.js";
 import { buildExtras } from "./levels-extra.js";
 import { batchStatic, BATCH_ENABLED } from "./batch.js";
+import { createEco } from "./journey-eco.js";
 
 // Color de las paredes y de la luz del borde de cada nivel (el acento también lo lee el CSS)
 export const LEVEL_STYLE = {
@@ -134,6 +135,8 @@ export async function createLevels({ palette, lite, order, pause }) {
     const clock = P.clock({ r: 1.05 });
     kit.hang(clock, 5.3, 7.1, -6.8);
     [f1, f2, clock].forEach((o) => root.add(o));
+
+    createEco(kit).binRow(root, 6.0, 3.4, { horizontal: false });
 
     pc.userData.noHover = true;
     pc.userData.noBatch = true;      // el PC se fusiona por su cuenta (hero-model.js): sus aspas y luces se animan
