@@ -15,7 +15,7 @@
   var root = document.documentElement;
   var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
   var finePointer = window.matchMedia("(hover: hover) and (pointer: fine)");
-  var TILT_MAX = 7; // grados
+  var TILT_MAX = 7; // grados (el tilt está desactivado más abajo)
 
   var active = false;
   var raf = 0;
@@ -360,8 +360,7 @@
   scrollLayers.forEach(function (el) {
     el.style.setProperty("--sfactor", el.getAttribute("data-scroll"));
   });
-  document.querySelectorAll("[data-tilt]").forEach(setupTilt);
-  setupCardTilt();
+  // Los paneles y las tarjetas ya no se inclinan con el cursor: se leían incómodos al moverse
 
   [reduceMotion, finePointer].forEach(function (mq) {
     if (mq.addEventListener) mq.addEventListener("change", sync);

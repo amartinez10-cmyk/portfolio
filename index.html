@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Mulish:wght@300;400;600&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
-  <link rel="stylesheet" href="css/theme3d.css">
+  <link rel="stylesheet" href="css/theme3d.css?v=2">
   <link rel="stylesheet" href="css/paradigm.css">
   <link rel="stylesheet" href="css/resume.css">
   <link rel="stylesheet" href="css/certificates.css">
@@ -111,7 +111,7 @@
   <main id="content">
     <!-- SOBRE MÍ -->
     <section id="about" class="page about" aria-labelledby="about-title">
-      <div class="about__panel" data-tilt data-depth="10">
+      <div class="about__panel" data-tilt>
         <div class="about__intro">
           <figure class="about__photo">
             <img src="img/alex.jpg" width="960" height="1280"
@@ -132,7 +132,7 @@
       <!-- Habilidades: las listas se rellenan desde js/translations.js (skills.hard y skills.soft)
            y cada elemento recibe sus iconos desde js/skill-icons.js. Son tarjetas que aparecen con
            profundidad al hacer scroll. -->
-      <div class="about__skills" data-depth="6">
+      <div class="about__skills">
         <div class="skills">
           <h2 data-i18n="skills.hardTitle">Habilidades técnicas</h2>
           <ul class="skills__list" data-i18n-list="skills.hard">
@@ -160,7 +160,7 @@
       </div>
 
       <!-- Mapa del paradigma personal: va después de las habilidades técnicas y personales -->
-      <div class="paradigm" data-depth="6">
+      <div class="paradigm">
         <h2 class="paradigm__title" data-i18n="paradigm.title">Mi paradigma personal</h2>
         <p class="paradigm__intro" data-i18n="paradigm.intro">Crea tu mapa de paradigma personal para vivir al máximo.</p>
         <p class="paradigm__def" data-i18n="paradigm.def">Paradigma personal = sistema de creencias: los principios básicos de nuestra filosofía de vida.</p>
@@ -232,7 +232,7 @@
     </section>
 
     <!-- CURRÍCULUM -->
-    <section id="resume" class="page" aria-labelledby="resume-title" data-tilt data-depth="12" hidden>
+    <section id="resume" class="page" aria-labelledby="resume-title" data-tilt hidden>
       <h1 id="resume-title" tabindex="-1" data-i18n="nav.resume">Currículum</h1>
       <p data-i18n="resume.body">Aquí tienes mi currículum en dos formatos: el Europass (en inglés) y mi currículum en español.</p>
 
@@ -274,7 +274,7 @@
          imagen y js/viewer.js lo abre en grande en el visor (#viewer, después de <main>).
          Las imágenes salen del PDF escaneado: certificates/ (1400 px de ancho) y certificates/thumbs/
          (180 px); el PDF con todos está en la misma carpeta. -->
-    <section id="certificates" class="page" aria-labelledby="certificates-title" data-tilt data-depth="12" data-viewer-alt="certificates.viewerAlt" hidden>
+    <section id="certificates" class="page" aria-labelledby="certificates-title" data-tilt data-viewer-alt="certificates.viewerAlt" hidden>
       <h1 id="certificates-title" tabindex="-1" data-i18n="nav.certificates">Certificados</h1>
       <p data-i18n="certificates.body">Los certificados y diplomas oficiales de mi primer curso de Sistemas Microinformáticos y Redes (SMX) en el INS Sa Palomera, de junio de 2026. Pulsa uno para verlo entero.</p>
 
@@ -374,7 +374,7 @@
     <!-- Cada proyecto es una tarjeta: la portada grande, el texto, las demás diapositivas en pequeño y los
          botones. Las diapositivas (grupo "rain") se abren en el visor de js/viewer.js; salen del PDF de
          Canva: projects/rainwater/ (1920 px), thumbs/ (480 px) y cover.webp (960 px). -->
-    <section id="projects" class="page" aria-labelledby="projects-title" data-tilt data-depth="12" hidden>
+    <section id="projects" class="page" aria-labelledby="projects-title" data-tilt hidden>
       <h1 id="projects-title" tabindex="-1" data-i18n="nav.projects">Proyectos</h1>
       <p data-i18n="projects.body">Proyectos que he hecho durante el ciclo, en clase y por mi cuenta.</p>
 
@@ -421,7 +421,7 @@
     </section>
 
     <!-- 7 HHEP -->
-    <section id="hhep" class="page" aria-labelledby="hhep-title" data-tilt data-depth="12" hidden>
+    <section id="hhep" class="page" aria-labelledby="hhep-title" data-tilt hidden>
       <h1 id="hhep-title" tabindex="-1" data-i18n="nav.hhep">7 HHEP</h1>
       <p data-i18n="hhep.body">Los seis primeros hábitos de «Los 7 hábitos de los adolescentes altamente efectivos», aplicados a mi vida.</p>
       <article class="habit">
@@ -469,7 +469,7 @@
     </section>
 
     <!-- CONTACTO -->
-    <section id="contact" class="page" aria-labelledby="contact-title" data-tilt data-depth="12" hidden>
+    <section id="contact" class="page" aria-labelledby="contact-title" data-tilt hidden>
       <h1 id="contact-title" tabindex="-1" data-i18n="nav.contact">Contacto</h1>
       <p data-i18n="contact.body">Pronto añadiré aquí mis datos de contacto.</p>
     </section>
@@ -507,7 +507,7 @@
   <script src="js/skill-icons.js"></script>
   <script src="js/main.js"></script>
   <script src="js/section-theme.js"></script>
-  <script src="js/fx.js"></script>
+  <script src="js/fx.js?v=3"></script>
   <script src="js/paradigm.js"></script>
   <script src="js/resume.js"></script>
   <script src="js/viewer.js"></script>

@@ -223,33 +223,6 @@ body::after {
   transition: border-color 250ms ease;
 }
 
-/* Borde con un destello del color del nivel que le da la vuelta a la tarjeta */
-.about__panel::after,
-.page:not(.about)::after {
-  content: "";
-  position: absolute;
-  inset: -1px;
-  padding: 2px;
-  border-radius: inherit;
-  background: conic-gradient(from var(--spin), transparent 0 52%, var(--level-accent) 72%, var(--accent-2) 90%, transparent 100%);
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
-  animation: spin-border 7s linear infinite;
-  pointer-events: none;
-}
-
-@keyframes spin-border {
-  to { --spin: 360deg; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .about__panel::after,
-  .page:not(.about)::after {
-    animation: none;
-  }
-}
-
 .page:not(.about) {
   align-self: flex-start;
   width: min(100%, 34rem);
